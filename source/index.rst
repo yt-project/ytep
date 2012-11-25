@@ -1,20 +1,27 @@
-.. yt Enhancement Proposals documentation master file, created by
-   sphinx-quickstart on Wed Nov 21 09:18:43 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+yt Enhancement Proposals
+========================
 
-Welcome to yt Enhancement Proposals's documentation!
-====================================================
+This is a repository of "yt Enhancement Proposals" (YTEPs).  Because yt is
+relied upon for production-level science, large-scale design decisions are to
+be described and discussed before being acted upon.  YTEP documents are set up
+to provide minimal overhead to discussion, while still allowing a clear and
+evolving specification.
+
+YTEPs go through several stages in their lifetime:
+
+  #. Initial writing of the YTEP
+  #. Announcement and/or discussion on the yt-dev mailing list (may include
+     implementation)
+  #. Implementation and integration, or possibly declination
+
+YTEPs are useful for any code development that affects how others build tools
+or infrastructure, and necessary for breaking backwards compatibility.  They
+are not necessary for most new developments or any bug fixes.
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+   YTEP-template
+   YTEPs
