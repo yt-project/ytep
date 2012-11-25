@@ -21,7 +21,7 @@ are not necessary for most new developments or any bug fixes.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :glob:
 
-   YTEP-template
-   YTEPs
+   YTEPs/*
