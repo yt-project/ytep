@@ -12,7 +12,8 @@ YTEPs go through several stages in their lifetime:
   #. Initial writing of the YTEP
   #. Announcement and/or discussion on the yt-dev mailing list (may include
      implementation)
-  #. Implementation and integration, or possibly declination
+  #. Implementation and integration, or possibly declination (this includes
+     pull requests)
 
 YTEPs are useful for any code development that affects how others build tools
 or infrastructure, and necessary for breaking backwards compatibility.  They

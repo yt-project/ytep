@@ -14,6 +14,7 @@ Abstract
 --------
 
 Created: November 25, 2012
+Author: Your Name
 
 This section should contain one or two sentences describing the proposed
 change.  It should not contain detailed design information, but it can contain
@@ -28,7 +29,10 @@ Status should be one of the following:
 
  #. Proposed
  #. Completed
+ #. In Progress
  #. Declined
+
+YTEPs do not need to pass through every stage.
 
 Project Management Links
 ------------------------
