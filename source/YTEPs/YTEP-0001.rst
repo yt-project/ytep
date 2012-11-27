@@ -22,10 +22,8 @@ In-Progress: This has been largely implemented for grid and oct geometries in
 Project Management Links
 ------------------------
 
-  * `Initial mailing list discussion
-     <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2012-February/001852.html>`_
-  * `Source of chunking tests
-     <https://bitbucket.org/yt_analysis/yt-3.0/src/a4bd4d12a47e614d6e3b9ab322f59c630c0bc6bf/yt/data_objects/tests/test_chunking.py?at=yt-3.0>`_
+  * `Initial mailing list discussion <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2012-February/001852.html>`_
+  * `Source of chunking tests <https://bitbucket.org/yt_analysis/yt-3.0/src/a4bd4d12a47e614d6e3b9ab322f59c630c0bc6bf/yt/data_objects/tests/test_chunking.py?at=yt-3.0>`_
 
 Detailed Description
 --------------------
@@ -46,7 +44,7 @@ objects, manually masking data, on and on.
 An explicit method of data chunking that relies on the characteristics of the
 desired chunks, rather than the means of the chunking, is needed to bypass this
 reliance on the grid mediation of IO.  In this method, data objects will
-request that the geometry handler supply a set of chunks Chunks are of the form
+request that the geometry handler supply a set of chunks. Chunks are of the form
 (IO_unit, size), where IO_unit is only ever managed or handled by
 ``_read_selection``.  This allows the information about all types of IO and
 collections of data to live internal to the individual implementations of
@@ -73,21 +71,21 @@ implemented:
     represents the full selection of data for that data object.  This is the
     "base" chunk from which other chunks will be subselected.
   * ``_count_selection(self, dobj, sub_objects)``: this must count and return
-     the count of cells within a given data object.
+    the count of cells within a given data object.
   * ``_chunk_io(self, dobj)``: this function should yield a series of
     ``YTDataChunk`` objects that have been ordered and created to consolidate IO.
   * ``_chunk_spatial(self, dobj, ngz, sort = None)``: this should yield a
-     series of ``YTDataChunk`` objects which have been created to allow for
-     spatial access of the data.  For grids, this means 3D objects, and for
-     Octs the behavior is undefined but should be 3D or possibly a string of 3D
-     objects.  This is where ghost zone generation will occur, although that
-     has not yet been implemented.
+    series of ``YTDataChunk`` objects which have been created to allow for
+    spatial access of the data.  For grids, this means 3D objects, and for
+    Octs the behavior is undefined but should be 3D or possibly a string of 3D
+    objects.  This is where ghost zone generation will occur, although that
+    has not yet been implemented.
   * ``_chunk_all(self, dobj)``: this should yield a single chunk that contains
-     the entire data object.
+    the entire data object.
 
 The only place that ``YTDataChunk`` objects will ever be directly queried is
 inside the ``_read_fluid_selection`` and ``_read_particle_selection`` routines,
-which are impleemented by the geometry handler itself.  This means that the
+which are implemented by the geometry handler itself.  This means that the
 chunks can be completely opaque external to the geometry handlers.
 
 To start the chunks shuffling over the output, the code calls
