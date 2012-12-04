@@ -1,0 +1,148 @@
+YTEP-0002: Profile Plotter
+==========================
+
+Abstract
+--------
+
+Created: December 5, 2012
+Author: Matthew Turk
+
+This YTEP describes a profile plotting solution, in the style of the
+PlotWindow, to replace the functionality of the methods on the
+``PlotCollection`` that create profiles.  It should have sane defaults, a
+restricted set of functionality, and should make accessing the underlying
+matplotlib axes object very easy.
+
+The method proposed needs to meet several competing needs.  It should accept
+objects, it should "do the right thing" for auto-creating profiles, it should
+provide access to 
+
+Status
+------
+
+In Progress: A basic implementation has been created, but API needs to be
+decided upon as does the list of functions it will implement.
+
+The code can be seen in ``yt/visualization/profile_plotter.py``, specifically
+the objects:
+
+ * ``PhasePlotter``
+ * ``ProfilePlotter``
+
+Project Management Links
+------------------------
+
+  * `Mailing list discussion <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2012-December/002700.html>`_
+  * `Example notebook <https://hub.yt-project.org/nb/vlilvw>`_
+
+Detailed Description
+--------------------
+
+Motivation
+++++++++++
+
+The ``PlotCollection`` provides an easy way to quickly make profiles and phase
+plots, both from spheres that it will create and from objects.  However, it
+suffers from a number of deficiencies:
+
+ * Accessing the axes objects from matplotlib is non-trivial
+ * Plotting multiple profiles on the same axes object is non-trivial
+ * The profile plotter tries to do too many things, and in doing so does not do
+   anything particularly well
+ * Profile plots can't be pickled independently of the data
+
+As such, by including this new approach, we will match the functionality from
+these routines:
+
+ * ``add_profile_sphere``
+ * ``add_profile_object``
+ * ``add_phase_sphere``
+ * ``add_phase_object``
+
+in a way that will enable access to the underlying plots, pickling of plots,
+and also easier overplotting and multi-plotting.
+
+Implementation
+++++++++++++++
+
+The implementation will need to:
+
+ * Accept a data object and set sane defaults for calculating a profile
+ * Not add more than one field to the resulting ``BinnedProfile`` object; only
+   one will be added at any time, and additional fields will be left up to the
+   user
+ * Include a standalone ``Plot``-type object that contains all of the necessary
+   data to create a representation of the data in Matplotlib.
+ * Deposit the plot into an existing ``Axes`` or ``Figure`` object.
+ * Provide simple methods of translating the initial Profile data into the
+   matplotlib object, and allow the user to modify the visualization as she
+   sees fit.
+
+The current implementation contains this class structure:
+
+ * ``ProfilePlotter``
+   * ``profile``: property, the BinnedProfile1D
+   * ``scale``: "log" or "linear", the scale of the profile's y-axis (x-axis is
+   set by the bins in the profile)
+   * ``_current_field``: property, the name of the field currently selected
+   * ``_setup_plot``: Called to create a new plot specification (*not* a
+   Matplotlib plot) and usually called in the background
+ * ``PhasePlotter``
+   * ``profile``: property, the BinnedProfile2D
+   * ``scale``: "log" or "linear", the scale of the profile's y-axis (x-axis
+   and y-axis are set by the bins in the profile)
+   * ``_current_field``: property, the name of the field currently selected
+   * ``_setup_plot``: Called to create a new plot specification (*not* a
+   Matplotlib plot) and usually called in the background
+ * ``AxisSpec``: This specifies the description (title, bounds, scale, ticks)
+   of an Axis.  It is typically used without specifying ticks, which are used
+   only by the ExtJS widgets.
+ * ``ColorbarSpec``
+   * ``cmap``: property, string
+   * ``display``: property, true or false
+ * ``PlotContainer``: Used for profile plots
+   * ``x_spec``: property, AxisSpec
+   * ``y_spec``: property, AxisSpec
+   * ``x_values``: property, numpy array
+   * ``y_values``: property, numpy array
+   * ``to_mpl``: routine that accepts either (Axes), (Figure), or None.
+   Returns the figure and axes after plottin.
+ * ``ImagePlotContainer``: Used for phase plots
+   * ``x_spec``: property, AxisSpec
+   * ``y_spec``: property, AxisSpec
+   * ``image``: property, numpy array (2D)
+   * ``cbar``: property, ``ColorbarSpec`` instance
+   * ``to_mpl``: routine that accepts either (Axes), (Figure) or None.  Returns
+   the figure and axes after plotting.
+  
+The indirection enables the user to pickle the plot, without storing the data.
+But it comes at the price of clarity.
+
+This is currently implemented, and plots returned for the most part to not
+encourage or allow a substantial amount of modification or fiddling.  I think
+this is okay, as it will very easily allow users to plot multiple lines into
+the same axes, for instance.  However, it does less hand-holding.
+
+Open Questions
+++++++++++++++
+
+ * Should the ``PhasePlotter`` and ``ProfilePlotter`` objects be refactored to
+   be explicitly favoring matplotlib?  The PlotWindow does this, and it is
+   successful.
+ * Should we allow users to dynamically switch fields on the fly?
+ * Should the desire for pickling of objects be given up in favor of a cleaner
+   and simpler class structure?  (i.e., getting rid of the Specification
+   objects.)
+
+Backwards Compatibility
+-----------------------
+
+We will not remove the existing functionality from ``PlotCollection``.  So
+there are no backwards compatibility issues.
+
+Alternatives
+------------
+
+Alternately, we could provide nothing, and encourage users to create their own
+``BinnedProfile1D`` plots.  Or, we could provide a much more specific-to-MPL
+alternative.
