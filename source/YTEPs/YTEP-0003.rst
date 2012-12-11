@@ -23,7 +23,8 @@ I started working on the edits in my yt-3.0 fork.
 Project Management Links
 ------------------------
 
-Nothing yet.
+yt 3.0 goals doc https://docs.google.com/document/d/17Q-rbmTj9PyaTgtN1h6C8vqoWeIZjw_OjFbQp8L3Tkg/edit
+Universal field names doc https://docs.google.com/document/d/1Qbt6z27S8VWh8h0kOx--ZYih4BDFAgGlH9pE55I51So/edit
 
 Detailed Description
 --------------------
