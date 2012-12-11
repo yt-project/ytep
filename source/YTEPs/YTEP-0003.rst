@@ -1,0 +1,52 @@
+YTEP-0003: Standardizing field names
+====================================
+
+
+Abstract
+--------
+
+Created: December 11, 2012
+
+Author: Casey Stark
+
+Let's clean up field names in yt, ex "SoundSpeed" -> "sound_speed". The
+proposed work will serve to remove Enzo-isms and encourage more consistent
+field names across frontends.
+
+Status
+------
+
+Proposed.
+
+I started working on the edits in my yt-3.0 fork.
+
+Project Management Links
+------------------------
+
+Nothing yet.
+
+Detailed Description
+--------------------
+
+Background
+^^^^^^^^^^
+
+The universal field names are PascalCased, while lowercase_underscored names
+are more standard in Python.
+
+Solution
+^^^^^^^^
+
+Editing field names inside the ``universal_fields`` module. I am not sure what
+changes we will need beyond this.
+
+Testing
+^^^^^^^
+
+I am relying on the existing tests in yt-3.0, but I am afraid it's not enough.
+
+Backwards Compatibility
+-----------------------
+
+This will certainly break some old scripts. This was the motivation for
+starting this in yt-3.0.
