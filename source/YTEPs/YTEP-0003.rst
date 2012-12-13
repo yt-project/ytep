@@ -24,6 +24,7 @@ Project Management Links
 ------------------------
 
 yt 3.0 goals doc https://docs.google.com/document/d/17Q-rbmTj9PyaTgtN1h6C8vqoWeIZjw_OjFbQp8L3Tkg/edit
+
 Universal field names doc https://docs.google.com/document/d/1Qbt6z27S8VWh8h0kOx--ZYih4BDFAgGlH9pE55I51So/edit
 
 Detailed Description
@@ -51,3 +52,153 @@ Backwards Compatibility
 
 This will certainly break some old scripts. This was the motivation for
 starting this in yt-3.0.
+
+Field Names
+-----------
+
+This is a listing of all field names currently defined in the yt-3.0 universal_fields module and the proposed replacement names.
+
+======================================  =======================================
+            Current name                              Proposal
+======================================  =======================================
+GridLevel                               grid_level
+GridIndices                             grid_indices
+OnesOverDx                              ones_over_dx
+Ones                                    ones
+CellsPerBin                             cells_per_bin
+SoundSpeed                              sound_speed
+RadialMachNumber                        radial_mach_number
+MachNumber                              mach_number
+CourantTimeStep                         courant_time_step
+ParticleVelocityMagnitude               particle_velocity_magnitude
+VelocityMagnitude                       velocity_magnitude
+TangentialOverVelocityMagnitude         tangential_over_velocity_magnitude
+Pressure                                pressure
+Entropy                                 entropy
+sph_r                                   sph_r
+sph_theta                               sph_theta
+sph_phi                                 sph_phi
+cyl_R                                   cyl_r
+cyl_RCode                               cyl_r_code
+cyl_z                                   cyl_z
+cyl_theta                               cyl_theta
+DiskAngle                               disk_angle
+Height                                  height
+HeightAU                                height_au
+cyl_RadialVelocity                      cyl_radial_velocity
+cyl_RadialVelocityABS                   cyl_radial_velocity_abs
+cyl_RadialVelocityKMS                   cyl_radial_velocity_kms
+cyl_RadialVelocityKMSABS                cyl_radial_velocity_kmsabs
+cyl_TangentialVelocity                  cyl_tangential_velocity
+cyl_TangentialVelocityABS               cyl_tangential_velocity_abs
+cyl_TangentialVelocityKMS               cyl_tangential_velocity_kms
+cyl_TangentialVelocityKMSABS            cyl_tangential_velocity_kms_abs
+DynamicalTime                           dynamical_time
+JeansMassMsun                           jeans_mass_msun
+CellMass                                cell_mass
+CellMassMsun                            cell_mass_msun
+CellMassCode                            cell_mass_code
+TotalMass                               total_mass
+TotalMassMsun                           total_mass_msun
+StarMassMsun                            star_mass_msun
+Matter_Density                          matter_density
+ComovingDensity                         comoving_density
+Overdensity                             overdensity
+DensityPerturbation                     density_perturbation
+Baryon_Overdensity                      baryon_overdensity
+WeakLensingConvergence                  weak_lensing_convergence
+CellVolumeCode                          cell_volume_code
+CellVolumeMpc                           cell_volume_mpc
+CellVolume                              cell_volume
+ChandraEmissivity                       chandra_emissivity
+XRayEmissivity                          xray_emissivity
+SZKinetic                               sz_kinetic
+SZY                                     szy
+AverageDensity                          average_density
+DivV                                    div_v
+AbsDivV                                 abs_div_v
+Contours                                contours
+tempContours                            temp_contours
+SpecificAngularMomentumX                specific_angular_momentum_x
+SpecificAngularMomentumY                specific_angular_momentum_y
+SpecificAngularMomentumZ                specific_angular_momentum_z
+AngularMomentumX                        angular_momentum_x
+AngularMomentumY                        angular_momentum_y
+AngularMomentumZ                        angular_momentum_z
+ParticleSpecificAngularMomentumX        particle_specific_angular_momentum_z
+ParticleSpecificAngularMomentumXKMSMPC  particle_specific_angular_momentum_z
+ParticleSpecificAngularMomentumYKMSMPC  particle_specific_angular_momentum_z
+ParticleSpecificAngularMomentumZKMSMPC  particle_specific_angular_momentum_z
+ParticleAngularMomentumX                particle_angular_momentum_x
+ParticleAngularMomentumY                particle_angular_momentum_y
+ParticleAngularMomentumZ                particle_angular_momentum_z
+ParticleRadius                          particle_radius
+Radius                                  radius
+RadiusMpc                               radius_mpc
+ParticleRadiusMpc                       particle_radius_mpc
+ParticleRadiuskpc                       particle_radius_kpc
+Radiuskpc                               radius_kpc
+ParticleRadiuskpch                      particle_radius_kpch
+Radiuskpch                              radius_kpch
+ParticleRadiuspc                        particle_radius_pc
+Radiuspc                                radius_pc
+ParticleRadiusAU                        particle_radius_au
+RadiusAU                                radius_au
+ParticleRadiusCode                      particle_radius_code
+RadiusCode                              radius_code
+RadialVelocity                          radial_velocity
+RadialVelocityABS                       radial_velocity_abs
+RadialVelocityKMS                       radial_velocity_kms
+RadialVelocityKMSABS                    radial_velocity_kms_abs
+TangentialVelocity                      tangential_velocity
+CuttingPlaneVelocityX                   cutting_plane_velocity_x
+CuttingPlaneVelocityY                   cutting_plane_velocity_y
+CuttingPlaneBX                          cutting_plane_bx
+CuttingPlaneBy                          cutting_plane_by
+MeanMolecularWeight                     mean_molecular_weight
+JeansMassMsun                           jeans_mass_msun
+particle_density                        particle_density
+MagneticEnergy                          magnetic_energy
+BMagnitude                              b_magnitude
+PlasmaBeta                              plasma_beta
+MagneticPressure                        magnetic_pressure
+BPoloidal                               b_poloidal
+BToroidal                               b_toroidal
+BRadial                                 b_radial
+VorticitySquared                        vorticity_squared
+gradPressureX                           grad_pressure_x
+gradPressureY                           grad_pressure_y
+gradPressureZ                           grad_pressure_z
+gradPressureMagnitude                   grad_pressure_magnitude
+gradDensityX                            grad_density_x
+gradDensityY                            grad_density_y
+gradDensityZ                            grad_density_z
+gradDensityMagnitude                    grad_density_magnitude
+BaroclinicVorticityX                    baroclinic_vorticity_x
+BaroclinicVorticityY                    baroclinic_vorticity_y
+BaroclinicVorticityZ                    baroclinic_vorticity_z
+BaroclinicVorticityMagnitude            baroclinic_vorticity_magnitude
+VorticityX                              vorticity_x
+VorticityY                              vorticity_y
+VorticityZ                              vorticity_z
+VorticityMagnitude                      vorticity_magnitude
+VorticityStretchingX                    vorticity_stretching_x
+VorticityStretchingY                    vorticity_stretching_y
+VorticityStretchingZ                    vorticity_stretching_z
+VorticityStretchingMagnitude            vorticity_stretching_magnitude
+VorticityGrowthX                        vorticity_growth_x
+VorticityGrowthY                        vorticity_growth_y
+VorticityGrowthZ                        vorticity_growth_z
+VorticityGrowthMagnitude                vorticity_growth_magnitude
+VorticityGrowthMagnitudeABS             vorticity_growth_magnitude_abs
+VorticityGrowthTimescale                vorticity_growth_timescale
+VorticityRadPressureX                   vorticity_rad_pressure_x
+VorticityRadPressureY                   vorticity_rad_pressure_y
+VorticityRadPressureZ                   vorticity_rad_pressure_z
+VorticityRadPressureMagnitude           vorticity_rad_pressure_magnitude
+VorticityRPGrowthX                      vorticity_rp_growth_x
+VorticityRPGrowthY                      vorticity_rp_growth_y
+VorticityRPGrowthZ                      vorticity_rp_growth_z
+VorticityRPGrowthMagnitude              vorticity_rp_growth_magnitude
+VorticityRPGrowthTimescale              vorticity_rp_growth_timescale
+======================================  =======================================
