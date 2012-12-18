@@ -123,7 +123,7 @@ SZKinetic                               sz_kinetic
 SZY                                     szy
 AveragedDensity                         averaged_density
 DivV                                    div_v
-AbsDivV                                 absolute_div_v
+AbsDivV                                 div_v_absolute
 Contours                                contours
 tempContours                            temp_contours
 SpecificAngularMomentumX                specific_angular_momentum_x
