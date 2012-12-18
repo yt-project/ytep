@@ -1,7 +1,6 @@
 YTEP-0003: Standardizing field names
 ====================================
 
-
 Abstract
 --------
 
@@ -56,7 +55,15 @@ starting this in yt-3.0.
 Field Names
 -----------
 
-This is a listing of all field names currently defined in the yt-3.0 universal_fields module and the proposed replacement names.
+Naming rules:
+  - must be lowercase underscored.
+  - should be as verbose as possible.
+  - should not include units.
+  - vector fields are separated into 4 scalar fields with endings _x, _y, _z,
+    and _magnitude.
+
+This is a listing of all field names currently defined in the yt-3.0
+universal_fields module and the proposed replacement names.
 
 ======================================  =======================================
             Current name                              Proposal
@@ -75,48 +82,48 @@ VelocityMagnitude                       velocity_magnitude
 TangentialOverVelocityMagnitude         tangential_over_velocity_magnitude
 Pressure                                pressure
 Entropy                                 entropy
-sph_r                                   sph_r
-sph_theta                               sph_theta
-sph_phi                                 sph_phi
-cyl_R                                   cyl_r
-cyl_RCode                               cyl_r_code
-cyl_z                                   cyl_z
-cyl_theta                               cyl_theta
-DiskAngle                               disk_angle
-Height                                  height
-HeightAU                                height_au
-cyl_RadialVelocity                      cyl_radial_velocity
-cyl_RadialVelocityABS                   cyl_radial_velocity_abs
-cyl_RadialVelocityKMS                   cyl_radial_velocity_kms
-cyl_RadialVelocityKMSABS                cyl_radial_velocity_kmsabs
-cyl_TangentialVelocity                  cyl_tangential_velocity
-cyl_TangentialVelocityABS               cyl_tangential_velocity_abs
-cyl_TangentialVelocityKMS               cyl_tangential_velocity_kms
-cyl_TangentialVelocityKMSABS            cyl_tangential_velocity_kms_abs
+sph_r                                   spherical_r
+sph_theta                               spherical_theta
+sph_phi                                 spherical_phi
+cyl_R                                   cylindrical_r
+cyl_RCode                               *remove* (unit duplicate)
+cyl_z                                   cylindrical_z
+cyl_theta                               cylindrical_theta
+DiskAngle                               *remove* (replaced by theta)
+Height                                  *remove* (replaced by z)
+HeightAU                                *remove* (unit duplicate)
+cyl_RadialVelocity                      cylindrical_radial_velocity
+cyl_RadialVelocityABS                   cylindrical_radial_velocity_absolute
+cyl_RadialVelocityKMS                   *remove* (unit duplicate)
+cyl_RadialVelocityKMSABS                *remove* (unit duplicate)
+cyl_TangentialVelocity                  cylindrical_tangential_velocity
+cyl_TangentialVelocityABS               cylindrical_tangential_velocity_absolute
+cyl_TangentialVelocityKMS               *remove* (unit duplicate)
+cyl_TangentialVelocityKMSABS            *remove* (unit duplicate)
 DynamicalTime                           dynamical_time
-JeansMassMsun                           jeans_mass_msun
+JeansMassMsun                           jeans_mass (possible unit change)
 CellMass                                cell_mass
-CellMassMsun                            cell_mass_msun
-CellMassCode                            cell_mass_code
+CellMassMsun                            *remove* (unit duplicate)
+CellMassCode                            *remove* (unit duplicate)
 TotalMass                               total_mass
-TotalMassMsun                           total_mass_msun
-StarMassMsun                            star_mass_msun
+TotalMassMsun                           *remove* (unit duplicate)
+StarMassMsun                            star_mass (possible unit change)
 Matter_Density                          matter_density
 ComovingDensity                         comoving_density
 Overdensity                             overdensity
 DensityPerturbation                     density_perturbation
 Baryon_Overdensity                      baryon_overdensity
 WeakLensingConvergence                  weak_lensing_convergence
-CellVolumeCode                          cell_volume_code
-CellVolumeMpc                           cell_volume_mpc
+CellVolumeCode                          *remove* (unit duplicate)
+CellVolumeMpc                           *remove* (unit duplicate)
 CellVolume                              cell_volume
 ChandraEmissivity                       chandra_emissivity
 XRayEmissivity                          xray_emissivity
 SZKinetic                               sz_kinetic
 SZY                                     szy
-AverageDensity                          average_density
+AveragedDensity                         averaged_density
 DivV                                    div_v
-AbsDivV                                 abs_div_v
+AbsDivV                                 absolute_div_v
 Contours                                contours
 tempContours                            temp_contours
 SpecificAngularMomentumX                specific_angular_momentum_x
@@ -125,38 +132,40 @@ SpecificAngularMomentumZ                specific_angular_momentum_z
 AngularMomentumX                        angular_momentum_x
 AngularMomentumY                        angular_momentum_y
 AngularMomentumZ                        angular_momentum_z
-ParticleSpecificAngularMomentumX        particle_specific_angular_momentum_z
-ParticleSpecificAngularMomentumXKMSMPC  particle_specific_angular_momentum_z
-ParticleSpecificAngularMomentumYKMSMPC  particle_specific_angular_momentum_z
-ParticleSpecificAngularMomentumZKMSMPC  particle_specific_angular_momentum_z
+ParticleSpecificAngularMomentumX        particle_specific_angular_momentum_x
+ParticleSpecificAngularMomentumY        particle_specific_angular_momentum_y
+ParticleSpecificAngularMomentumZ        particle_specific_angular_momentum_z
+ParticleSpecificAngularMomentumXKMSMPC  *remove* (unit duplicate)
+ParticleSpecificAngularMomentumYKMSMPC  *remove* (unit duplicate)
+ParticleSpecificAngularMomentumZKMSMPC  *remove* (unit duplicate)
 ParticleAngularMomentumX                particle_angular_momentum_x
 ParticleAngularMomentumY                particle_angular_momentum_y
 ParticleAngularMomentumZ                particle_angular_momentum_z
 ParticleRadius                          particle_radius
 Radius                                  radius
-RadiusMpc                               radius_mpc
-ParticleRadiusMpc                       particle_radius_mpc
-ParticleRadiuskpc                       particle_radius_kpc
-Radiuskpc                               radius_kpc
-ParticleRadiuskpch                      particle_radius_kpch
-Radiuskpch                              radius_kpch
-ParticleRadiuspc                        particle_radius_pc
-Radiuspc                                radius_pc
-ParticleRadiusAU                        particle_radius_au
-RadiusAU                                radius_au
-ParticleRadiusCode                      particle_radius_code
-RadiusCode                              radius_code
+RadiusMpc                               *remove* (unit duplicate)
+ParticleRadiusMpc                       *remove* (unit duplicate)
+ParticleRadiuskpc                       *remove* (unit duplicate)
+Radiuskpc                               *remove* (unit duplicate)
+ParticleRadiuskpch                      *remove* (unit duplicate)
+Radiuskpch                              *remove* (unit duplicate)
+ParticleRadiuspc                        *remove* (unit duplicate)
+Radiuspc                                *remove* (unit duplicate)
+ParticleRadiusAU                        *remove* (unit duplicate)
+RadiusAU                                *remove* (unit duplicate)
+ParticleRadiusCode                      *remove* (unit duplicate)
+RadiusCode                              *remove* (unit duplicate)
 RadialVelocity                          radial_velocity
-RadialVelocityABS                       radial_velocity_abs
-RadialVelocityKMS                       radial_velocity_kms
-RadialVelocityKMSABS                    radial_velocity_kms_abs
+RadialVelocityABS                       radial_velocity_absolute
+RadialVelocityKMS                       *remove* (unit duplicate)
+RadialVelocityKMSABS                    *remove* (unit duplicate)
 TangentialVelocity                      tangential_velocity
 CuttingPlaneVelocityX                   cutting_plane_velocity_x
 CuttingPlaneVelocityY                   cutting_plane_velocity_y
 CuttingPlaneBX                          cutting_plane_bx
 CuttingPlaneBy                          cutting_plane_by
 MeanMolecularWeight                     mean_molecular_weight
-JeansMassMsun                           jeans_mass_msun
+JeansMassMsun                           *remove* (duplicate)
 particle_density                        particle_density
 MagneticEnergy                          magnetic_energy
 BMagnitude                              b_magnitude
@@ -190,15 +199,15 @@ VorticityGrowthX                        vorticity_growth_x
 VorticityGrowthY                        vorticity_growth_y
 VorticityGrowthZ                        vorticity_growth_z
 VorticityGrowthMagnitude                vorticity_growth_magnitude
-VorticityGrowthMagnitudeABS             vorticity_growth_magnitude_abs
+VorticityGrowthMagnitudeABS             vorticity_growth_magnitude_absolute
 VorticityGrowthTimescale                vorticity_growth_timescale
-VorticityRadPressureX                   vorticity_rad_pressure_x
-VorticityRadPressureY                   vorticity_rad_pressure_y
-VorticityRadPressureZ                   vorticity_rad_pressure_z
-VorticityRadPressureMagnitude           vorticity_rad_pressure_magnitude
-VorticityRPGrowthX                      vorticity_rp_growth_x
-VorticityRPGrowthY                      vorticity_rp_growth_y
-VorticityRPGrowthZ                      vorticity_rp_growth_z
-VorticityRPGrowthMagnitude              vorticity_rp_growth_magnitude
-VorticityRPGrowthTimescale              vorticity_rp_growth_timescale
+VorticityRadPressureX                   vorticity_radiation_pressure_x
+VorticityRadPressureY                   vorticity_radiation_pressure_y
+VorticityRadPressureZ                   vorticity_radiation_pressure_z
+VorticityRadPressureMagnitude           vorticity_radiation_pressure_magnitude
+VorticityRPGrowthX                      vorticity_radiation_pressure_growth_x
+VorticityRPGrowthY                      vorticity_radiation_pressure_growth_y
+VorticityRPGrowthZ                      vorticity_radiation_pressure_growth_z
+VorticityRPGrowthMagnitude              vorticity_radiation_pressure_growth_magnitude
+VorticityRPGrowthTimescale              vorticity_radiation_pressure_growth_timescale
 ======================================  =======================================
