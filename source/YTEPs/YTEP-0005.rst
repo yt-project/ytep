@@ -144,8 +144,12 @@ Octs are defined to have the following attributes:
     * (``ParticleArrays``) ``*sd`` -- this is optional, and a pointer to
       particle arrays.  This is typically only used for N-body data and will
       otherwise be null.
-    * (``Oct``) ``*children[2][2][2]`` -- Pointers to child nodes.  If any are
-      null, all are null and the Oct is not refined.
+    * (``Oct``) ``*children[2][2][2]`` -- Pointers to child nodes.  Typically,
+      ifany are null, all are null and the Oct is not refined.  However, in ART
+      simulations, the root mesh is defined in cells, rather than octs.  This
+      is mocked up in yt as a false mesh of Octs, and so the ``children``
+      values can be either NULL (for a refined cell) or not, but may not be
+      homogeneously refined.
     * (``Oct``) ``*parent`` -- an upward pointer, for easier traversal of the
       Octree.
 
@@ -196,6 +200,7 @@ Future Work
      the overhead for individual processors of storing the entire Octree mesh.
    * Convert FLASH to use the Octree code.
    * Generalize Octree support structures beyond RAMSES.
+   * Ensure that children can be independently refined.
 
 Stumbling Blocks
 ++++++++++++++++
