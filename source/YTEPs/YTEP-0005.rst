@@ -1,0 +1,249 @@
+YTEP-0005: Octrees for Fluids and Particles
+===========================================
+
+Abstract
+--------
+
+Created: December 24, 2012
+Author: Matthew Turk
+
+In the yt 2.x series, octree AMR codes have largely been supported by
+re-gridding data to create larger grid patches consisting of both
+high-resolution data and coarse data.  This has the overhead of requiring that
+each time a dataset (as in from RAMSES or ART) is loaded, the data has to be
+placed into these grids.  This is an expensive process and requires a
+considerable amount of RAM.  This YTEP describes the mechanism in yt 3.0 that
+directly accesses Octree data, avoiding the costly regridding step and enabling
+higher-fidelity data access.  Additionally, it describes how the Octree data
+structure will be used for particle data access from datasets such as N-body or
+SPH simulation output.
+
+Status
+------
+
+This YTEP is in progress.  Most aspects have been implemented in yt 3.0.  A
+major deficiency (described below) is the lack of a distributed memory octree.
+Discussion of distributed memory Octrees is reserved for a future YTEP.
+
+Project Management Links
+------------------------
+
+For the most part, this has been conducted internally in the source code.
+
+ * `Octree data structure <http://en.wikipedia.org/wiki/Octree>`_
+
+Detailed Description
+--------------------
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Background
+++++++++++
+
+In the 2.x branch of yt, RAMSES and (NMSU) ART data are read and processed in a
+way that mocks up patch-based AMR data.  This is sub-par for several reasons:
+
+  #. A costly re-gridding step is required, where octs are deposited into grid
+     patches that are split with some efficiency measure.
+  #. To conduct IO, coarse grid cells are deposited multiple times into grid
+     patches at finer levels.  This results in extremely inefficient IO, as it
+     means that if multiple fine grids overlap with a single cell at coarse
+     resolution, that coarse cell will be read multiple times.  It's also very
+     slow.
+  #. The end result is data that is not exactly what is in the file, reducing
+     the ability of individuals to examine data in a detailed way.
+  #. The regridding code is difficult to parse and understand, and even harder
+     to extend.
+
+In addition to this, particle codes are simply not available in yt 2.x.  All
+attempts to include them have involved a regridding method similar to that for
+Octree AMR codes, which is not efficient or high-fidelity.  Finally, the RAMSES
+code is broken in 2.x.
+
+Why is it this way?
++++++++++++++++++++
+
+The 2.x branch of yt is relatively inflexible in how data is accessed.  There
+are a number of locations that the attributes `grids` or `_grids` are accessed,
+which are implicitly assumed to be grid patches with a relatively sizable
+extent.  This is used in things like projections, data masking, and the like.
+For patch-AMR codes where the grids are actually somewhat larger, this is
+efficient; however, the overhead of python objects and iteration dominate if
+the grids are smaller than some minimum size or extent.  The first
+implementation of support for RAMSES implemented Octs as grid patches by
+themselves; this was found to be unbearably slow.
+
+To get around this, a regridding step was applied.  This regridding step was
+based on refinement algorithms, where octs were deposited into grid patches
+that covered some fraction of the domain.  These grid patches were then split
+to attempt to achieve some minimum efficiency ratio of "refined" (i.e., fine)
+versus "unrefined" (i.e., coarse) data.  When IO was conducted, these were
+filled in a non-interpolating inverse cascade, where grid patches were filled
+with fine data, then coarser data.  This could be very slow.  Additional
+improvements such as restricting grid patches not to cross "domains" (the
+RAMSES term for individual files or domains of a specific processr) were
+eventually added.  The NMSU ART data was also loaded in a similar way.
+
+All of this is because yt 2.x relies on "grids" as the fundamental object.  As
+described in :ref:`ytep0001`, in yt 3.0 we no longer rely on grids as the
+object by which all IO is mediated.  Data can now be streamed from disk to
+memory, and coordinates and resolution information can be seen as independent
+of that data.  This allows octrees to exist without a regridding step.
+
+Octree Implementation
++++++++++++++++++++++
+
+The octree implementation is designed around having a full Octree which
+contains subsets of that octree that are distribute amongst different
+"domains."  The term "domain" comes from RAMSES, and it is best thought of as
+whatever the natural, IO-oriented subdivision of the data is.  For instance,
+RAMSES divides into multiple files, each of which is called a domain.  For
+purposes of consolidating IO costs, reading on a per-domain basis makes some
+sense.  NMSU ART does not have the concept of multiple domains, and so we can
+choose to divide data into domains however we like.
+
+Octrees can then be walked to identify which Octs, and then which cells,
+contribute to a given geometric selector.  This can default back to selecting
+based on the point-by-point location of the Octs, but it can also be queried
+much more efficiently by early-terminating an octree traversal if a coarse node
+is not included inside a geometric selector.
+
+This leads nicely to a future where subsets of the octree are not present on
+every processor; instead, portions can be passed around at will or pinned to
+specific processors.  This is not yet in place, but the Octree has been
+designed to be forward compatible with this.
+
+For RAMSES data (where the number of Octs is known before any are added to the
+system), the octree is composed of a set of ``OctAllocationContainers``, one
+for each domain, which are pre-allocated and include all of the Octs
+themselves.  Additionally, there is a base class ``OctreeContainer`` and a
+subclass ``RAMSESOctreeContainer``.  The base class handles and exposes the
+majority of methods for traversing the octree and querying the octree.  The
+subclass specifies how ``Octs`` get added to the octree.
+
+Octs are defined to have the following attributes:
+
+    * (``np.int64_t``) ``ind`` -- index into the local
+      ``OctAllocationContainer``.
+    * (``np.int64_t``) ``local_ind`` -- index into the global Octree container.
+    * (``np.int64_t``) ``domain`` -- the domain to which an Oct belongs.
+    * (``np.int64_t``) ``pos[3]`` -- the integer index, based on the local
+      level's refinement (i.e., the center divided by the local dx)
+    * (``np.int8_t``) ``level`` -- the level of refinement of the Oct
+    * (``ParticleArrays``) ``*sd`` -- this is optional, and a pointer to
+      particle arrays.  This is typically only used for N-body data and will
+      otherwise be null.
+    * (``Oct``) ``*children[2][2][2]`` -- Pointers to child nodes.  Typically,
+      ifany are null, all are null and the Oct is not refined.  However, in ART
+      simulations, the root mesh is defined in cells, rather than octs.  This
+      is mocked up in yt as a false mesh of Octs, and so the ``children``
+      values can be either NULL (for a refined cell) or not, but may not be
+      homogeneously refined.
+    * (``Oct``) ``*parent`` -- an upward pointer, for easier traversal of the
+      Octree.
+
+Particle ad N-body data, which does not typically know the organization and
+structure of the resultant Octree in advance, Uses the additional
+``ParticleArrays`` class for storing particle data that will help govern
+refinement.  ``ParticleArrays`` have enough data to decide where all of the
+particles will go during a refinement.  This has the downside of mandating that
+the positions (but no other fields) of all particles in a simulation must, at
+present, be held in memory.  This is a key motivating factor in moving to a
+distributed octree.
+
+Particle arrays have the following attributes:
+
+    * (``Oct``) ``*oct`` -- the Oct to which this particle array belongs.
+    * (``ParticleArrays``) ``*next`` -- the next particle array in sequence
+    * (``np.float64_t``) ``**pos`` -- the array of positions for this particle
+      array
+    * (``np.int64_t``) ``*domain_id`` -- the domain ID (multiple domains
+      mandates refinement in N-body data, as we do not want to span two domains
+      in a single oct.)
+    * (``np.int64_t``) ``np`` -- the number of particles here.
+
+As noted above there are a number of downsides.  Many of these will be simple
+to fix: for instance, IO right now is characterized by reading in large
+portions of octrees simultaneously.  Furthermore, masks are passed around,
+although masks are likely an artifact that is no longer necessary (and larget
+than they need be.)
+
+To add on support for a new Octree code, a subclass of ``OctreeContainer`` must
+be made (or ``RAMSESOctreeContainer``, if you would like to re-use the
+``OctAllocationContainer`` logic) that implements the following routines:
+
+    * ``add`` -- to add new octs to the octree
+    * ``count`` -- for counting based on a selector
+    * ``icoords``, ``ires``, ``fcoords``, and IO routines
+
+Additionally, right now the domain subset code is general but not set into base
+classses.  This is also necessary.
+
+Future Work
++++++++++++
+
+   * Generalize the multi-domain support to allow routines such as ``icoords``
+     to be applied generally rather than specifically only for each system of
+     allocation.
+   * Allow domains to be pinned to processors (distributed memory) and reduce
+     the overhead for individual processors of storing the entire Octree mesh.
+   * Convert FLASH to use the Octree code.
+   * Generalize Octree support structures beyond RAMSES.
+   * Ensure that children can be independently refined.
+
+Stumbling Blocks
+++++++++++++++++
+
+ #. Spatial data and ghost zones is currently not implemented, and
+    implementation may pose challenes.  Part of the reason the
+    implementation for patch-based codes is straightforward is that the arrays
+    come back as 3D arrays, to which (for instance) stencils can be applied.
+    However, for Octree data, we may need to move to returning 4D data to
+    reduce the overhead of processing 10^3 arrays.  This means (X,Y,Z,N) where
+    the final dimension is all of the Octs.  Retaining compatibility between
+    We also do not want to read outside the domain if not necessary; for
+    instance, RAMSES includes ghost zones in the domain file, even if they are
+    active on a different processor.  We should utilize this.
+ #. Implementation requires a good deal of understanding of how other Octree
+    codes are set up.  We should improve readability and make this easier to use.
+ #. Applying density estimators to particle codes is not yet implemented, and
+    still somewhat unclear.  The first implementation will use Voro++ and
+    regions that have some fixed spatial growth affiliated with them.  This
+    will likely not be efficient.
+
+Particle Codes
+++++++++++++++
+
+Particle codes are currently supported for reading and creating octree
+structures.  This means that particles can be read in and Octree selection
+applied to them, where the Octree is refined after either reaching a critical
+particle count threshold in a given Oct or where an Oct spans multiple domains.
+
+Backwards Compatibility
+-----------------------
+
+Volume rendering no longer works with Octree codes, and will require spatial
+data support to do so.  Additionally, it may be the case that we need to move
+to a different method for spatial data analysis (X,Y,Z,N) which will require
+rewriting old scripts.
+
+Alternatives
+------------
+
+I do not believe there are currently credible alternatives to directly
+understanding Octree data structures in yt.  I believe that while we may be
+able to improve the implemented system, other options such as grid patch
+conversions are not worthwhile.  The particle code support, relying on Octrees
+for fast selection, could also be implemented using a kD-tree, which may speed
+the density estimation.
