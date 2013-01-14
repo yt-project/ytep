@@ -114,8 +114,8 @@ We need to take account of the following types of checks:
 We will make the following changes:
 
  * Create a ``periodicity`` property on all ``StaticOutput`` objects.  This
-   will be a ``float64`` array of shape (3,) that contains either 0.0 or the
-   domain width around which positions should be wrapped.
+   will be a tuple of three booleans, indicating whether or not the simulations
+   are periodic (and if they are, they must be periodic by one domain width.)
  * Remove all locally-defined periodicity functions in favor of
    the function ``periodic_dist`` in ``yt/utilities/math_utils.py`` and
    checking the ``periodicity`` attribute.  **Q: What other functions should be
