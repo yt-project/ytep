@@ -1,0 +1,58 @@
+YTEP-0007: Automatic Pull Requests' validation
+==============================================
+
+Abstract
+--------
+
+Created: February 21, 2013
+Author: Kacper Kowalik
+
+This YTEP describes framework used to automatically run both unit and answer
+testing for incoming pull requests to main YT repository.
+
+Methods proposed here need to be agnostic with respect to chosen continous
+integration system.
+
+Status
+------
+
+In Progress: A basic implementation has been created, which now needs to be
+modified and changed in accordance with this YTEP.
+
+The code can be seen in ``http://bitbucket.org/xarthisius/yt-validation``.
+
+Project Management Links
+------------------------
+
+  * `Mailing list discussion <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2013-February/002826.html>`_
+
+Detailed Description
+--------------------
+
+Motivation
+++++++++++
+
+When a new pull request is issued there is no way to automatically test validity
+of proposed changes. Every author is forced to run the tests manually, which
+requires: knowledge of how to perform the tests, downloading required data,
+possessing significant free computing power. This is troublesome and results in
+tests being run less frequently than they are suppossed to be. With
+implementation of this YTEP the responsibility of running the testsuite will be
+shifted from PR's author to designated, automatic infrastructure.
+
+Implementation
+++++++++++++++
+
+The implementation will need to:
+
+  * Constantly poll for incoming changes to main repository (or react to POST)
+  * Run both unit and answer testsuite
+  * Notify the author should the tests fail
+  * Notify the author should the PR could not be cleanly merged
+  * Inform people responsible for accepting PR that all tests have passed
+    (send mail to ml?)
+
+Backwards Compatibility
+-----------------------
+
+There are no backwards compatibility issues.
