@@ -45,12 +45,14 @@ Implementation
 
 The implementation will need to:
 
-  * Constantly poll for incoming changes to main repository (or react to POST).
+  * Constantly poll for incoming changes to main repository (or react to POST
+    message if required API will become available)
   * Run both unit and answer testsuite.
   * Notify the author should the tests fail.
   * Notify the author should the PR could not be cleanly merged.
   * Inform people responsible for accepting PR that all tests have passed
-    (send mail to ml?).
+    by sending mail to yt-svn@lists.spacepope.org and broadcast on #yt irc
+    channel.  
   * Results of tests should be publicly available.
 
 Future Work
