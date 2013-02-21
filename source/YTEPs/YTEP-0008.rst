@@ -1,0 +1,213 @@
+YTEP-0008: Release Schedule
+===========================
+
+Abstract
+--------
+
+Created: February 21, 2013
+Author: Matthew Turk
+
+The yt release schedule is somewhat dysfunctional in several ways.  Release
+dates can be difficult to stick to, and merges to stable occur only after long
+periods.  This results in bug fixes not propagating and increases the pressure
+on developers for a given "release," as each release is seen as monumental
+rather than incremental.  This YTEP describes a new mechanism for increasing
+the cadence of point releases as well as merging from the development branch
+into the stable branch.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+The Mercurial time based release plan, which has partially inspired this
+discussion, is available here:
+http://mercurial.selenic.com/wiki/TimeBasedReleasePlan .
+
+Detailed Description
+--------------------
+
+The yt release schedule is irregular.  Here's a table of the releases over
+time, along with the number of days since the most recent major (i.e.,
+non-point) release.
+
+======= ============ ===============
+Version Release Date Days Since Last
+======= ============ ===============
+1.0.1   2008-10-25   N/A
+1.5     2009-11-04   375
+1.6     2010-01-22   79
+1.6.1   2010-02-11   N/A
+1.7     2010-06-27   156
+2.0     2011-01-17   204
+2.0.1   2011-01-20   N/A
+2.1     2011-04-06   79
+2.2     2011-09-02   149
+2.3     2011-12-15   104
+2.4     2012-08-02   231
+======= ============ ===============
+
+In principle, a long release schedule is not a problem.  However, what this
+results in is a reluctance to merge to the stable branch.  This has two major
+side effects: it leads to many people working off of the development branch and
+it leads to a long time between bug fixes for individuals working off of the
+stable branch.  The development branch, despite its name, is quite stable --
+however, this also means that when instabilities (or API changes) are
+introduced in the development branch, it can be much more disruptive.
+
+What Constitutes a Release
+++++++++++++++++++++++++++
+
+The majority of development in the primary yt repository is stable.  Seldom are
+backwards-incompatible changes introduced, nor functionality broken.  This is
+helped by continuous integration and detailed code review.  As such, for the
+most part, yt is in a constant state of "release."
+
+For the purposes of this document, a "release" constitutes five things:
+
+  * A new build of the documentation with API and cookbook is placed in a
+    long-term container.
+  * The development branch (``yt``) is merged to the stable branch (``stable``)
+  * A new tag in the version control history
+  * An upload of the source code to PyPI ( http://pypi.python.org/ )
+  * An announcement email (to ``yt-users`` for minor releases and more broadly
+    for major releases)
+
+Standards for Changes to the Code
++++++++++++++++++++++++++++++++++
+
+This YTEP proposes a change in structure to the release system, but for this to
+succeed it *requires* new standards for acceptances of pull requests.  These
+standards are currently being added to the development documentation, and this
+YTEP cannot be accepted until they are.  Modifications to the code typically
+fall into one of three categories, each of which have different requirements
+for acceptance into the code base.
+
+  * New Features
+
+    * New unit tests (possibly new answer tests)
+    * Docstrings for public API
+    * Addition of new feature to the narrative documentation
+    * Addition of cookbook recipe
+    * Issue created on issue tracker, to ensure this is added to the changelog
+
+  * Extension or Breakage of API in Existing Features
+
+    * Update existing narrative docs and docstrings
+    * Update existing cookbook recipes
+    * Modify of create new unit tests
+    * Issue created on issue tracker, to ensure this is added to the changelog
+
+  * Bug fixes
+
+    * Unit test is encouraged, to ensure breakage does not happen again in the
+      future.
+    * Issue created on issue tracker, to ensure this is added to the changelog
+
+Without ensuring that all of these standards are met, the likely outcome is
+that during the process of release, components of these will be put off and
+procrastinated, leading to a bunching up of work at the end of the release
+cycle.  By front-loading the work, the process of release is much easier, and
+the reliability of the resultant code is much higher.
+
+This proposed change in the release cycle is not just about releasing more
+frequently, but about more evenly distributing work that contributes to a
+release.  If docs and tests are added as features are created, the barrier to
+merging to stable is reduced.
+
+Long Term Support Branch
+++++++++++++++++++++++++
+
+As development on underlying infrastructure of yt continues apace, we must
+provide long-term support for the existing infrastructure.  As such, we will
+continue to provide (time, effort and need permitting) the existing 2.X
+branches with criticla bugfixes.
+
+Here is an outline of the release dates for the remainder of 2013.  This YTEP
+will be updated as time goes on with additional release dates for long-term
+stability, but currently it is anticipated that this release schedule will
+relax over time once the next-generation branch (described below) becomes
+viable.
+
+======= ============
+Version Release Date
+======= ============
+2.6     2013-03-01
+2.6.1   2013-04-01
+2.6.2   2013-05-01
+2.6.3   2013-06-01
+2.7     2013-07-01
+2.7.1   2013-08-01
+2.7.2   2013-09-01
+2.7.3   2013-10-01
+2.8     2013-11-01
+======= ============ 
+
+Next-Generation Branch
+++++++++++++++++++++++
+
+yt 3.0 (described elsewhere) is a major rethinking of the mechanisms by which
+yt manipulates data in memory.  As such, it by necessity breaks some
+functionality, changes some functionality, and enables some functionality.  A
+full description of the changes in yt 3.0 is outside the scope of this
+document.
+
+However, because it is under active development without a clear
+production-level date in mind, a different release structure is envisioned for
+it.  A series of preview releases will be tagged and announced, but not
+uploaded to PyPI or merged into stable.
+
+These releases will be announced with the caveat that they are *preview*
+releases, and bug fixes will be solicited.  They will be conducted every two
+months, rather than every month, as the relative value of releasing alpha
+releases to a developer community is much smaller.
+
+======= ============
+Version Release Date
+======= ============
+3.0a1   2013-03-15
+3.0a2   2013-05-15
+3.0a3   2013-06-15
+======= ============ 
+
+This YTEP will be updated as milestones are met and the development trajectory
+of yt 3.0 is more clearly evaluated.
+
+Release Managers
+++++++++++++++++
+
+The release manager for minor releases will be Matthew Turk, as they will only
+be announced to ``yt-users``.  For major releases, a new release manager will
+be selected by consensus in the ``yt-dev`` community.  Merging, tagging and
+uploading will be handled by Matthew Turk, but the release manager will act as
+"whip" to ensure the necessary documentation building is done.  Additionally,
+this release manager will write the release notes and send the email to various
+mailing lists.
+
+======= ===============
+Version Release Manager
+======= ===============
+2.6     John ZuHone
+2.6.1   Matthew Turk
+2.6.2   Matthew Turk
+2.6.3   Matthew Turk
+2.7     Unknown
+2.7.1   Matthew Turk
+2.7.2   Matthew Turk
+2.7.3   Matthew Turk
+2.8     Unknown
+======= ===============
+
+Backwards Compatibility
+-----------------------
+
+This should have no backwards-incompatible changes.
+
+Alternatives
+------------
+
+One alternative would be to forego release numbers and move to completely
+continuous integration.  Another would be to continue on our current path.
