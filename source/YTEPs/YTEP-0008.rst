@@ -190,15 +190,15 @@ mailing lists.
 ======= ===============
 Version Release Manager
 ======= ===============
-2.6     John ZuHone
+2.5     John ZuHone
+2.5.1   Matthew Turk
+2.5.2   Matthew Turk
+2.5.3   Matthew Turk
+2.6     Unknown
 2.6.1   Matthew Turk
 2.6.2   Matthew Turk
 2.6.3   Matthew Turk
 2.7     Unknown
-2.7.1   Matthew Turk
-2.7.2   Matthew Turk
-2.7.3   Matthew Turk
-2.8     Unknown
 ======= ===============
 
 Backwards Compatibility
