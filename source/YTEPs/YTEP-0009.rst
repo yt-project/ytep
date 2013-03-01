@@ -1,14 +1,5 @@
-YTEP-0000: Source Rendering 
-===========================
-
-To write a YTEP, copy this template to the next numerical number, add it to the
-repository, and issue a pull request.  Discussion of the YTEP will occur either
-on the mailing list (for large-scale changes) or in the PR itself (small items,
-such as formatting).
-
-This document has been patterned after the Matplotlib Enhancement Proposal
-Template (found `here
-<https://github.com/matplotlib/matplotlib/wiki/MEPTemplate>`_.)
+YTEP-0009: Data Source Rendering & Camera Refactor
+==================================================
 
 Abstract
 --------
@@ -152,3 +143,4 @@ My only reasoning for breaking things for the 2.6+ release is that it is
 a simplification and I've already started using it with great success.  I'm
 also hopeful that this simplification is along the same lines of the idea of
 a simplified volume rendering scene object.
+
