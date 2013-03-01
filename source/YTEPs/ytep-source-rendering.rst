@@ -87,16 +87,16 @@ unnecessary arguments and keyword arguments to the camera constructor.
 In my working solution, I have set the AMRKDTree __init__ function to have the
 following form:
 
-```
+{{{
 #!python
 class AMRKDTree(ParallelAnalysisInterface)
     def __init__(self, pf, min_level=None, max_level=None, source=None):
 
-```
+}}}
 
 Similarly, the current constructor for the Camera object has been changed to:
 
-```
+{{{
 #!python
 class Camera(...):
     def __init__(self, center, normal_vector, width,
@@ -108,16 +108,16 @@ class Camera(...):
                  source=None,
                  use_light=False):
 
-```
+}}}
 
 I would like to propose that the Camera constructor eventually take the form:
 
-```
+{{{
 #!python
 class Camera(...):
     def __init__(self, pf, resolution, fields=None, source=None):
 
-```
+}}}
 
 If ``source`` is none, it will default to pf.h.all_data. Fields would no longer
 default to Density, and instead must be specified at construction or later with
