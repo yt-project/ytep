@@ -1,0 +1,145 @@
+YTEP-0006: Periodicity
+======================
+
+Periodicity needs to be dealt with in an explicit, rather than implicit,
+fashion.
+
+Abstract
+--------
+
+ * Created: January 10, 2013
+ * Modified: January 29, 2013
+ * Author: Matthew Turk, Nathan Goldbaum
+
+Periodicity in yt has been handled poorly in the past.  Some objects and fields
+have been set to be periodic by default, but not all.  This YTEP aims to define
+a mechanism by which fields and objects can query periodicity information and
+use it correctly.
+
+Status
+------
+
+In progress.  See pull request #410: http://bitbucket.org/yt_analysis/yt/pull-request/410
+
+Project Management Links
+------------------------
+
+  * Mailing list discussion: http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2012-December/002739.html
+  * Mailing list discussion: http://lists.spacepope.org/pipermail/yt-users-spacepope.org/2012-December/003194.html
+  * Issue: https://bitbucket.org/yt_analysis/yt/issue/484/fields-dont-know-about-periodic-boundary
+  * Pull request 410: http://bitbucket.org/yt_analysis/yt/pull-request/410
+
+Detailed Description
+--------------------
+
+Periodicity is a tricky business.  By volume, the majority of simulations
+analyzed with yt are cosmology simulations, which are exclusively periodic.  So
+objects such as ellipsoids, fields such as radius, and so on have all evolved
+to select data or regard data as wrapping around the edges of simulation
+boundaries.
+
+However, all of these should only be periodic *when it makes sense*.  This
+means that we need to have a method of marking a simulation as periodic and a
+method for applying this periodicity.  For those situations where periodicity
+makes sense, it should either *always* be applied if the simulation is
+periodic, or *never* applied if it is not.  I believe we should allow
+simulations to be periodic in any one of the three axes, but not necessarily
+all simultaneously; this may be overly complex.  We explicitly do not support
+any type of domain-wrapping or boundary conditions more complex than simply
+wrapping around.
+
+Affected Regions
+----------------
+
++---------------------------+---------------------+---------------+------------------+
+| Region of the Code        | Type of Periodicity | Change?       | Status?          |
++===========================+=====================+===============+==================+
+| Light cone                | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| Halo finding              | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| Light ray                 | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| EnzoFOF                   | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| FOF                       | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| Halo objects              | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| Fixed Res Buffers         | Explicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Multi-halo profiler       | Implicit            | No            | N/A              |
++---------------------------+---------------------+---------------+------------------+
+| Radial column density     | Implicit            | Yes           | See PR #410      |
++---------------------------+---------------------+---------------+------------------+
+| Periodic regions          | Explicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Spheres                   | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Ellipsoids                | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Two-point functions       | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Clumps                    | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Boolean regions           | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| AMR kD Tree               | Explicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Domain decomp             | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+| Radius                    | Implicit            | Yes           | Finished: PR 410 |
++---------------------------+---------------------+---------------+------------------+
+| ParticleRadius            | Implicit            | Yes           | Finished: PR 410 |
++---------------------------+---------------------+---------------+------------------+
+| Covering grids            | Implicit            | Yes           | Not done yet     |
++---------------------------+---------------------+---------------+------------------+
+
+New Method
+----------
+
+Two types of changes will be made.  The first is to remove implicit periodicity
+and replace it with a check on the periodicity of the simulation.  The second
+is to remove multiple definitions of objects or functions that operate either
+in periodic or non-periodic methods, and instead provide only one that
+self-distinguished.  Some operations, such as anything that operates on
+cosmological simulations (which I reluctantly consider halo finding to do) can
+assume periodicity.
+
+We need to take account of the following types of checks:
+
+ * Distance between two points
+ * Shortest path between two points (uncommon, can be special cased)
+ * Object inclusion/collision
+ * Selection of points
+
+We will make the following changes:
+
+ * Create a ``periodicity`` property on all ``StaticOutput`` objects.  This
+   will be a tuple of three booleans, indicating whether or not the simulations
+   are periodic (and if they are, they must be periodic by one domain width).
+   This has been implemented for most of the frontends in PR #410.
+ * Remove all locally-defined periodicity functions in favor of
+   the function ``periodic_dist`` in ``yt/utilities/math_utils.py`` and
+   checking the ``periodicity`` attribute.  For situations where a purely
+   euclidean distance is required, we also supply ``euclidean_dist``, which
+   calculates the distance between two points without considering the domain
+   boundaries.  These two functions were finalized in PR #410 and currently live
+   in ``math_utils.py``. 
+ * Anything that applies periodic shifts to data for checks of inclusion should
+   apply them exclusively through the ``periodicity`` attribute.  For data
+   selectors, we will have a two-step process: the data object will need to
+   implement a ``check_periodicity`` function.
+ * Everything that relies on ``periodic_region`` should instead rely on
+   ``region`` which will include an option (default = True, which actually
+   means) to check periodicity.
+ * The ``periodic_region`` data object will, in 2.X, become a wrapper around
+   the basic region object.
+
+Backwards Compatibility
+-----------------------
+
+All operations that relied on implicit periodicity for datasets that cannot be
+identified as periodic will have different results.
+
+Old results for non-periodic datasets that were incorrect will become correct.
