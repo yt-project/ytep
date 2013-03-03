@@ -1,0 +1,88 @@
+.. _ytep0006:
+
+YTEP-0006: Movie Paths
+======================
+
+Abstract
+--------
+
+Created: January 6, 2013
+Author: Cameron Hummels
+
+This section should contain one or two sentences describing the proposed
+change.  It should not contain detailed design information, but it can contain
+background information.
+
+Status
+------
+
+Status should be one of the following:
+
+ #. Proposed
+ #. Completed
+ #. In Progress
+ #. Declined
+
+YTEPs do not need to pass through every stage.
+
+Project Management Links
+------------------------
+
+Any external links to:
+
+  * Pull requests
+  * Related issues in the bug tracker
+  * Previous implementations
+  * Mailing list discussions or Google Docs
+
+Detailed Description
+--------------------
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+ * Make cameras just cameras.  They should be very lightweight, should
+be situated in a scene, and should not contain references to the
+volumes.
+ * Add a "scene" object which then contains things like stars and
+volumes and a camera -- or multiple cameras.
+ * Make the scene understand how to traverse from point A to point B a
+plane of rays and update them.  This is where actual ray casting would
+occur.
+ * Remove a ridiculous amount of complexity from the Camera and Volume
+objects by stripping out a large number of variables from the
+constructors.  Feed an Orientation, not a set of vectors.  Don't allow
+volumes to be added in a constructor.  etc.
+ * Add a path object which updates a camera or cameras inside a scene.
+
+In short, I think that by reducing complexity of individual objects
+and splitting them in to multiple objects, we can reduce the
+complexity of individual operations by adding in a slightly larger set
+of objects that are more flexible.
+
+
+Backwards Compatibility
+-----------------------
+
+If we remove any of the old movie making functionality (e.g. rotations,
+translations, pitches, yaws, and zooms), we will break old scripts.  So
+it might be worthwhile to leave those simpler functions present in the code
+for backwards compatibility, and add the new movie path framework as a 
+more advanced tool.
+
+Alternatives
+------------
+
+One could imagine just leaving the existing movie framework as is, and relying 
+upon building up movie paths piecewise from individual rotations, pitches, 
+yaws, translations, and zooms; however, this seems like a cleaner method.  
