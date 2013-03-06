@@ -1,7 +1,7 @@
 .. _ytep0010:
 
-YTEP-0010: Camera Refactor
-======================
+YTEP-0010: Refactoring for Volume Rendering and Movie Generation
+================================================================
 
 Abstract
 --------
@@ -16,8 +16,14 @@ retaining functionality for individual images.
 Status
 ------
 
-These are proposed changes to be acted partially/fully implemented at the yt
+These are proposed changes to be partially implemented at the yt
 developers conference in March 2013.
+
+Project Management Links
+------------------------
+
+This integrates directly with YTEP-0009 currently in pull request at:
+https://bitbucket.org/yt_analysis/ytep/pull-request/11/data-source-rendering-camera-refactor
 
 Detailed Description
 --------------------
@@ -104,25 +110,38 @@ to enable more transparency and usability of this important functionality.
  *  Make cameras just cameras.  They should be very lightweight, should
     be situated in a scene, and should not contain references to the
     volumes.
+ *  Add a "scene" object which then contains components like data sources
+    (i.e. volumes),  cameras, transfer functions, etc.  The scene remains
+    a structure for modifying the underlying components in that scene 
+    throughout the duration of the scene.
  *  Make a camera a reusable object for a given movie which can be modified
     in virtually any way (location, transfer function, underlying pf) through 
     a series callback functions, or modifying the scene object directly.
  *  Remove the homogenized volume method for generating volume renderings 
     and make the kd-tree method handle all functionality that homogenized 
     volumes provided (e.g. reusability, usability on an arbitrary geometric 
-    object).
+    object -- see ytep 0009).
  *  Integrate all current camera classes into a single camera class, so we
     don't have separate classes for volume renderings, projections, 
     stereoscopic renderings, HEALpix renderings, etc.
- *  Add a "scene" object which then contains things like stars and
-    volumes and a camera -- or multiple cameras.
- *  Make the scene understand how to traverse from point A to point B a
-    plane of rays and update them.  
+ *  Make the scene understand how to traverse from point A to point B
+    in a complex way by designating keyframes where you constrain the 
+    exact rendered image (position/orientation of camera, state of transfer
+    function, data source for rendering, etc.) and having the scene figure
+    out a smooth transition between these keyframes.
  *  Remove a ridiculous amount of complexity from the Camera and Volume
     objects by stripping out a large number of variables from the
-    constructors.  Feed an Orientation, not a set of vectors.  Don't allow
-    volumes to be added in a constructor.  etc.
- *  Add a CameraPath object which updates a camera or cameras inside a scene.
+    constructors.  
+ *  KDTrees should be built for the volume active at any time for easy 
+    reusability in future frames (e.g. by moving the camera or changing the 
+    transfer function).  If the underlying data source changes, then the
+    old kdtree is purged and a new one for that new data source is constructed.
+    This will dramatically reduce overhead on rendering the same volume
+    from different perspectives.
+ *  By default, when one defines a Scene object from a single datadump, it 
+    sets the Timeline object to 1 output frame, whereas if one defines a 
+    Scene object from a TimeSeries, it adds keyframes for each pf in that 
+    TimeSeries uniformly across the Timeline object.
 
 In short, we propose that by reducing complexity of individual objects
 and splitting them in to multiple objects, we can reduce the
@@ -132,22 +151,24 @@ of objects that are more flexible.
 New classes: 
   * Scene - Meant to be the main class for dealing with renderings.
             In constructor it creates a default volume, camera, transfer
-            function, and Timeline of length 0, but any of these 
+            function, and timeline of length 0, but any of these 
             can be changed in callbacks or directly after creation.
-  * Camera - A lightweight camera representing the location of the camera,
-             the location to which it is pointing, and its north vector 
-             (which will be confirmed to be orthogonal to its location vector)
+  * Camera - A lightweight camera representing the location and orientation
+             of the camera.  This can be specified in a number of ways, but to
+             uniquely define it, we need position of camera, pointing vector, 
+             and north vector (which will be confirmed to be orthogonal to its 
+             pointing vector).
   * Timeline - The timeline object represents how the scene changes with time.
                It is valid from t=0 to t=1, but this can be mapped on to 
                any number of output frames during the render.  One can 
                modify the Timeline object by setting events such as keyframes
-               to change the underlying scene structure at any point in the
+               to change the underlying scene components at any point in the
                timeline.
   * CameraPath - In dealing with movies, one can set key frames of where
                  and in what orientation one wants the camera to be at certain
                  times.  A smoothing function (like a spline) can connect
                  up these keyframes into a smooth camera path for application
-                 on the timeline.
+                 on the timeline. 
 
 Sample Scripts for Proposed Infrastructure
 ++++++++++++++++++++++++++++++++++++++++++
@@ -175,11 +196,11 @@ the end user to change things through a series of callbacks:
 >>> sc = scene(pf)
 ### Change the rendered volume to be a sphere of radius 100 kpc
 >>> sp = pf.h.sphere([0.5,0.5,0.5],100/pf['kpccm'])
->>> sc.volume = sp
+>>> sc.set_keyframe(source = sp)
 ### Change the camera position and orientation
 >>> cam = camera(pos = [0,100,0], point = [0,0,0], north = [0,0,1], 
-                 scale = pf['kpccm'])
->>> sc.camera = cam
+                  scale = pf['kpccm'])
+>>> sc.set_camera(camera = cam)
 >>> sc.render()
 
 In order to create a short movie making a rotation around the center from 
@@ -196,9 +217,8 @@ set the timeline to match the timeseries data with a framerate of 12 frames/sec.
 >>> sc.set_keyframe(time=0, camera = keyframe_start)
 >>> sc.set_keyframe(time=0.5, camera = keyframe_mid)
 >>> sc.set_keyframe(time=1, camera = keyframe_end)
->>> sc.timeline.fps = 12
+>>> sc.timeline.set_num_frames(50)
 >>> sc.render()
-
 
 Backwards Compatibility
 -----------------------
