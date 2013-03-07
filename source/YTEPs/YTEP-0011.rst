@@ -1,4 +1,4 @@
-YTEP-0000: YTEP Template
+YTEP-0011: Adding Units to yt
 ========================
 
 To write a YTEP, copy this template to the next numerical number, add it to the
@@ -14,7 +14,7 @@ Abstract
 --------
 
 Created: March 7, 2013
-Author: Anna Rosen & Casey Stark
+Authors: Anna Rosen & Casey Stark
 
 This YTEP describes adding symbolic units to yt with the sympy package. This new capability will also allow users to define their own unit system and perform analysis and visualization in units of their choosing. Using this implementation, the default unit class is cgs.
 
