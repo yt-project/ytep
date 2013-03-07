@@ -56,10 +56,18 @@ information, but this abstraction is not needed for Octree IO.
 Main Changes
 ++++++++++++
 
-  * Data objects no longer have a ``_grids`` attribute
+  * Data objects no longer have a ``_grids`` attribute.  
   * Parallelism is restructured to iterate over chunks (decided on by the
     geometry handler) rather than grids
   * Grids do not exist outside of the grid geometry handler
+  * To specifically break backwards compatibility, a ``blocks`` property has
+    been added which will iterate and yield block-like data (i.e., grids) and
+    the mask of the blocks.  This should encompass the use case of both
+    iterating over the ``_grids`` attribute, obtaining the mask that selects
+    points inside a region, and having a 3D dataset.  This should be used
+    exceedingly rarely, but it will be implemented for all types of data.  All
+    routines that call upon ``_grids`` directly must be updated to use
+    ``blocks``.
 
 Implementation
 ++++++++++++++
@@ -152,8 +160,17 @@ All Octree code will need to be updated for 3.0.  All frontends for grids will
 need to be updated, as this requires somewhat different IO systems to be in
 place.  Updating the grid patch handling will require minimal code change.
 
-Currently, because of how chunking is handled, ghost zones are not available.
-This is a lack of implementation, not an impossibility.
+Ghost zones have been implemented, but will require further study to ensure
+that the results are correctly being calculated.  Ghost zone-requiring fields
+are progressing.
+
+To accommodate situations where data objects or processing routines (not
+derived fields) require information about the shape, connectivity and masking
+of data, a ``blocks`` attribute has been implemented.  This attribute will
+yield masks of data and 3D-shaped data containers, enabling most old
+grids-using routines to work.  By focusing on blocks of data rather than grids,
+we emphasize that these may be of any size, and may also be generated rather
+than code-inherent data.
 
 Alternatives
 ------------
