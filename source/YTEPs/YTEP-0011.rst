@@ -1,0 +1,68 @@
+YTEP-0000: YTEP Template
+========================
+
+To write a YTEP, copy this template to the next numerical number, add it to the
+repository, and issue a pull request.  Discussion of the YTEP will occur either
+on the mailing list (for large-scale changes) or in the PR itself (small items,
+such as formatting).
+
+This document has been patterned after the Matplotlib Enhancement Proposal
+Template (found `here
+<https://github.com/matplotlib/matplotlib/wiki/MEPTemplate>`_.)
+
+Abstract
+--------
+
+Created: March 7, 2013
+Author: Anna Rosen & Casey Stark
+
+This YTEP describes adding symbolic units to yt with the sympy package. This new capability will also allow users to define their own unit system and perform analysis and visualization in units of their choosing. Using this implementation, the default unit class is cgs.
+
+Status
+------
+In Progress: A new utilities module called units has been created. The frontend universal fields files have been edited to reflect the new units scheme. More code changes are required to make yt completely dimensional. 
+
+The code can be seen in yt/utilities/units.py
+
+Project Management Links
+------------------------
+
+  Casey Stark is leading the units work and the code can be found in his repository:
+  https://alrosen@bitbucket.org/caseywstark/yt-3.0
+
+Detailed Description
+--------------------
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Motivation
+yt does not handle units correctly and treats all physical constants are scalars. Also, instead of having to use latex text when describing units we would prefer to have yt use the sympy modules to generate symbol labels. This capability will help with analysis and also allow users to choose their own unit system. 
+
+Implementation
+The Unit class in yt is a subclass of the sympy class Expr. The units module also contains the UnitRegistry class that describes which unit symbols are allowed. The UnitRegistry class also has every units value in cgs and its dimensionality. The YTArray class, which is a sub-class of numpy ndarray, will have an extra attribute "units" which is a Unit object. Operations on YTarray now create other yt arrays so that units are implicitly tracked during calculations.   
+
+The implementation will need to:
+    add units to all fields
+    add units to all physical constants
+    add units to all field labels used in visualization modules
+
+Backwards Compatibility
+-----------------------
+
+This section should outline backwards compatibility issues.  In particular, it
+should focus on those issues that will appear to the main scripting API: will
+this break old scripts?  Will it break internal uses of the API?
+
+We are working in yt-3.0 and expect that this work will not be backwards compatible.
+
