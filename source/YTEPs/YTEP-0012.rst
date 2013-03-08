@@ -16,19 +16,13 @@ creation, and halo profiling on one's own.
 Status
 ------
 
-Status should be one of the following:
-
 Proposed
 
 Project Management Links
 ------------------------
 
-Any external links to:
-
-  * Pull requests
-  * Related issues in the bug tracker
-  * Previous implementations
-  * Mailing list discussions or Google Docs
+The issue created for this is here:
+https://bitbucket.org/yt_analysis/yt/issue/522/unified-halo-analysis
 
 Detailed Description
 --------------------
@@ -49,14 +43,10 @@ This needs to include:
 Backwards Compatibility
 -----------------------
 
-This section should outline backwards compatibility issues.  In particular, it
-should focus on those issues that will appear to the main scripting API: will
-this break old scripts?  Will it break internal uses of the API?
+This will be a completely new framework for performing this type of analysis.  
+Other than working with existing halo finders and potentially reading in the 
+output they produce now, there will be no compatibility with pre-existing 
+machinery.  For these reason, this work will be confined to yt 3.0.
 
 Alternatives
 ------------
-
-*This section is optional.*
-
-What other means are there to accomplishing the goals of this YTEP, and why is
-this the best option?
