@@ -5,25 +5,20 @@ Abstract
 --------
 
 Created: March 7, 2013
-Author: 
+Author: Britton Smith, Cameron Hummels, Chris Moody, Mark Richardson
 
-This section should contain one or two sentences describing the proposed
-change.  It should not contain detailed design information, but it can contain
-background information.
-
-This should contain a date
+In yt 3.0, operations relating to the analysis of halos (halo finding, 
+merger tree creation, and individual halo analysis) will be brought together 
+into a single framework.  This will enable the analysis of individual halos 
+through time without the need to bridge the gap between halo finding, merger tree 
+creation, and halo profiling on one's own.
 
 Status
 ------
 
 Status should be one of the following:
 
- #. Proposed
- #. Completed
- #. In Progress
- #. Declined
-
-YTEPs do not need to pass through every stage.
+Proposed
 
 Project Management Links
 ------------------------
