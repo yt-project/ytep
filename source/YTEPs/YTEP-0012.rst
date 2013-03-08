@@ -46,7 +46,7 @@ Backwards Compatibility
 This will be a completely new framework for performing this type of analysis.  
 Other than working with existing halo finders and potentially reading in the 
 output they produce now, there will be no compatibility with pre-existing 
-machinery.  For these reason, this work will be confined to yt 3.0.
+machinery.  For these reasons, this work will be confined to yt 3.0.
 
 Alternatives
 ------------
