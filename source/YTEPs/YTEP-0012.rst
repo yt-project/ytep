@@ -6,7 +6,7 @@ Abstract
 
 Created: March 7, 2013
 
-Author: Britton Smith, Cameron Hummels, Chris Moody, Mark Richardson
+Author: Britton Smith, Cameron Hummels, Chris Moody, Mark Richardson, Yu Lu
 
 In yt 3.0, operations relating to the analysis of halos (halo finding, 
 merger tree creation, and individual halo analysis) will be brought together 
