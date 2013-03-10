@@ -5,6 +5,7 @@ Abstract
 --------
 
 Created: March 7, 2013
+
 Author: Britton Smith, Cameron Hummels, Chris Moody, Mark Richardson
 
 In yt 3.0, operations relating to the analysis of halos (halo finding, 
@@ -58,24 +59,56 @@ accomplished by creating a filter for a specific halo index, and cannot account 
 halos coming from multiple parents or having multiple children.  There are numerous 
 other ways in which these approaches are very limiting.
 
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
+Halo Analysis in yt 3.0
++++++++++++++++++++++++
+
+All of the functionality described above will be managed by a series of new objects 
+working in a hierarchy.  These will be ``HaloCatalogTimeSeries``, ``HaloCatalog``, 
+and ``Halo``, decribed in further detail below.  The files created by the operations 
+described here will allow for the full state of the ``HaloCatalogTimeSeries`` object 
+to be restored by running the same commands that were used to create them.  This will 
+allow the user to create a single script that will be run first on a supercomputer to 
+perform all of the dataset-requiring analysis and then later on a local machine to 
+load the halo data into memory for further analysis and plotting.
 
 ``HaloCatalogTimeSeries``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+This object will accept a ``TimeSeriesData`` object containing all the datasets to be 
+used.  Its two primary functions will be to perform halo finding on all datasets and 
+creating the merger tree.  Each of these two steps will be performed with separate 
+functions calls where the arguments given will be a callable halo finding or merger 
+tree function and a dictionary containing additional configuration paramters specific to 
+the provided callables.  The data structure contained in memory will be a time-sorted 
+list of ``HaloCatalog`` objects, one for each dataset.
+
+The other primary function will be to create halo tables that are flattened numpy arrays 
+of various halo quantities from all or a selection of all halos from all halo catalogs.  
+This will enable easy plotting of properties from multiple halos.
+
 ``HaloCatalog``
 ^^^^^^^^^^^^^^^
 
+This will be a light-weight container for ``Halo`` objects from a single dataset.  It 
+will be responsible for writing ``Halo`` objects to and restoring from disk.
+
 ``Halo``
 ^^^^^^^^
+
+The ``Halo`` object will contain all quantities associated with a given halo calculated 
+either during the halo finding step or by analysis performed later.  It will contain a 
+particles attribute for holding member particle information for particle-related 
+quantities, such as center of mass, and also for merger tree calculation.  Every effort 
+will be made to see that particle-requiring quantities are calculated calculated 
+during the halo finding step to minimize the number of times that particles are read 
+off disk.  The ``Halo`` object will also have pointers to the ``Halo`` objects that are 
+their past and future instances.  This will allow one to perform any additional analysis 
+on a single halo lineage simply by traversing this linked list.  Further analysis on 
+``Halo`` objects will be facilitated by associating quantities with callable functions.  
+If the user attempts to access a halo quantity whose value is not currently stored within 
+the ``Halo`` object, it will run the associated callable to create it.  At any time, 
+the ``HaloCatalogTimeSeries`` object can be directed to update the files on disk with 
+any new quantities that have been calculated.
 
 Backwards Compatibility
 -----------------------
@@ -83,7 +116,7 @@ Backwards Compatibility
 This will be a completely new framework for performing this type of analysis.  
 Other than working with existing halo finders and potentially reading in the 
 output they produce now, there will be no compatibility with pre-existing 
-machinery.  For these reasons, this work will be confined to yt 3.0.
+machinery.  For these reasons, this development will be confined to yt 3.0.
 
 Alternatives
 ------------
