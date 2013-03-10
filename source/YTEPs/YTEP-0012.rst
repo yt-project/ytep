@@ -21,14 +21,42 @@ Proposed
 Project Management Links
 ------------------------
 
-The issue created for this is here:
-https://bitbucket.org/yt_analysis/yt/issue/522/unified-halo-analysis
+  * `Issue tracker <https://bitbucket.org/yt_analysis/yt/issue/522/unified-halo-analysis>`_
 
 Detailed Description
 --------------------
 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
+Halo Analysis in yt 2.x
++++++++++++++++++++++++
+
+Currently, analyzing halos from a cosmological simulation works in the following way.  
+First, a halo finder is run, which produces a halo catalog in the form of an ascii 
+file.  Each of the halo finders implemented in yt produce halo catalogs with slightly 
+different formats, including various quantities that also differ.  To perform any 
+additional analysis on the halos that have been found, one then uses the 
+``HaloProfiler``.  The ``HaloProfiler`` reads the various halos catalogs from their 
+files and performs a limited set of specific functionality, namely one-dimensional 
+radial profiles and projections.  There is also a function that accepts a callback 
+function for performing custom analysis.  The analysis products for each of these are 
+stored in separate locations.  Any figures to be made from these analyses require the 
+user to write their own scripts that are responsible for all file i/o, sorting, and 
+plotting.
+
+Analysis of a halo as it evolves over time first requires the creation of a merger 
+tree.  For this to work, the particles that belong to each halo need to have been 
+written out during the halo finding step.  Most of the merger trees work by manually 
+specifying a list of dataset filenames over which the merger tree is to be calculated.  
+A separate database file is created that contains the entire merger tree and helper 
+functions exist to tracks a given halo's lineage over time.  There is no comprehensive 
+framework for performing halo time series analysis.  With the functionality existing 
+currently, halo time series analysis can be managed in one of two ways.  The first, 
+and more expensive by far, is to run the ``HaloProfiler`` on all halos in all datasets 
+and then use the merger tree database file to correlate halos from multiple times in 
+the user's hand-built plotting script.  The second is to use the merger tree information 
+to specify a single halo index to be analyzed with the ``HaloProfiler``.  This is 
+accomplished by creating a filter for a specific halo index, and cannot account for 
+halos coming from multiple parents or having multiple children.  There are numerous 
+other ways in which these approaches are very limiting.
 
   * Background
   * Nature of the problem
@@ -39,6 +67,15 @@ This needs to include:
     * How will the solution be tested?
   * What are any stumbling points
   * What is the proposed method for reaching out to the community about this?
+
+``HaloCatalogTimeSeries``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``HaloCatalog``
+^^^^^^^^^^^^^^^
+
+``Halo``
+^^^^^^^^
 
 Backwards Compatibility
 -----------------------
