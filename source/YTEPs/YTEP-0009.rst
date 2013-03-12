@@ -49,25 +49,30 @@ acts on a rectangular brick of data, and the traversal of this brick is fairly
 far removed from a AMR3DData object.  Therefore, we either need to modify the 
 traversal, or somehow mask out the data being handed to the traversal.
 
-This proposal takes the latter approach by creating a mask that modifies the
-data being passed to the integrator.
+The latter approach can be accomplished using the following code:
 
-I have taken a first pass at implementing this which is done by creating
-a 'source_mask' derived field based of the source._get_cut_mask() function.
-There may be a better way to do this, but this seems to work.  By using this
-derived field to create a mask, we then take all points outside the data object
-and multiply the incoming data (Density, Temperature, etc), by np.inf.  No 
-physical field should be np.inf, where some fields may easily be very large,
-very small, or zero.  This seems to function as expected, and the transfer
-function is zero for np.inf. 
+.. code-block:: python
 
-There are several stumbling points:
+    def _source_mask(field, data):
+        return 1.0*self.source._get_cut_mask(data)
+    self.pf.field_info.add_field('source_mask', function=_source_mask, take_log=False)
 
-  * no_ghost=False does not seem to work as the smoothed covering grid doesn't
-    like the cut_mask as being what is used to generate the field.
-  * Since the source_mask is smoothed, it may non-trivially affect the data
-    values at the edges of the source. I haven't seen this show up yet, but I 
-    wouldn't be surprised to see it.
+then when creating the vertex centered data:
+
+.. code-block:: python
+
+    mask = grid.get_vertex_centered_data('source_mask',smoothed=False,no_ghost=self.no_ghost).astype('float64')
+    mask = np.clip(mask, 0.0, 1.0)
+    mask[mask<1.0] = np.inf
+    for i,field in enumerate(self.fields):
+        vcd = grid.get_vertex_centered_data(field,smoothed=True,no_ghost=self.no_ghost).astype('float64')
+        vcd = vcd*mask
+
+However, this approach is full of quirks since what we really want is to mask
+out an entire cell, and not some set of vertices.  Therefore, we propose to
+modify the ``PartitionedGrid`` object to include an integer mask that is used
+during traversal to mask out the individual cells.  
+
 
 API Background:
 
@@ -75,7 +80,7 @@ The method for specifying a data source in a volume rendering has not been
 suggested.  Currently, the rectangular volume that is used for rendering uses
 a ``le`` and ``re`` pair of keywords to specify the left and right edges.  When
 moving to a data source, we should simplify the volume selection by simply
-supplying a ``source=`` (or ``data_source=``) keyword.  
+supplying a ``data_source=`` keyword.  
 
 Changes to the Camera interfaces suggested in YTEP-0010 will handle the move
 to using a data_source.
@@ -86,7 +91,7 @@ following form:
 .. code-block:: python
 
     class AMRKDTree(ParallelAnalysisInterface)
-        def __init__(self, pf, min_level=None, max_level=None, source=None):
+        def __init__(self, pf, min_level=None, max_level=None, data_source=None):
 
 
 Backwards Compatibility
@@ -110,5 +115,5 @@ Alternatives
 My only reasoning for breaking things for the 2.6+ release is that it is
 a simplification and I've already started using it with great success.  I'm
 also hopeful that this simplification is along the same lines of the idea of
-a simplified volume rendering scene object.
+a simplified volume rendering scene object, as outlined in YTEP-0010.
 
