@@ -48,19 +48,20 @@ tree.  For this to work, the particles that belong to each halo need to have bee
 written out during the halo finding step.  Most of the merger trees work by manually 
 specifying a list of dataset filenames over which the merger tree is to be calculated.  
 A separate database file is created that contains the entire merger tree and helper 
-functions exist to tracks a given halo's lineage over time.  There is no comprehensive 
-framework for performing halo time series analysis.  With the functionality existing 
-currently, halo time series analysis can be managed in one of two ways.  The first, 
-and more expensive by far, is to run the ``HaloProfiler`` on all halos in all datasets 
-and then use the merger tree database file to correlate halos from multiple times in 
-the user's hand-built plotting script.  The second is to use the merger tree information 
-to specify a single halo index to be analyzed with the ``HaloProfiler``.  This is 
-accomplished by creating a filter for a specific halo index, and cannot account for 
-halos coming from multiple parents or having multiple children.  There are numerous 
-other ways in which these approaches are very limiting.
+functions exist to tracks a given halo's lineage over time.  There is little 
+comprehensive framework for performing halo time series analysis.  With the 
+functionality existing currently, halo time series analysis can be managed in one 
+of two ways.  The first, and more expensive by far, is to run the ``HaloProfiler`` 
+on all halos in all datasets and then use the merger tree database file to correlate 
+halos from multiple times in the user's hand-built plotting script.  The second 
+is to use the merger tree information to specify a single halo index to be analyzed 
+with the ``HaloProfiler``.  This is accomplished by creating a filter for a specific 
+halo index, and cannot account for halos coming from multiple parents or having 
+multiple children.  There are numerous other ways in which these approaches are 
+very limiting.
 
-Halo Analysis in yt 3.0
-+++++++++++++++++++++++
+Proposed Halo Analysis in yt 3.0
+++++++++++++++++++++++++++++++++
 
 All of the functionality described above will be managed by a series of new objects 
 working in a hierarchy.  These will be ``HaloCatalogTimeSeries``, ``HaloCatalog``, 
@@ -80,34 +81,44 @@ creating the merger tree.  Each of these two steps will be performed with separa
 functions calls where the arguments given will be a callable halo finding or merger 
 tree function and a dictionary containing additional configuration paramters specific to 
 the provided callables.  The data structure contained in memory will be a time-sorted 
-list of ``HaloCatalog`` objects, one for each dataset.
+list of ``HaloCatalog`` objects, one for each dataset.  It will also contain
+a dictionary of dictionaries showing the merger tree information for each halo.
 
-The other primary function will be to create halo tables that are flattened numpy arrays 
-of various halo quantities from all or a selection of all halos from all halo catalogs.  
-This will enable easy plotting of properties from multiple halos.
+
+The other primary function will be to create halo tables that are flattened numpy 
+structured arrays of various halo quantities from all or a selection of all halos 
+(e.g. by timestep) from all halo catalogs.  This will enable easy slicing and 
+plotting of properties from multiple halos.
 
 ``HaloCatalog``
 ^^^^^^^^^^^^^^^
 
 This will be a light-weight container for ``Halo`` objects from a single dataset.  It 
-will be responsible for writing ``Halo`` objects to and restoring from disk.
+will be responsible for writing ``Halo`` objects to and restoring from disk.  It
+will be a numpy structured array.
 
 ``Halo``
 ^^^^^^^^
 
-The ``Halo`` object will contain all quantities associated with a given halo calculated 
-either during the halo finding step or by analysis performed later.  It will contain a 
-particles attribute for holding member particle information for particle-related 
-quantities, such as center of mass, and also for merger tree calculation.  Every effort 
-will be made to see that particle-requiring quantities are calculated calculated 
-during the halo finding step to minimize the number of times that particles are read 
-off disk.  The ``Halo`` object will also have pointers to the ``Halo`` objects that are 
-their past and future instances.  This will allow one to perform any additional analysis 
-on a single halo lineage simply by traversing this linked list.  Further analysis on 
-``Halo`` objects will be facilitated by associating quantities with callable functions.  
-If the user attempts to access a halo quantity whose value is not currently stored within 
-the ``Halo`` object, it will run the associated callable to create it.  At any time, 
-the ``HaloCatalogTimeSeries`` object can be directed to update the files on disk with 
+The ``Halo`` object will contain all quantities associated with a given halo 
+calculated either during the halo finding step or by analysis performed later.  
+By default, particle information will *not* be saved to disk after creation of individual
+halo objects, since it takes a great deal of memory to store this information.  
+Instead, there will be several halo quantities determined at instantiation using 
+these particles including center-of-mass phase-space coordinates, densest point,
+shape of halo, and merger tree information (matching against previous and later 
+timesteps to determine lineage of a halo).  However, the option will exist
+for saving particle information for later analysis.
+
+The ``Halo`` object will also have pointers to the ``Halo`` objects that are 
+their past and future instances, essentially the most massive pro/postgenitors 
+with the largest match of particles inventories.  This will allow one to perform 
+any additional analysis on a single halo lineage simply by traversing this 
+linked list.  Further analysis on ``Halo`` objects will be facilitated by 
+associating quantities with callable functions.  If the user attempts to access 
+a halo quantity whose value is not currently stored within the ``Halo`` object, 
+it will run the associated callable to create it.  At any time, the 
+``HaloCatalogTimeSeries`` object can be directed to update the files on disk with 
 any new quantities that have been calculated.
 
 Backwards Compatibility
