@@ -110,13 +110,17 @@ This will allow users to write to any number of standardized formats, such as th
 
 The ``Halo`` object will contain all quantities associated with a given halo 
 calculated either during the halo finding step or by analysis performed later.  
-By default, particle information will *not* be saved to disk after creation of individual
-halo objects, since it takes a great deal of memory to store this information.  
-Instead, there will be several halo quantities determined at instantiation using 
+By default, particle information will be saved to disk after halo finding has been 
+performed since it is required for merger tree generation.  However, particle 
+information will not remain attached to the ``Halo`` object since it takes a great 
+deal of memory to store this information.  
+Instead, there will be several halo quantities calculatd at instantiation using 
 these particles including center-of-mass phase-space coordinates, densest point,
 shape of halo, and merger tree information (matching against previous and later 
 timesteps to determine lineage of a halo).  However, the option will exist
-for saving particle information for later analysis.
+for reloading particle information for later analysis.  This technique of frontloading 
+analysis that requires particle information is how some halo finders, such as 
+Rockstar, currently operate.
 
 The ``Halo`` object will also have pointers to the ``Halo`` objects that are 
 their past and future instances, essentially the most massive pro/postgenitors 
