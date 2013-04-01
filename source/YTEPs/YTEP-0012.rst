@@ -82,8 +82,12 @@ functions calls where the arguments given will be a callable halo finding or mer
 tree function and a dictionary containing additional configuration paramters specific to 
 the provided callables.  The data structure contained in memory will be a time-sorted 
 list of ``HaloCatalog`` objects, one for each dataset.  It will also contain
-a dictionary of dictionaries showing the merger tree information for each halo.
-
+a dictionary of dictionaries showing the merger tree information for each halo.  The 
+on-disk format for ``HaloCatalogTimeSeries`` objects will likely need to be refined, but 
+will ideally preserve the system of pointers connecting ``Halo`` objects to their past and 
+future counterparts (described further in the ``Halo`` section).  The data stored here will 
+potentially be far too large for a single file.  Instead, a system of multiple files that 
+is capable of quickly reconstructing the ``Halo`` pointer structure may be better.
 
 The other primary function will be to create halo tables that are flattened numpy 
 structured arrays of various halo quantities from all or a selection of all halos 
@@ -95,7 +99,11 @@ plotting of properties from multiple halos.
 
 This will be a light-weight container for ``Halo`` objects from a single dataset.  It 
 will be responsible for writing ``Halo`` objects to and restoring from disk.  It
-will be a numpy structured array.
+will be a numpy structured array.  The manner in which ``HaloCatalog`` objects will be 
+written to disk will be specified similar to how halo finders and merger tree generators 
+given to ``HaloCatalogTimeSeries`` objects, i.e., by providing a callable writer function.  
+This will allow users to write to any number of standardized formats, such as the 
+`IRATE <http://www.physics.uci.edu/~etolleru/irate-docs/formatspec.html>`_ format.
 
 ``Halo``
 ^^^^^^^^
