@@ -46,12 +46,12 @@ Proposed Syntax
 Alongside traditional field types like 'gas' (an Eulerian field) and 'stars' 
 (Lagrangian) we should also have a 'deposit' field type (Lagrangian-as-Eleurian).
 Additionally, we could use the particle generator code to implement the reverse 
-procedure, but that is not the subject of this YTEP.
+discretization procedure, but that is not the subject of this YTEP.
 
-In all of the following examples the subset.deposit
-function calls the appropriate function in oct_handler to actually
+In all of the following examples the ``subset.deposit()``
+function calls the appropriate function in oct handler to actually
 do the depositing. Because the deposit function lives on
-the subset class (e.g., DomainSubset) particle deposition
+the subset class (e.g., ``DomainSubset``) particle deposition methods
 can be separately customized for grid or octree codes or for different
 frontends.
 
@@ -65,8 +65,8 @@ the field in every oct::
         m = subset.deposit(pos, mas, method='sum')
         return m
 
-Here the IO checks for a field type of 'deposit'
-and then instead of using a field name like 'Density' or 'particle_mass'
+Here the IO checks for a field type of ``deposit``
+and then instead of using a field name like ``Density`` or ``particle_mass``
 we feed it the method that handles the deposition (instead of a string 
 ``field_name`` ) ::
 
@@ -77,8 +77,8 @@ An alternative syntax that is closer to the current convention could be::
     add_deposit_field('stellar_mass', deposit_stellar_mass)
     dd[('deposit', 'stellar_mass')] 
 
-In this case, the ``add_deposit_field()`` would register a new field and method
-which io.py would then lookup.
+In this case, the ``add_deposit_field()`` would register a new field and 
+accompanying method which io.py would then lookup.
 
 Changes to Frontend Code
 ++++++++++++
@@ -103,13 +103,14 @@ Further Example Use Cases
 ++++++++
 
 The following examples demonstrate a variety of cases we should be able to 
-support: picking out just stars, just stars under a certain age, and calculating
+support: picking out just stars (from other particle types), 
+just stars under a certain age, and calculating
 the dispersion in two steps.
 
 This field must apply two selections: one for the stars in our region,
-but we also only want the young stars. Note that this function
+and another checking the age. Note that this function
 cannot be hardcoded because we want the definition of 'young' stars to be
-optional::
+user-defined ::
 
     def deposit_young_stars_mass(subset,selector):
         fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
