@@ -28,7 +28,7 @@ Proposed
 Detailed Description
 --------------------
 
-Halo Analysis in yt 2.x
+Particle Deposition in yt 2.x
 +++++++++++++++++++++++
 
 Currently, particle deposition for grid-patch codes works by using cloud-in-cell
@@ -44,7 +44,9 @@ Proposed Syntax
 +++++++++++++++
 
 Alongside traditional field types like 'gas' (an Eulerian field) and 'stars' 
-(Lagrangian) we should also have a 'deposit' field (Lagrangian-as-Eleurian).
+(Lagrangian) we should also have a 'deposit' field type (Lagrangian-as-Eleurian).
+Additionally, we could use the particle generator code to implement the reverse 
+procedure, but that is not the subject of this YTEP.
 
 In all of the following examples the subset.deposit
 function calls the appropriate function in oct_handler to actually
