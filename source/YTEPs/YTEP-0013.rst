@@ -109,7 +109,7 @@ the dispersion in two steps.
 
 This field must apply two selections: one for the stars in our region,
 and another checking the age. Note that this function
-cannot be hardcoded because we want the definition of 'young' stars to be
+cannot be hardcoded because we want the age of 'young' stars to be
 user-defined ::
 
     def deposit_young_stars_mass(subset,selector):
@@ -122,7 +122,8 @@ user-defined ::
         return rv
     dd[('deposit',deposit_young_stars_mass)]
 
-Here we calculate the mean velocity vector using a different deposit method::
+Here we calculate the mean velocity vector using a different deposit method that
+finds the mean of the field instead of the sum ::
 
     def deposit_velocity_x(subset,selector):
         fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
@@ -141,9 +142,9 @@ Then we want to deposit the dispersion, which is done in two passes
 over the particles. The first pass involves calculating 
 the mean velocity by looping over every particle, depositing the velocity.
 Then step two: loop over all particles, now looking up the oct mean velocity, 
-finding the difference, then calculating the mean difference squared.
-This means we must have chunk_all because step one needs to finish
-completely before step two::
+finding the difference between oct and particle, then calculating the mean 
+difference squared. This means we must have chunk_all because step one needs 
+to finish completely before step two::
 
     def deposit_dispersion_xx(subset, selector):
         fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
