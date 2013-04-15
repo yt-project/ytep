@@ -1,0 +1,154 @@
+YTEP-0013: First Class Deposited Particle Fields
+========================
+
+Abstract
+--------
+Created: March 7, 2013
+
+Author: Chris Moody, Matthew Turk
+
+The majority of the yt codebase is currently built around Eulerian, grid 
+or cell-like quantities. In order to use particles quantities, we typically
+have to deposit particles and essentially make them look like fluid quantities.
+The goal is to make deposited particles a **first-class field type**. This is tricky
+because deposited fields need more parameters (they are specified by more than 
+just a (field_type,field_name)) and because callbacks must pass particles to the
+oct_handler (or grids). Derived fields do not get octs, but slices or 
+projections of octs, and so you cannot do the deposition there. The deposition 
+for octrees must happen in io.py, long before a derived field comes in to play.
+
+This should improve particle support for Octrees and SPH codes dramatically,
+and extend particle deposition syntax for grid-patch codes.
+
+Status
+------
+
+Proposed
+
+Detailed Description
+--------------------
+
+Halo Analysis in yt 2.x
++++++++++++++++++++++++
+
+Currently, particle deposition for grid-patch codes works by using cloud-in-cell
+deposition of particles onto grids. This works because slicing and projecting
+yields 3D grids to the derived field. However, for octree and SPH codes (which
+use a yt-generated octree) slicing and projecting yield a 1D array of cells
+with no positional information, thereby making it impossible to deposit
+particles at derived field time. Instead, this must happen after the IO layer,
+but before we have reduced data in later operations. This proposal tries to 
+create model particle deposition at this level.
+
+Proposed Syntax
++++++++++++++++
+
+Alongside traditional field types like 'gas' (an Eulerian field) and 'stars' 
+(Lagrangian) we should also have a 'deposit' field (Lagrangian-as-Eleurian).
+
+In all of the following examples the subset.deposit
+function calls the appropriate function in oct_handler to actually
+do the depositing. Because the deposit function lives on
+the subset class (e.g., DomainSubset) particle deposition
+can be separately customized for grid or octree codes or for different
+frontends.
+
+The simplest example just takes all particles of one type and accumulates
+the field in every oct::
+
+    def deposit_stellar_mass(subset, selector):
+        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
+        mas = IOHandlerART._read_particle_selection(chunk, selector, ('stars', 'particle_mass'))
+        pos = IOHandlerART._read_particle_selection(chunk, selector, fpos)
+        m = subset.deposit(pos, mas, method='sum')
+        return m
+
+Here the IO checks for a field type of 'deposit'
+and then instead of using a field name like 'Density' or 'particle_mass'
+we feed it the method that handles the deposition (instead of a string 
+``field_name`` ) ::
+
+    dd[('deposit', deposit_stellar_mass)] 
+
+An alternative syntax that is closer to the current convention could be::
+    
+    add_deposit_field('stellar_mass', deposit_stellar_mass)
+    dd[('deposit', 'stellar_mass')] 
+
+In this case, the ``add_deposit_field()`` would register a new field and method
+which io.py would then lookup.
+
+Changes to Frontend Code
+++++++++++++
+
+This would mean adding a new function to BaseIOHandler in frontends/io.py 
+for dealing with a ``deposit`` field type::
+
+    def _read_deposit_selection(self, chunks, selector, fields, size):
+        tr = dict((f, np.empty(size, dtype='float64')) for f in fields)
+        cp = 0
+        for chunk in chunks:
+            for subset in chunk.objs:
+                for ft, func in fields:
+                    rv = func(subset, selector)
+                    tr[(ft, func )][cp:cp+subset.cell_count] = rv
+                    cp += subset.cell_count
+        return tr
+
+Where ``func``  for our example refers to the ``deposit_stellar_mass`` above. 
+
+Further Example Use Cases
+++++++++
+
+The following examples demonstrate a variety of cases we should be able to 
+support: picking out just stars, just stars under a certain age, and calculating
+the dispersion in two steps.
+
+This field must apply two selections: one for the stars in our region,
+but we also only want the young stars. Note that this function
+cannot be hardcoded because we want the definition of 'young' stars to be
+optional::
+
+    def deposit_young_stars_mass(subset,selector):
+        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
+        pos = IOHandlerART._read_particle_selection(chunk,selector,fpos)
+        age = IOHandlerART._read_particle_selection(chunk,selector,['particle_age'])
+        mas = IOHandlerART._read_particle_selection(chunk,selector,('stars','particle_mass'))
+        mask = age < 10e6*(365*24*3600) # age is less than 10Myr
+        m = subset.deposit(pos[mask], mas[mask], method='sum')
+        return rv
+    dd[('deposit',deposit_young_stars_mass)]
+
+Here we calculate the mean velocity vector using a different deposit method::
+
+    def deposit_velocity_x(subset,selector):
+        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
+        fvel = [('stars', 'particle_velocity_%s'%ax ) for ax in 'xyz']
+        pos = IOHandlerART._read_particle_selection(chunk,selector,fpos)
+        vel = IOHandlerART._read_particle_selection(chunk,selector,fvel)
+        mas = IOHandlerART._read_particle_selection(chunk,selector,('stars','particle_mass'))
+        # Note that deposit_mean will have to keep track of two Nx1 quantities
+        # the total mass*vel in that oct, and the total mass in that oct
+        # and then once we finish looping all particles, 
+        # divide the two to get <vel> in the oct
+        vx = subset.deposit(pos, vel, method='mean', weight = mas)
+        return vx
+
+Then we want to deposit the dispersion, which is done in two passes 
+over the particles. The first pass involves calculating 
+the mean velocity by looping over every particle, depositing the velocity.
+Then step two: loop over all particles, now looking up the oct mean velocity, 
+finding the difference, then calculating the mean difference squared.
+This means we must have chunk_all because step one needs to finish
+completely before step two::
+
+    def deposit_dispersion_xx(subset, selector):
+        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
+        fvel = [('stars', 'particle_velocity_%s'%ax ) for ax in 'xyz']
+        pos = IOHandlerART._read_particle_selection(chunk,selector,fpos)
+        vel = IOHandlerART._read_particle_selection(chunk,selector,fvel)
+        mas = IOHandlerART._read_particle_selection(chunk,selector,('stars','particle_mass'))
+        vx = subset.deposit(pos, vel, method='std', weight=mass)
+        return vx
+    dd[('deposit',deposit_dispersion_xx)] #how do we enforce chunk_all in this step?
+
