@@ -13,9 +13,7 @@ have to deposit particles and essentially make them look like fluid quantities.
 The goal is to make deposited particles a **first-class field type**. This is tricky
 because deposited fields need more parameters (they are specified by more than 
 just a (field_type,field_name)) and because callbacks must pass particles to the
-oct_handler (or grids). Derived fields do not get octs, but slices or 
-projections of octs, and so you cannot do the deposition there. The deposition 
-for octrees must happen in io.py, long before a derived field comes in to play.
+oct_handler (or grids) and therefore be employed just after the IO layer. 
 
 This should improve particle support for Octrees and SPH codes dramatically,
 and extend particle deposition syntax for grid-patch codes.
@@ -34,11 +32,11 @@ Particle Deposition in yt 2.x
 Currently, particle deposition for grid-patch codes works by using cloud-in-cell
 deposition of particles onto grids. This works because slicing and projecting
 yields 3D grids to the derived field. However, for octree and SPH codes (which
-use a yt-generated octree) slicing and projecting yield a 1D array of cells
+use a yt-generated octree), slicing and projecting yield a 1D array of cells
 with no positional information, thereby making it impossible to deposit
 particles at derived field time. Instead, this must happen after the IO layer,
 but before we have reduced data in later operations. This proposal tries to 
-create model particle deposition at this level.
+develop an idiom for particle deposition at this level.
 
 Proposed Syntax
 +++++++++++++++
@@ -46,10 +44,11 @@ Proposed Syntax
 Alongside traditional field types like 'gas' (an Eulerian field) and 'stars' 
 (Lagrangian) we should also have a 'deposit' field type (Lagrangian-as-Eleurian).
 Additionally, we could use the particle generator code to implement the reverse 
-discretization procedure, but that is not the subject of this YTEP.
+discretization procedure (Eulerian-as-Lagrangian), but that is not the 
+subject of this YTEP.
 
-In all of the following examples the ``subset.deposit()``
-function calls the appropriate function in oct handler to actually
+In all of the following examples the ``subset.deposit(...)``
+function calls the appropriate function in oct handler or grid to actually
 do the depositing. Because the deposit function lives on
 the subset class (e.g., ``DomainSubset``) particle deposition methods
 can be separately customized for grid or octree codes or for different
@@ -98,6 +97,7 @@ for dealing with a ``deposit`` field type::
         return tr
 
 Where ``func``  for our example refers to the ``deposit_stellar_mass`` above. 
+
 
 Further Example Use Cases
 ++++++++
