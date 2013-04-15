@@ -98,6 +98,16 @@ for dealing with a ``deposit`` field type::
 
 Where ``func``  for our example refers to the ``deposit_stellar_mass`` above. 
 
+We would also require adding code to ``DomainSubset``::
+
+    def deposit(self, pos, data, method='sum', weight=None):
+        if method=='sum':
+            rv = self.oct_handler.deposit_accumulate(pos,data)      
+        elif method == 'std':
+            rv = self.oct_handler.deposit_std(pos,data)
+
+The purpose of this code would be to choose the correct depositing function.
+For grid-patch codes, this would utilize CIC deposition.
 
 Further Example Use Cases
 ++++++++
