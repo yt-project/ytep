@@ -19,7 +19,7 @@ and extend particle deposition syntax for grid-patch codes.
 Status
 ------
 
-Proposed
+Testing Implementation
 
 Detailed Description
 --------------------
@@ -39,9 +39,10 @@ Proposed Syntax
 
 The names of deposited fields can be user-defined, and thus are not explicitly
 restricted. However, as having a deposited fields becomes more common in the yt
-framework and libraries begin to expect and depend on it, we do suggest that 
-field names are prefixed with ``deposit_``. This indicates that the returned
-array is particle-shaped, and not grid-shaped or octree-shaped. Note that this
+framework and libraries begin to expect and depend on particular names, 
+we do suggest that field names are prefixed with ``deposit_``. This 
+indicates that the returned array is particle-shaped, and not grid-shaped or 
+octree-shaped. Note that this
 means that the field type (e.g. ``stars`` or ``gas``) no longer guarantees that 
 the returned array is a certain shape.  
 
@@ -49,7 +50,7 @@ the returned array is a certain shape.
 Example Deposited Field
 +++++++++++++++++++++++
 
-Below as example derived field defined in Python::
+Below as example particle deposition field defined in Python::
 
     @derived_field(name = "particle_count", validators=[ValidateSpatial()])
     def particle_count(field, data):
@@ -65,12 +66,13 @@ We exploit the fact that the octree frontends share a common
 base class ``OctreeSubset(YTSelectionContainer)`` to create a common
 function ``deposit()``. The patch-based codes have an analogous 
 ``AMRGridPatch(YTSelectionContainer)``. The deposition is passed
-an the particle positions, the particle fields required, and the
+the particle positions, the particle fields required, and the
 deposition method: ``deposit(positions, field = None, method = None)``.
-The deposit function uses ``method`` to lookup a cython 
+The deposit function uses ``method`` to lookup a Cython 
 ``ParticleDepositOperation`` class in ``particle_deposit.pyx``. This class
-defines the deposition procedure in three steps, which deposit calls 
-sequentially. The first is ``initialize`` which allocates the memory
+defines the deposition procedure in three steps, which ``deposit`` calls 
+sequentially. The first ``ParticleDepositOperation`` member function 
+is ``initialize`` which allocates the memory
 required to hold temporary arrays for the deposition of particles into
 grids or octs. Extra temporary arrays are useful when a reduction of data
 must occur after the we have looped through all particles. The next step
@@ -78,12 +80,15 @@ is either ``process_octree`` or ``process_grid`` where we loop over all
 particles, find the oct or cell in an octree or grid (respectively). Once
 found, we call ``process(dims, left_edge, dds, 0, pos, field_vals)`` which
 relates a single particle, its associated cell, and the incremental deposited
-value. This organization allows us to seperate the particle lookup along in a
+value. The last step ``finalize`` reduces the data from the temporary arrays
+and return an oct-shaped or grid-shaped array. 
+This organization allows us to seperate the particle lookup along in a
 grid or oct tree from the deposition operation we would like to perform. 
 
 Example Cython Code
 +++++++++++++++++++
-Below we include an example of the base particle deposit class::
+Below we include an example of the base particle deposit class with 
+most of the Cython type definitions removed for legibility::
 
     cdef class ParticleDepositOperation:
         def initialize(self, *args): raise NotImplementedError
@@ -120,3 +125,7 @@ that this will work with grid and octree codes::
         def finalize(self):
             return self.ocount
 
+Using the templates and organizational scheme proposed here, one can
+define fields with arbitrary particle selections (e.g. young stars)
+perform arbitrary accumulations (e.g. count, sum, or std) and possibly 
+perform multiple loops over all of the particles. 
