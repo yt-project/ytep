@@ -1,19 +1,17 @@
-YTEP-0013: First Class Deposited Particle Fields
-========================
+YTEP-0013: Deposited Particle Fields
+================================================
 
 Abstract
 --------
-Created: March 7, 2013
+Created: April 25, 2013
 
-Author: Chris Moody, Matthew Turk
+Author: Chris Moody, Matthew Turk, Britton Smith, Doug Rudd, Sam Leitner
 
 The majority of the yt codebase is currently built around Eulerian, grid 
-or cell-like quantities. In order to use particles quantities, we typically
+or cell-like quantities. In order to use particle quantities, we typically
 have to deposit particles and essentially make them look like fluid quantities.
-The goal is to make deposited particles a **first-class field type**. This is tricky
-because deposited fields need more parameters (they are specified by more than 
-just a (field_type,field_name)) and because callbacks must pass particles to the
-oct_handler (or grids) and therefore be employed just after the IO layer. 
+This YTEP details the suggest deposition process, how to implement it,
+how to extend and subclass it, and suggested syntax.
 
 This should improve particle support for Octrees and SPH codes dramatically,
 and extend particle deposition syntax for grid-patch codes.
@@ -27,142 +25,98 @@ Detailed Description
 --------------------
 
 Particle Deposition in yt 2.x
-+++++++++++++++++++++++
++++++++++++++++++++++++++++++
 
-Currently, particle deposition for grid-patch codes works by using cloud-in-cell
-deposition of particles onto grids. This works because slicing and projecting
-yields 3D grids to the derived field. However, for octree and SPH codes (which
-use a yt-generated octree), slicing and projecting yield a 1D array of cells
-with no positional information, thereby making it impossible to deposit
-particles at derived field time. Instead, this must happen after the IO layer,
-but before we have reduced data in later operations. This proposal tries to 
-develop an idiom for particle deposition at this level.
+Currently, particle deposition for grid-patch codes works by 
+querying particle fields and supplying them to a routine like 
+CIC_Deposit3. It is non-trivial to extend this CIC function 
+to octree codes but essential to making SPH codes interoperable
+with the yt codebase.
+
 
 Proposed Syntax
 +++++++++++++++
 
-Alongside traditional field types like 'gas' (an Eulerian field) and 'stars' 
-(Lagrangian) we should also have a 'deposit' field type (Lagrangian-as-Eleurian).
-Additionally, we could use the particle generator code to implement the reverse 
-discretization procedure (Eulerian-as-Lagrangian), but that is not the 
-subject of this YTEP.
+The names of deposited fields can be user-defined, and thus are not explicitly
+restricted. However, as having a deposited fields becomes more common in the yt
+framework and libraries begin to expect and depend on it, we do suggest that 
+field names are prefixed with ``deposit_``. This indicates that the returned
+array is particle-shaped, and not grid-shaped or octree-shaped. Note that this
+means that the field type (e.g. ``stars`` or ``gas``) no longer guarantees that 
+the returned array is a certain shape.  
 
-In all of the following examples the ``subset.deposit(...)``
-function calls the appropriate function in oct handler or grid to actually
-do the depositing. Because the deposit function lives on
-the subset class (e.g., ``DomainSubset``) particle deposition methods
-can be separately customized for grid or octree codes or for different
-frontends.
 
-The simplest example just takes all particles of one type and accumulates
-the field in every oct::
+Example Deposited Field
++++++++++++++++++++++++
 
-    def deposit_stellar_mass(subset, selector):
-        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
-        mas = IOHandlerART._read_particle_selection(chunk, selector, ('stars', 'particle_mass'))
-        pos = IOHandlerART._read_particle_selection(chunk, selector, fpos)
-        m = subset.deposit(pos, mas, method='sum')
-        return m
+Below as example derived field defined in Python::
 
-Here the IO checks for a field type of ``deposit``
-and then instead of using a field name like ``Density`` or ``particle_mass``
-we feed it the method that handles the deposition (instead of a string 
-``field_name`` ) ::
+    @derived_field(name = "particle_count", validators=[ValidateSpatial()])
+    def particle_count(field, data):
+        pos = np.column_stack([data["particle_position_%s" % ax]
+                               for ax in 'xyz'])
+        return data.deposit(pos, method = "count")
 
-    dd[('deposit', deposit_stellar_mass)] 
-
-An alternative syntax that is closer to the current convention could be::
-    
-    add_deposit_field('stellar_mass', deposit_stellar_mass)
-    dd[('deposit', 'stellar_mass')] 
-
-In this case, the ``add_deposit_field()`` would register a new field and 
-accompanying method which io.py would then lookup.
 
 Changes to Frontend Code
-++++++++++++
+++++++++++++++++++++++++
 
-This would mean adding a new function to BaseIOHandler in frontends/io.py 
-for dealing with a ``deposit`` field type::
+We exploit the fact that the octree frontends share a common
+base class ``OctreeSubset(YTSelectionContainer)`` to create a common
+function ``deposit()``. The patch-based codes have an analogous 
+``AMRGridPatch(YTSelectionContainer)``. The deposition is passed
+an the particle positions, the particle fields required, and the
+deposition method: ``deposit(positions, field = None, method = None)``.
+The deposit function uses ``method`` to lookup a cython 
+``ParticleDepositOperation`` class in ``particle_deposit.pyx``. This class
+defines the deposition procedure in three steps, which deposit calls 
+sequentially. The first is ``initialize`` which allocates the memory
+required to hold temporary arrays for the deposition of particles into
+grids or octs. Extra temporary arrays are useful when a reduction of data
+must occur after the we have looped through all particles. The next step
+is either ``process_octree`` or ``process_grid`` where we loop over all
+particles, find the oct or cell in an octree or grid (respectively). Once
+found, we call ``process(dims, left_edge, dds, 0, pos, field_vals)`` which
+relates a single particle, its associated cell, and the incremental deposited
+value. This organization allows us to seperate the particle lookup along in a
+grid or oct tree from the deposition operation we would like to perform. 
 
-    def _read_deposit_selection(self, chunks, selector, fields, size):
-        tr = dict((f, np.empty(size, dtype='float64')) for f in fields)
-        cp = 0
-        for chunk in chunks:
-            for subset in chunk.objs:
-                for ft, func in fields:
-                    rv = func(subset, selector)
-                    tr[(ft, func )][cp:cp+subset.cell_count] = rv
-                    cp += subset.cell_count
-        return tr
+Example Cython Code
++++++++++++++++++++
+Below we include an example of the base particle deposit class::
 
-Where ``func``  for our example refers to the ``deposit_stellar_mass`` above. 
+    cdef class ParticleDepositOperation:
+        def initialize(self, *args): raise NotImplementedError
+        def finalize(self, *args): raise NotImplementedError
+        def process_octree(self, octree, dom_ind, positions, fields = None):
+            for i in range(positions.shape[0]):
+                oct = octree.get(pos, &oi)
+                offset = dom_ind[oct.ind]
+                self.process(dims, oi.left_edge, oi.dds,
+                             offset, pos, field_vals)
+        def process_grid(self, gobj, positions,fields = None):
+            for i in range(positions.shape[0]):
+                for j in range(3):
+                    pos[j] = positions[i, j]
+                self.process(dims, left_edge, dds, 0, pos, field_vals)
+        def process(self, *args): raise NotImplementedError
 
-We would also require adding code to ``DomainSubset``::
-
-    def deposit(self, pos, data, method='sum', weight=None):
-        if method=='sum':
-            rv = self.oct_handler.deposit_accumulate(pos,data)      
-        elif method == 'std':
-            rv = self.oct_handler.deposit_std(pos,data)
-
-The purpose of this code would be to choose the correct depositing function.
-For grid-patch codes, this would utilize CIC deposition.
-
-Further Example Use Cases
-++++++++
-
-The following examples demonstrate a variety of cases we should be able to 
-support: picking out just stars (from other particle types), 
-just stars under a certain age, and calculating
-the dispersion in two steps.
-
-This field must apply two selections: one for the stars in our region,
-and another checking the age. Note that this function
-cannot be hardcoded because we want the age of 'young' stars to be
-user-defined ::
-
-    def deposit_young_stars_mass(subset,selector):
-        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
-        pos = IOHandlerART._read_particle_selection(chunk,selector,fpos)
-        age = IOHandlerART._read_particle_selection(chunk,selector,['particle_age'])
-        mas = IOHandlerART._read_particle_selection(chunk,selector,('stars','particle_mass'))
-        mask = age < 10e6*(365*24*3600) # age is less than 10Myr
-        m = subset.deposit(pos[mask], mas[mask], method='sum')
-        return rv
-    dd[('deposit',deposit_young_stars_mass)]
-
-Here we calculate the mean velocity vector using a different deposit method that
-finds the mean of the field instead of the sum ::
-
-    def deposit_velocity_x(subset,selector):
-        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
-        fvel = [('stars', 'particle_velocity_%s'%ax ) for ax in 'xyz']
-        pos = IOHandlerART._read_particle_selection(chunk,selector,fpos)
-        vel = IOHandlerART._read_particle_selection(chunk,selector,fvel)
-        mas = IOHandlerART._read_particle_selection(chunk,selector,('stars','particle_mass'))
-        # Note that deposit_mean will have to keep track of two Nx1 quantities
-        # the total mass*vel in that oct, and the total mass in that oct
-        # and then once we finish looping all particles, 
-        # divide the two to get <vel> in the oct
-        vx = subset.deposit(pos, vel, method='mean', weight = mas)
-        return vx
-
-Then we want to deposit the dispersion, which is done in two passes 
-over the particles. The first pass involves calculating 
-the mean velocity by looping over every particle, depositing the velocity.
-Then step two: loop over all particles, now looking up the oct mean velocity, 
-finding the difference between oct and particle, then calculating the mean 
-difference squared. This means we must have chunk_all because step one needs 
-to finish completely before step two::
-
-    def deposit_dispersion_xx(subset, selector):
-        fpos = [('stars', 'particle_position_%s'%ax ) for ax in 'xyz']
-        fvel = [('stars', 'particle_velocity_%s'%ax ) for ax in 'xyz']
-        pos = IOHandlerART._read_particle_selection(chunk,selector,fpos)
-        vel = IOHandlerART._read_particle_selection(chunk,selector,fvel)
-        mas = IOHandlerART._read_particle_selection(chunk,selector,('stars','particle_mass'))
-        vx = subset.deposit(pos, vel, method='std', weight=mass)
-        return vx
-    dd[('deposit',deposit_dispersion_xx)] #how do we enforce chunk_all in this step?
+Below we subclass the template above to deposit a particle count,
+taking care to override ``initialize``, ``process`` and ``finalize``
+but leaving grid traversal in ``process_octree/grid`` alone, ensuring
+that this will work with grid and octree codes::
+    cdef class CountParticles(ParticleDepositOperation):
+        def initialize(self):
+            self.ocount = np.zeros(self.nvals, dtype="float64")
+            cdef np.ndarray arr = self.ocount
+            self.count = <np.float64_t*> arr.data
+        @cython.cdivision(True)
+        cdef void process(self, int dim[3],left_edge[3], dds[3], offset, 
+                          ppos[3], *fields):
+            cdef int ii[3], i
+            for i in range(3):
+                ii[i] = <int>((ppos[i] - left_edge[i])/dds[i])
+            self.count[gind(ii[0], ii[1], ii[2], dim) + offset] += 1
+        def finalize(self):
+            return self.ocount
 
