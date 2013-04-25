@@ -1,5 +1,5 @@
 YTEP-0013: Deposited Particle Fields
-================================================
+====================================
 
 Abstract
 --------
@@ -19,7 +19,7 @@ and extend particle deposition syntax for grid-patch codes.
 Status
 ------
 
-Testing Implementation
+Currently Testing Implementation
 
 Detailed Description
 --------------------
@@ -126,6 +126,7 @@ that this will work with grid and octree codes::
             return self.ocount
 
 Using the templates and organizational scheme proposed here, one can
-define fields with arbitrary particle selections (e.g. young stars)
-perform arbitrary accumulations (e.g. count, sum, or std) and possibly 
-perform multiple loops over all of the particles. 
+define fields with arbitrary particle selections (e.g. young stars),
+perform arbitrary accumulations (e.g. count, sum, or std),
+loops over all of the particles multiple times, and switch between
+cloud-in-cell, SPH smoothing kernel, or simple direct deposition.
