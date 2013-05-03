@@ -1,21 +1,25 @@
 =============================
-YTEP-0011: Adding Units to yt
+YTEP-0011: Symbol units in yt
 =============================
 
 Abstract
 --------
 
 Created: March 7, 2013
-Authors: Anna Rosen, Casey Stark & Nathan Goldbaum
+Authors: Anna Rosen, Casey Stark, and Nathan Goldbaum
 
-This YTEP describes adding symbolic units to yt with the `sympy`_ package. The
+This YTEP describes adding symbolic units to yt using the `sympy`_ package. The
 main benefit is to make sure units are carried through calculations in a
-*transparent* and *intuitive* manner.  The new components are a `YTArray` class,
-which appends a `sympy`_ symbolic unit to the NumPy `ndarray`, a `Quantity`
-class, which will append symbolic units to scalar quantities and physical
-constants, and a `UnitRegistry` which will create units (i.e. for cosmological
-analysis) in a contextual way by querying the `StaticOutput` object associated
-with a dataset.
+*transparent* and *intuitive* manner. The new components are:
+
+ - a `Unit` class, which describes the dimensionality (mass, length, time,
+   temperature) and conversion value of any unit.
+ - a `UnitRegistry` class, which defines valid unit symbols (ex: "g" for gram)
+   and their associated data (dimensionality and conversion value).
+ - a `YTArray` class, a subclass of NumPy `ndarray` that attaches a `Unit`
+   object.
+ - a `Quantity` class, a subclass of `YTArray` which is restricted to a single
+   element (for handling scalars).
 
 .. _sympy: http://sympy.org/
 
@@ -47,7 +51,7 @@ might look like this::
   from yt.utilities.physical_constants import mass_sun_cgs
   pf = load('IsolatedGalaxy/galaxy0030/galaxy0030')
   dd = pf.h.all_data()
-  mass = dd['CellMass'] 
+  mass = dd['CellMass']
   print "Mass in CGS: ", mass
   print "Mass in Solar Masses: ", dd['CellMass']/mass_sun_cgs
   print "Mass in code units: ", dd['CellMass']/pf['Mass']
@@ -95,21 +99,21 @@ Proposed Solution
 
 We propose to handle units in a more automatic fashion, leveraging the symbolic
 math library, sympy.  Instead of returning a NumPy `ndarray` when users query
-for fields, the `__getitem__` selector on the data objects will return a
-`YTArray`, a subclass of `ndarray`.  This preserves `ndarray`'s array
-operations, including broadcasting, views, deep and shallow copies, and all the
-nice properties of `ndarray`.  Additonally, `YTArray` has a `sympy`_ object
-attached to it that tracks units associated with each value in the array.  This
-is encoded in the `__repr__` method of `YTArray`::
+for fields, the `__getitem__` selector on data objects will return a `YTArray`,
+a subclass of `ndarray`.  This preserves `ndarray`'s array operations,
+including broadcasting, views, deep and shallow copies, and all the nice
+properties of `ndarray`.  Additonally, `YTArray` has a `Unit` object attached
+to it that tracks units associated with each value in the array.  This is
+encoded in the `__repr__` method of `YTArray`::
 
   >> dd['Density']
   YTArray([  4.92775113e-31,   4.94005233e-31,   4.93824694e-31, ...,
            1.12879234e-25,   1.59561490e-25,   1.09824903e-24]) g/cm**3
 
 `YTArray` defines several user-visible member functions: `convert_to_units`,
-`convert_to_cgs`, `in_units`, and `in_cgs`.  The first two functions do in-place
-operations while the second two return copies of the original array in the new
-unit::
+`convert_to_cgs`, `in_units`, and `in_cgs`.  The first two functions do
+in-place operations while the second two return copies of the original array in
+the new unit::
 
   >> dens = dd['Density']
   >> print dens
@@ -142,25 +146,25 @@ for unitful operations is performed automatically by `sympy`_::
   [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
    1.59561490e-25   1.09824903e-24] g/cm**3
 
-We will also create a new `Quantity` class to handle scalars that are associated
-with units.  In the proposed implementation, `Quantity` is a subclass of
-`YTArray` with the additional requirement that it is limited to one element.
-`Quantity` is primarily useful for physical constants and ensures that the units are
-propogated correctly when composing quantities from arrays, physical constants,
-and unitless scalars::
+We will also create a new `Quantity` class to handle scalars that are
+associated with units.  In the proposed implementation, `Quantity` is a
+subclass of `YTArray` with the requirement that it is limited to one element.
+`Quantity` is primarily useful for physical constants and ensures that the
+units are propogated correctly when composing quantities from arrays, physical
+constants, and unitless scalars::
 
   >> from yt.utilities.physical_constants import boltzmann_constant
   >> print dd['Temperature']*boltzmann_constant
   [  1.28901607e-12   1.29145540e-12   1.29077208e-12 ...,   1.63255263e-12
    1.59992074e-12   1.40453862e-12] erg
 
-With this new capability, we will have no need for fields defined only to handle
-different units (i.e. Radius, RadiusCode, Radiuspc, etc.).  Instead, there will
-only be one definition and if a user needs the field in a different unit system,
-they can quickly convert using `convert_to_units` or `in_units`::
-  
-  add_field("MagneticEnergy",function=_MagneticEnergy,
-            units='ergs/cm**3', display_name = 'Magnetic Energy')
+With this new capability, we will have no need for fields defined only to
+handle different units (e.g. Radius, RadiusCode, Radiuspc, etc.).  Instead,
+there will only be one definition and if a user needs the field in a different
+unit system, they can quickly convert using `convert_to_units` or `in_units`::
+
+  >> add_field("MagneticEnergy",function=_MagneticEnergy,
+               units='ergs/cm**3', display_name = 'Magnetic Energy')
 
 This will also replace the way we handle cosmological units.  When the
 `StaticOutput` object is instantiated, it will create a `UnitRegistry` class
@@ -176,92 +180,184 @@ LaTeX to supply to matplotlib's mathtext parser.
 Implementation
 ==============
 
-The symbolic logic for units is contained in `yt.utilities.units`.  Most of this
-code has been ported from `dimensionful`_.  The new `Quantity` object is defined in
-`yt.utilities.quantities`. `YTArray` is in `yt.data_objects.yt_array`.
+We stick to the CGS perspective of units, which conflicts with other popular
+unit libraries (almost all SI). Because we use CGS, we have 4 base dimensions
+of ``mass``, ``length``, ``time``, and ``temperature``. All units can be
+described as combinations of these base dimensions and with a conversion factor
+to equivalent CGS units. We provide `sympy` `Symbol` objects for the 4 base dimensions. All
+other dimensions should be `sympy` `Expr` objects made up of the base dimension
+symbols and the `sympy` operation objects `Mul` and `Pow`.
 
-.. _dimensionful: https://github.com/caseywstark/dimensionful
+Let's use some common units as examples: gram (``g``), erg (``erg``), and solar
+mass per cubic megaparsec (``Msun / Mpc**3``). ``g`` is an atomic, CGS base
+unit, ``erg`` is an atomic unit in CGS, but is not a base unit, and
+``Msun/Mpc**3`` is a combination of atomic units, which are not in CGS, and one
+of them even has a prefix. The dimensions of ``g`` are ``mass`` and the cgs
+factor is ``1``. The dimensions of ``erg`` are ``mass * length**2 * time**-2``
+and the cgs factor is ``1``. The dimensions of ``Msun/Mpc**3`` are ``mass / length**3``
+and the cgs factor is about ``6.8e-41``.
+
+We will create the `UnitRegistry` class to define all valid atomic units. All unit
+registries contain a unit symbol lookup table (dict) containing the valid
+units' dimensionality and cgs conversion factor. Here is what it would look
+like with the above units::
+
+  {"g": (mass, 1.0),
+   "erg": (mass * length**2 * time**-2, 1.0),
+   "Msun": (mass, 1.98892e+33),
+   "pc": (length, 3.08568e18)}
+
+Note that we only define *atomic* units here. There should be no operations in
+the registry symbol strings. When we parse units like ``Msun/Mpc**3``, we use
+the registry just to look up the symbols. The unit system in yt knows how
+handle units like ``Mpc`` by looking up unit symbols with and without prefixes.
+The `UnitRegistry` class provides the `add` and `remove` methods which allow
+users to add and remove atomic unit definitions.
+
+We construct a ``Unit`` object by providing a string containing atomic unit
+symbols, combined with operations in Python syntax, and the registry those
+atomic unit symbols are defined in. We use `sympy`'s new parsing features to
+create the unit expression from the user-provided string. Here's how this works
+on ``Msun/Mpc**3``::
+
+  >>> from sympy.parsing.sympy_parser import parse_expr
+  >>> unit_expr = parse_expr("Msun/Mpc**3")
+  >>> from sympy.printing import print_tree
+  >>> print_tree(unit_expr)
+      Mul: Msun/Mpc**3
+      +-Symbol: Msun
+      | comparable: False
+      +-Pow: Mpc**(-3)
+        +-Symbol: Mpc
+        | comparable: False
+        +-Integer: -3
+          real: True
+          ...
+
+yt units looks up the symbols in the unit expression for matching atomic unit
+symbols in the registry. It then combines the dimensions and cgs factors of the
+atomic units using the given operations. The ``Unit`` object holds the
+``sympy`` unit expression, the ``sympy`` dimensions expression, and the cgs
+conversion factor. ``Unit`` also provides the methods
+``same_dimensions_as(other_units)`` which returns True if the other units have
+equivalent dimensions and ``get_cgs_equivalent``, which returns the equivalent
+cgs base units. ``Unit`` also defines the mul, div, pow, and eq operations with
+other unit objects.
+
+This implementation will provide three new utilities modules:
+yt.utilities.units, yt.utilities.yt_array, and yt.utilities.quantity.
+yt.utilities.units contains the base dimensions objects, some common derived
+dimensions objects, a default unit symbol LUT, the UnitRegsitry class, and the
+Unit class. yt.utilities.yt_array contains the YTArray class.
+yt.utilities.quantity contains the Quantity class.
+
+Handling code units
+-------------------
+
+Code frontend developers should add code base units to their static output. In
+the `set_units` method, developers can use self.unit_registry.add to define
+"code_mass", "code_length", and "code_time". We recommend also defining other
+common code units such as "code_velocity", "code_potential", etc. If users want
+to work in code units, they can now use::
+
+    >>> dd["density"].in_units("code_density")
+
+Handling cosmological units
+---------------------------
+
+We also want to handle comoving length units and the hubble little "h" unit. In
+StaticOutput.set_units, we implement this by checking if the simulation is
+cosmological, and if so adding those units to the dataset's unit registry.
+Comoving length unit symbols are "(length symbol)cm", like "pccm".
+
+LaTeX printing
+--------------
+
+We are still working on this design. This might require one extra element in
+the atomic unit definitions for things like "Msun -> M_{\odot}". Besides that
+sort of symbol replacement, sympy's printing function ``print_latex`` can
+handle this completely.
+
+YTArray operations
+------------------
 
 When working interactively, it is important to make sure quick workflows are
-possible.  To this end, we want to make it possible to use our new dimensionful
+possible. To this end, we want to make it possible to use our new dimensionful
 operations while still leveraging the syntactic simplicity of defining an array
-using a python list or something equally simple and straightforward.  We would
-prefer to avoid mandating that all user-defined data be a `YTArray` or a
-`Quantity`.  This means we need to define rules for ways to manipilate standard
-`ndarray`, python lists, or scalar quantities interact with the `YTArray`.  In
-the table below, we have enumerated all of the possible combinations of
-`YTArray`, `Quantity`, scalar, and `ndarray` when combined using binary and
-unary operators.  In most cases, unitful operations are well defined, however in
-cases where the unitful operations are not well defined, we raise a new
-exception, `YTBadUnitOperation`.  In cases where the decision to raise an
-exception or not is ambiguous, we define a new configuration options that users
-can set to be more or less strict for unitful operations.
+using a python list or something equally simple and straightforward. We want to
+avoid mandating that all user-defined data be a `YTArray` or `Quantity`. This
+means we need to define operations between native Python objects like float and
+lists of floats, numpy floats, numpy ndarray, and `YTArray`. In the table
+below, we have enumerated all combinations of `YTArray`, scalar (native Python
+float or np.float64), and `ndarray` in binary operations. In most cases,
+unitful operations are well defined, however in cases where the unitful
+operations are not well defined, we raise a new exception,
+`YTInvalidUnitOperation`. In case a user does not want to deal with catching
+this exception, we provide a new configuration option
+"ignore_invalid_unit_operation".
 
-+------------------------+------------------------+-------------------------------------+
-| Operation              | Combination            | Result                              |
-|                        |                        |                                     |
-+========================+========================+=====================================+
-| mul and div            | scalar, Quantity       | Quantity, unit preserved            |
-|                        +------------------------+-------------------------------------+
-|                        | scalar, YTArray        | YTArray, unit preserved             |
-|                        +------------------------+-------------------------------------+
-|                        | ndarray, YTArray       | YTArray, unit preserved             |
-|                        +------------------------+-------------------------------------+
-|                        | Quantity, YTArray      | YTArray, unit preserved             |
-+------------------------+------------------------+-------------------------------------+
-| add and sub            | scalar, Quantity       | if Quantity is dimensionless:       |
-|                        |                        |  Quantity                           |
-|                        | scalar, YTArray        | else                                |
-|                        |                        |  if ytcfg["ignore_bad_op"]:         |
-|                        | ndarray, YTArray       |   return Quantity (unit preserved)  |
-|                        |                        |  else                               |
-|                        | Quantity, YTArray      |   raise YTBadUnitOperation          |
-+------------------------+------------------------+-------------------------------------+
-| le, lt, ge, gt, eq     | (ndarray or scalar),   | if Q or Y is dimensionless:         |
-|                        | (Quantity or YTArray)  |  revert to NumPy's definition       |
-|                        |                        | else:                               |
-|                        |                        |  if ytcfg["ignore_bad_op"]:         |
-|                        |                        |   return Q or Y (unit preserved)    |
-|                        |                        |  else                               |
-|                        |                        |   raise YTBadUnitOperation          |
-|                        |                        |                                     |
-+------------------------+------------------------+-------------------------------------+
-| abs, sqrt              | Quantity               | Quantity                            |
-|                        +------------------------+-------------------------------------+
-|                        | YTArray                | YTArray                             |
-+------------------------+------------------------+-------------------------------------+
-| pow                    | Quantity, scalar       | Quantity if the scalar is the       |
-|                        |                        | exponent, otherwise raise           |
-|                        |                        | YTBadUnitOperation, unless the      |
-|                        |                        | quantity is dimensionless           |
-|                        |                        |                                     |
-|                        +------------------------+-------------------------------------+
-|                        | Quantity, YTArray      | YTBadUnitOperation, unless the      |
-|                        |                        | quantity is dimensionless           |
-|                        +------------------------+-------------------------------------+
-|                        | YTArray, scalar        | YTArray if the scalar is the        |
-|                        |                        | exponent, otherwise raise           |
-|                        |                        | YTBadUnitOperation unless the       |
-|                        |                        | YTArray is dimensionless            |
-|                        +------------------------+-------------------------------------+
-|                        | YTArray, YTArray       | YTBadUnitOperation unless the       |
-|                        |                        | exponent YTArray is dimensionless   |
-|                        +------------------------+-------------------------------------+
-|                        | Quantity, Quantity     | YTBadUnitOperation unless the       |
-|                        |                        | exponent Quantity is dimensionless  |
-|                        +------------------------+-------------------------------------+
-|                        | YTArray, ndarray       | YTBadUnitOperation unless the       |
-|                        |                        | YTArray is the exponent and it is   |
-|                        |                        | dimensionless (note)                |
-+------------------------+------------------------+-------------------------------------+
-| exp                    | YTArray or Quantity    | YTBadUnitOperation unless to        |
-|                        |                        | exponent is dimensionless           |
-+------------------------+------------------------+-------------------------------------+
++-----------+--------------------+-----------------------------------------------+
+| Operation | Combination        | Result (pseudocode)                           |
++===========+====================+===============================================+
+| mul, div  | scalar, YTArray    | YTArray, units = input_units (op) 1           |
+|           | ndarray, YTArray   |                                               |
+|           +--------------------+-----------------------------------------------+
+|           | YTArray, YTArray   | YTArray, units = left_units (op) right_units  |
++-----------+--------------------+-----------------------------------------------+
+| add, sub  | scalar, YTArray    | if YTArray is dimensionless:                  |
+|           | ndarray, YTArray   |     return YTArray                            |
+|           |                    | if ytcfg["ignore_invalid_unit_operation"]:    |
+|           |                    |     return YTArray (unit preserved)           |
+|           |                    | raise YTInvalidUnitOperation                  |
+|           +--------------------+-----------------------------------------------+
+|           | YTArray, YTArray   | if left_units same dimensions as right_units: |
+|           |                    |     return YTArray, in left_units             |
+|           |                    | else:                                         |
+|           |                    |     raise YTInvalidUnitOperation              |
++-----------+--------------------+-----------------------------------------------+
+| pow       | scalar, YTArray    | if YTArray is dimensionless:                  |
+|           | ndarray, YTArray   |     return scalar**YTArray                    |
+|           |                    | else:                                         |
+|           |                    |     raise YTInvalidUnitOperation              |
+|           +--------------------+-----------------------------------------------+
+|           | YTArray, scalar    | return YTArray**scalar (note units change)    |
+|           +--------------------+-----------------------------------------------+
+|           | YTArray, ndarray   | if YTArray is dimensionless:                  |
+|           |                    |     return YTArray**ndarray                   |
+|           |                    | raise YTInvalidUnitOperation [1]_             |
+|           +--------------------+-----------------------------------------------+
+|           | YTArray, YTArray   | if YTArray and YTArray are dimensionless:     |
+|           |                    |     return YTArray**YTArray                   |
+|           |                    | raise YTInvalidUnitOperation [1]_             |
++-----------+--------------------+-----------------------------------------------+
+| le, lt,   | scalar, YTArray    | if YTArray is dimensionless:                  |
+| ge, gt,   | ndarray, YTArray   |     return (op)                               |
+| eq        |                    | if ytcfg["ignore_invalid_unit_operation"]:    |
+|           |                    |     return YTArray (unit preserved)           |
+|           |                    | raise YTInvalidUnitOperation                  |
+|           +--------------------+-----------------------------------------------+
+|           | YTArray, YTArray   | if left_units same dimensions as right units: |
+|           |                    |     return left (op) (right in left units)    |
+|           |                    | else:                                         |
+|           |                    |     raise YTInvalidUnitOperation              |
++-----------+--------------------+-----------------------------------------------+
 
-(note) This one is a little tricky, since it is defined for ndarrays.  Technically,
-it's a well-defined unitful operation if the ndarray is the exponent.
-Unfortunately, this will make all the elements of the ndarray have different
-units, so we don't allow it in practice.
+.. [1] This one is a little tricky, since it is defined for ndarrays.
+       Technically, it's a well-defined unitful operation if the ndarray is the
+       exponent. Unfortunately, this will make all the elements of the ndarray
+       have different units, so we don't allow it in practice.
+
+Now we list the behavior of unary operations on YTArray objects.
+
++-----------+-------------------------------+
+| Operation | Result (pseudocode)           |
++===========+===============================+
+| abs, sqrt | YTArray                       |
++-----------+-------------------------------+
+| exp       | if YTArray is dimensionless:  |
+|           |     return exp(YTArray)       |
+|           | raise YTInvalidUnitOperation  |
++-----------+-------------------------------+
 
 Testing
 =======
