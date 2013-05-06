@@ -5,17 +5,16 @@ YTEP-0011: Symbol units in yt
 Abstract
 --------
 
-Created: March 7, 2013
-Authors: Anna Rosen, Casey Stark, and Nathan Goldbaum
+| Created: March 7, 2013  
+| Authors: Casey Stark, Nathan Goldbaum, and Anna Rosen
 
 This YTEP describes adding symbolic units to yt using the `sympy`_ package. The
 main benefit is to make sure units are carried through calculations in a
 *transparent* and *intuitive* manner. The new components are:
 
- - a `Unit` class, which describes the dimensionality (mass, length, time,
-   temperature) and conversion value of any unit.
- - a `UnitRegistry` class, which defines valid unit symbols (ex: "g" for gram)
-   and their associated data (dimensionality and conversion value).
+ - a `Unit` class, which describes the dimensionality (powers of mass, length,
+   time, temperature) and conversion factor of any unit.
+ - a `UnitRegistry` class, which defines valid atomic units (ex: "g" for gram).
  - a `YTArray` class, a subclass of NumPy `ndarray` that attaches a `Unit`
    object.
  - a `Quantity` class, a subclass of `YTArray` which is restricted to a single
@@ -57,11 +56,12 @@ might look like this::
   print "Mass in code units: ", dd['CellMass']/pf['Mass']
 
 This model works well if a user always uses CGS units. If the user needs a
-quantity in a different unit system, they run into trouble.  This is illustrated
-above in the example to convert to 'solar mass' units, since this isn't a proper
-unit, the conversion isn't stored inside the `pf` dict, so a user will either
-need to import the unit definition from yt, or add their own definition to their
-script.  The situation is a little bit better for length conversions::
+quantity in a different unit system, they run into trouble.  This is
+illustrated above in the example to convert to 'solar mass' units, since this
+isn't a proper unit, the conversion isn't stored inside the `pf` dict, so a
+user will either need to import the unit definition from yt, or add their own
+definition to their script.  The situation is a little bit better for length
+conversions::
 
   dx = dd['dx']
   print "Cell dx in code units: ", dx
@@ -69,20 +69,21 @@ script.  The situation is a little bit better for length conversions::
   print "Cell dx in megaparsecs: ", dx*pf['mpc']
 
 This works pretty nicely, since all of the various length units are stored in
-the `pf` dictionary.  However, this example illustrates another problem; here `dx` is
-returned in code units, while most quantities are returned in CGS.  If we wanted
-to enforce that all quantities be returned in CGS, we would need to
-painstakingly go through the codebase, tweaking the field definitions and places
-where fields are used so that units are handled properly.  Clearly, a better
-solution is needed.
+the `pf` dictionary.  However, this example illustrates another problem; here
+`dx` is returned in code units, while most quantities are returned in CGS.  If
+we wanted to enforce that all quantities be returned in CGS, we would need to
+painstakingly go through the codebase, tweaking the field definitions and
+places where fields are used so that units are handled properly.  Clearly, a
+better solution is needed.
 
 Cosmological units are also handled in a somewhat ad hoc way.  Each of the code
 frontends need to detect that a simulation was performed using comoving units,
 and define new scaled, comoving and scaled comoving units (i.e. 'kpccm',
 'kpchcm' and 'kpch').  This encourages duplication of code in each of the
 frontends and makes likely that different frontends will ignore some of the
-cosmological units that are defined in the Enzo frontend.  Cosmological units
-are also not labeled correctly in plots.
+cosmological units that are defined in the Enzo frontend. In addition, this is
+not documented in the frontend docs, making it easier for newly supported codes
+to miss this. Cosmological units are also not labeled correctly in plots.
 
 To ensure units to display nicely on plots, the unit definition is
 currently encoded as a raw string in LaTeX format::
@@ -182,11 +183,13 @@ Implementation
 
 We stick to the CGS perspective of units, which conflicts with other popular
 unit libraries (almost all SI). Because we use CGS, we have 4 base dimensions
-of ``mass``, ``length``, ``time``, and ``temperature``. All units can be
-described as combinations of these base dimensions and with a conversion factor
-to equivalent CGS units. We provide `sympy` `Symbol` objects for the 4 base dimensions. All
-other dimensions should be `sympy` `Expr` objects made up of the base dimension
-symbols and the `sympy` operation objects `Mul` and `Pow`.
+of ``mass``, ``length``, ``time``, and ``temperature``. The matching CGS base
+units are grams, centimeters, seconds, and Kelvins. All units can be described
+as combinations of these base dimensions and with a conversion factor to
+equivalent CGS units. We provide `sympy` `Symbol` objects for the 4 base
+dimensions. The dimensionality of all other units should be `sympy` `Expr`
+objects made up of the base dimension object and the `sympy` operation objects
+`Mul` and `Pow`.
 
 Let's use some common units as examples: gram (``g``), erg (``erg``), and solar
 mass per cubic megaparsec (``Msun / Mpc**3``). ``g`` is an atomic, CGS base
@@ -194,10 +197,10 @@ unit, ``erg`` is an atomic unit in CGS, but is not a base unit, and
 ``Msun/Mpc**3`` is a combination of atomic units, which are not in CGS, and one
 of them even has a prefix. The dimensions of ``g`` are ``mass`` and the cgs
 factor is ``1``. The dimensions of ``erg`` are ``mass * length**2 * time**-2``
-and the cgs factor is ``1``. The dimensions of ``Msun/Mpc**3`` are ``mass / length**3``
-and the cgs factor is about ``6.8e-41``.
+and the cgs factor is ``1``. The dimensions of ``Msun/Mpc**3`` are ``mass /
+length**3`` and the cgs factor is about ``6.8e-41``.
 
-We will create the `UnitRegistry` class to define all valid atomic units. All unit
+We use the `UnitRegistry` class to define all valid atomic units. All unit
 registries contain a unit symbol lookup table (dict) containing the valid
 units' dimensionality and cgs conversion factor. Here is what it would look
 like with the above units::
@@ -208,11 +211,12 @@ like with the above units::
    "pc": (length, 3.08568e18)}
 
 Note that we only define *atomic* units here. There should be no operations in
-the registry symbol strings. When we parse units like ``Msun/Mpc**3``, we use
-the registry just to look up the symbols. The unit system in yt knows how
-handle units like ``Mpc`` by looking up unit symbols with and without prefixes.
-The `UnitRegistry` class provides the `add` and `remove` methods which allow
-users to add and remove atomic unit definitions.
+the registry symbol strings. When we parse non-atomic units like
+``Msun/Mpc**3``, we use the registry just to look up the symbols. The unit
+system in yt knows how handle units like ``Mpc`` by looking up unit symbols
+with and without prefixes and modify the conversion factor appropriately. The
+`UnitRegistry` class provides the `add` and `remove` methods which allow users
+to add and remove atomic unit definitions.
 
 We construct a ``Unit`` object by providing a string containing atomic unit
 symbols, combined with operations in Python syntax, and the registry those
@@ -243,6 +247,16 @@ conversion factor. ``Unit`` also provides the methods
 equivalent dimensions and ``get_cgs_equivalent``, which returns the equivalent
 cgs base units. ``Unit`` also defines the mul, div, pow, and eq operations with
 other unit objects.
+
+The `YTArray` class works by tacking a Unit object onto an ndarray instance.
+Besides the conversion methods already listed, most of the implementation of
+YTArray depends on defining all the operations on YTArray instances. We want to
+preserve the normal ndarray operations, while getting the correct units on the
+resulting `YTArray` (be it in-place or a copy). The proper way to handle
+operations on ndarray subclasses is explained in the numpy docs page,
+`Subclassing
+ndarray<http://docs.scipy.org/doc/numpy/user/basics.subclassing.html>`_. We
+follow this approach and describe the desired behavior in the section below.
 
 This implementation will provide three new utilities modules:
 yt.utilities.units, yt.utilities.yt_array, and yt.utilities.quantity.
