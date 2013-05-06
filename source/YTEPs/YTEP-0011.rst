@@ -254,9 +254,10 @@ YTArray depends on defining all the operations on YTArray instances. We want to
 preserve the normal ndarray operations, while getting the correct units on the
 resulting `YTArray` (be it in-place or a copy). The proper way to handle
 operations on ndarray subclasses is explained in the numpy docs page,
-`Subclassing
-ndarray<http://docs.scipy.org/doc/numpy/user/basics.subclassing.html>`_. We
-follow this approach and describe the desired behavior in the section below.
+`subclassing ndarray`_. We follow this approach and describe the desired
+behavior in the section below.
+
+.. _subclassing ndarray: http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 
 This implementation will provide three new utilities modules:
 yt.utilities.units, yt.utilities.yt_array, and yt.utilities.quantity.
@@ -310,51 +311,51 @@ operations are not well defined, we raise a new exception,
 this exception, we provide a new configuration option
 "ignore_invalid_unit_operation".
 
-+-----------+--------------------+-----------------------------------------------+
-| Operation | Combination        | Result (pseudocode)                           |
-+===========+====================+===============================================+
-| mul, div  | scalar, YTArray    | YTArray, units = input_units (op) 1           |
-|           | ndarray, YTArray   |                                               |
-|           +--------------------+-----------------------------------------------+
-|           | YTArray, YTArray   | YTArray, units = left_units (op) right_units  |
-+-----------+--------------------+-----------------------------------------------+
-| add, sub  | scalar, YTArray    | if YTArray is dimensionless:                  |
-|           | ndarray, YTArray   |     return YTArray                            |
-|           |                    | if ytcfg["ignore_invalid_unit_operation"]:    |
-|           |                    |     return YTArray (unit preserved)           |
-|           |                    | raise YTInvalidUnitOperation                  |
-|           +--------------------+-----------------------------------------------+
-|           | YTArray, YTArray   | if left_units same dimensions as right_units: |
-|           |                    |     return YTArray, in left_units             |
-|           |                    | else:                                         |
-|           |                    |     raise YTInvalidUnitOperation              |
-+-----------+--------------------+-----------------------------------------------+
-| pow       | scalar, YTArray    | if YTArray is dimensionless:                  |
-|           | ndarray, YTArray   |     return scalar**YTArray                    |
-|           |                    | else:                                         |
-|           |                    |     raise YTInvalidUnitOperation              |
-|           +--------------------+-----------------------------------------------+
-|           | YTArray, scalar    | return YTArray**scalar (note units change)    |
-|           +--------------------+-----------------------------------------------+
-|           | YTArray, ndarray   | if YTArray is dimensionless:                  |
-|           |                    |     return YTArray**ndarray                   |
-|           |                    | raise YTInvalidUnitOperation [1]_             |
-|           +--------------------+-----------------------------------------------+
-|           | YTArray, YTArray   | if YTArray and YTArray are dimensionless:     |
-|           |                    |     return YTArray**YTArray                   |
-|           |                    | raise YTInvalidUnitOperation [1]_             |
-+-----------+--------------------+-----------------------------------------------+
-| le, lt,   | scalar, YTArray    | if YTArray is dimensionless:                  |
-| ge, gt,   | ndarray, YTArray   |     return (op)                               |
-| eq        |                    | if ytcfg["ignore_invalid_unit_operation"]:    |
-|           |                    |     return YTArray (unit preserved)           |
-|           |                    | raise YTInvalidUnitOperation                  |
-|           +--------------------+-----------------------------------------------+
-|           | YTArray, YTArray   | if left_units same dimensions as right units: |
-|           |                    |     return left (op) (right in left units)    |
-|           |                    | else:                                         |
-|           |                    |     raise YTInvalidUnitOperation              |
-+-----------+--------------------+-----------------------------------------------+
++-----------+--------------------+-------------------------------------------------+
+| Operation | Combination        | Result (pseudocode)                             |
++===========+====================+=================================================+
+| mul, div  | scalar, YTArray    | | YTArray, units = input_units (op) 1           |
+|           | ndarray, YTArray   |                                                 |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | YTArray, units = left_units (op) right_units  |
++-----------+--------------------+-------------------------------------------------+
+| add, sub  | scalar, YTArray    | | if YTArray is dimensionless:                  |
+|           | ndarray, YTArray   | |     return YTArray                            |
+|           |                    | | if ytcfg["ignore_invalid_unit_operation"]:    |
+|           |                    | |     return YTArray (unit preserved)           |
+|           |                    | | raise YTInvalidUnitOperation                  |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | if left_units same dimensions as right_units: |
+|           |                    | |     return YTArray, in left_units             |
+|           |                    | | else:                                         |
+|           |                    | |     raise YTInvalidUnitOperation              |
++-----------+--------------------+-------------------------------------------------+
+| pow       | scalar, YTArray    | | if YTArray is dimensionless:                  |
+|           | ndarray, YTArray   | |     return scalar**YTArray                    |
+|           |                    | | else:                                         |
+|           |                    | |     raise YTInvalidUnitOperation              |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, scalar    | | return YTArray**scalar (note units change)    |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, ndarray   | | if YTArray is dimensionless:                  |
+|           |                    | |     return YTArray**ndarray                   |
+|           |                    | | raise YTInvalidUnitOperation [1]_             |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | if YTArray and YTArray are dimensionless:     |
+|           |                    | |     return YTArray**YTArray                   |
+|           |                    | | raise YTInvalidUnitOperation [1]_             |
++-----------+--------------------+-------------------------------------------------+
+| le, lt,   | scalar, YTArray    | | if YTArray is dimensionless:                  |
+| ge, gt,   | ndarray, YTArray   | |     return (op)                               |
+| eq        |                    | | if ytcfg["ignore_invalid_unit_operation"]:    |
+|           |                    | |     return YTArray (unit preserved)           |
+|           |                    | | raise YTInvalidUnitOperation                  |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | if left_units same dimensions as right units: |
+|           |                    | |     return left (op) (right in left units)    |
+|           |                    | | else:                                         |
+|           |                    | |     raise YTInvalidUnitOperation              |
++-----------+--------------------+-------------------------------------------------+
 
 .. [1] This one is a little tricky, since it is defined for ndarrays.
        Technically, it's a well-defined unitful operation if the ndarray is the
@@ -363,15 +364,15 @@ this exception, we provide a new configuration option
 
 Now we list the behavior of unary operations on YTArray objects.
 
-+-----------+-------------------------------+
-| Operation | Result (pseudocode)           |
-+===========+===============================+
-| abs, sqrt | YTArray                       |
-+-----------+-------------------------------+
-| exp       | if YTArray is dimensionless:  |
-|           |     return exp(YTArray)       |
-|           | raise YTInvalidUnitOperation  |
-+-----------+-------------------------------+
++-----------+---------------------------------+
+| Operation | Result (pseudocode)             |
++===========+=================================+
+| abs, sqrt | YTArray                         |
++-----------+---------------------------------+
+| exp       | | if YTArray is dimensionless:  |
+|           | |     return exp(YTArray)       |
+|           | | raise YTInvalidUnitOperation  |
++-----------+---------------------------------+
 
 Testing
 =======
