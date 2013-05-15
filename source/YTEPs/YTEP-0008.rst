@@ -169,8 +169,8 @@ releases to a developer community is much smaller.
 Version Release Date
 ======= ============
 3.0a1   2013-03-15
-3.0a2   2013-05-15
-3.0a3   2013-06-15
+3.0a2   2013-06-01
+3.0a3   2013-07-15
 ======= ============ 
 
 This YTEP will be updated as milestones are met and the development trajectory
