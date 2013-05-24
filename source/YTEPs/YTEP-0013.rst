@@ -1,0 +1,169 @@
+YTEP-0013: Deposited Particle Fields
+====================================
+
+Abstract
+--------
+Created: April 25, 2013
+
+Author: Chris Moody, Matthew Turk, Britton Smith, Doug Rudd, Sam Leitner
+
+The majority of the yt codebase is currently built around Eulerian, grid 
+or cell-like quantities. In order to use particle quantities, we typically
+have to deposit particles and essentially make them look like fluid quantities.
+This YTEP details the suggest deposition process, how to implement it,
+how to extend and subclass it, and suggested syntax.
+
+This should improve particle support for Octrees and SPH codes dramatically,
+and extend particle deposition syntax for grid-patch codes.
+
+Note that while this covers initial implementation of particle deposition, that
+deposition does *not* include smoothing kernels that utilize extended regions
+outside of the target region.  SPH smoothing kernel implementations will be
+defiend in a subsequent YTEP.
+
+Status
+------
+
+Accepted: an implementation has been written, tested and included.
+
+Project Management Links
+------------------------
+
+Pull request this was conducted inside:
+
+ * https://bitbucket.org/yt_analysis/yt-3.0/pull-request/32/implement-initial-spatial-chunking-for/diff
+
+Detailed Description
+--------------------
+
+Particle Deposition in yt 2.x
++++++++++++++++++++++++++++++
+
+Currently, particle deposition for grid-patch codes works by 
+querying particle fields and supplying them to a routine like 
+CIC_Deposit3. It is non-trivial to extend this CIC function 
+to octree codes but essential to making SPH codes interoperable
+with the yt codebase.
+
+
+Proposed Syntax
++++++++++++++++
+
+The names of deposited fields can be user-defined, and thus are not explicitly
+restricted. However, as having a deposited fields becomes more common in the yt
+framework and libraries begin to expect and depend on particular names, 
+we do suggest that field names are prefixed with ``deposit_``. This 
+indicates that the returned array is shaped like a fluid field and not
+particle-shaped.  This is distinct from ``gas`` as we may have conflicting or
+overlapping field definitions.
+
+Example Deposited Field
++++++++++++++++++++++++
+
+Below is example particle deposition field defined in Python::
+
+    @derived_field(name = "deposit_particle_count",
+                   validators=[ValidateSpatial()])
+    def particle_count(field, data):
+        pos = np.column_stack([data["particle_position_%s" % ax]
+                               for ax in 'xyz'])
+        return data.deposit(pos, method = "count")
+
+Changes to Frontend Code
+++++++++++++++++++++++++
+
+We exploit the fact that the octree frontends share a common
+base class ``OctreeSubset(YTSelectionContainer)`` to create a common
+function ``deposit()``. The patch-based codes have an analogous 
+``AMRGridPatch(YTSelectionContainer)``. The deposition is passed
+the particle positions, the particle fields required, and the
+deposition method: ``deposit(positions, field = None, method = None)``.
+The deposit function uses ``method`` to lookup a Cython 
+``ParticleDepositOperation`` class in ``particle_deposit.pyx``. This class
+defines the deposition procedure in three steps, which ``deposit`` calls 
+sequentially. The first ``ParticleDepositOperation`` member function 
+is ``initialize`` which allocates the memory
+required to hold temporary arrays for the deposition of particles into
+grids or octs. Extra temporary arrays are useful when a reduction of data
+must occur after the we have looped through all particles. The next step
+is either ``process_octree`` or ``process_grid`` where we loop over all
+particles, find the oct or cell in an octree or grid (respectively). Once
+found, we call ``process(dims, left_edge, dds, 0, pos, field_vals)`` which
+relates a single particle, its associated cell, and the incremental deposited
+value. The last step ``finalize`` reduces the data from the temporary arrays
+and return an oct-shaped or grid-shaped array. 
+This organization allows us to seperate the particle lookup along in a
+grid or oct tree from the deposition operation we would like to perform. 
+
+Example Cython Code
++++++++++++++++++++
+
+Below we include an example of the base particle deposit class with 
+most of the Cython type definitions removed for legibility::
+
+    cdef class ParticleDepositOperation:
+        def initialize(self, *args): raise NotImplementedError
+        def finalize(self, *args): raise NotImplementedError
+        def process_octree(self, octree, dom_ind, positions, fields = None):
+            for i in range(positions.shape[0]):
+                oct = octree.get(pos, &oi)
+                offset = dom_ind[oct.ind]
+                self.process(dims, oi.left_edge, oi.dds,
+                             offset, pos, field_vals)
+        def process_grid(self, gobj, positions,fields = None):
+            for i in range(positions.shape[0]):
+                for j in range(3):
+                    pos[j] = positions[i, j]
+                self.process(dims, left_edge, dds, 0, pos, field_vals)
+        def process(self, *args): raise NotImplementedError
+
+Below we subclass the template above to deposit a particle count,
+taking care to override ``initialize``, ``process`` and ``finalize``
+but leaving grid traversal in ``process_octree/grid`` alone, ensuring
+that this will work with grid and octree codes::
+
+    cdef class CountParticles(ParticleDepositOperation):
+        def initialize(self):
+            self.ocount = np.zeros(self.nvals, dtype="float64")
+            cdef np.ndarray arr = self.ocount
+            self.count = <np.float64_t*> arr.data
+        @cython.cdivision(True)
+        cdef void process(self, int dim[3],left_edge[3], dds[3], offset, 
+                          ppos[3], *fields):
+            cdef int ii[3], i
+            for i in range(3):
+                ii[i] = <int>((ppos[i] - left_edge[i])/dds[i])
+            self.count[gind(ii[0], ii[1], ii[2], dim) + offset] += 1
+        def finalize(self):
+            return self.ocount
+
+Using the templates and organizational scheme proposed here, one can
+define fields with arbitrary particle selections (e.g. young stars),
+perform arbitrary accumulations (e.g. count, sum, or std),
+loops over all of the particles multiple times, and switch between
+cloud-in-cell, SPH smoothing kernel, or simple direct deposition.
+
+Future SPH Kernel
++++++++++++++++++
+
+This process will be utilized in the future to conduct smoothing kernel
+operations.  This will require two operations:
+
+ * Iteration over the Octs, rather than the particles, and selection of
+   particles based on proximity to an Oct
+ * An octree selector that has lee-way in its selection of particles; i.e.,
+   particles can be fed in as having a ``dx`` that allows them to be selected
+   by octs within which they do not directly reside.
+
+We may find that this specific operation is too slow for applying the smoothing
+kernel, in which case other options will be explored.
+
+Backwards Compatibility
+-----------------------
+
+This has no backwards incompatible changes.
+
+Alternatives
+------------
+
+We were unable to identify any.
