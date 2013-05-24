@@ -16,10 +16,22 @@ how to extend and subclass it, and suggested syntax.
 This should improve particle support for Octrees and SPH codes dramatically,
 and extend particle deposition syntax for grid-patch codes.
 
+Note that while this covers initial implementation of particle deposition, that
+deposition does *not* include smoothing kernels that utilize extended regions
+outside of the target region.  SPH smoothing kernel implementations will be
+defiend in a subsequent YTEP.
+
 Status
 ------
 
-Currently Testing Implementation
+Accepted: an implementation has been written, tested and included.
+
+Project Management Links
+------------------------
+
+Pull request this was conducted inside:
+
+ * https://bitbucket.org/yt_analysis/yt-3.0/pull-request/32/implement-initial-spatial-chunking-for/diff
 
 Detailed Description
 --------------------
@@ -41,23 +53,21 @@ The names of deposited fields can be user-defined, and thus are not explicitly
 restricted. However, as having a deposited fields becomes more common in the yt
 framework and libraries begin to expect and depend on particular names, 
 we do suggest that field names are prefixed with ``deposit_``. This 
-indicates that the returned array is particle-shaped, and not grid-shaped or 
-octree-shaped. Note that this
-means that the field type (e.g. ``stars`` or ``gas``) no longer guarantees that 
-the returned array is a certain shape.  
-
+indicates that the returned array is shaped like a fluid field and not
+particle-shaped.  This is distinct from ``gas`` as we may have conflicting or
+overlapping field definitions.
 
 Example Deposited Field
 +++++++++++++++++++++++
 
-Below as example particle deposition field defined in Python::
+Below is example particle deposition field defined in Python::
 
-    @derived_field(name = "particle_count", validators=[ValidateSpatial()])
+    @derived_field(name = "deposit_particle_count",
+                   validators=[ValidateSpatial()])
     def particle_count(field, data):
         pos = np.column_stack([data["particle_position_%s" % ax]
                                for ax in 'xyz'])
         return data.deposit(pos, method = "count")
-
 
 Changes to Frontend Code
 ++++++++++++++++++++++++
@@ -87,6 +97,7 @@ grid or oct tree from the deposition operation we would like to perform.
 
 Example Cython Code
 +++++++++++++++++++
+
 Below we include an example of the base particle deposit class with 
 most of the Cython type definitions removed for legibility::
 
@@ -110,6 +121,7 @@ Below we subclass the template above to deposit a particle count,
 taking care to override ``initialize``, ``process`` and ``finalize``
 but leaving grid traversal in ``process_octree/grid`` alone, ensuring
 that this will work with grid and octree codes::
+
     cdef class CountParticles(ParticleDepositOperation):
         def initialize(self):
             self.ocount = np.zeros(self.nvals, dtype="float64")
@@ -130,3 +142,28 @@ define fields with arbitrary particle selections (e.g. young stars),
 perform arbitrary accumulations (e.g. count, sum, or std),
 loops over all of the particles multiple times, and switch between
 cloud-in-cell, SPH smoothing kernel, or simple direct deposition.
+
+Future SPH Kernel
++++++++++++++++++
+
+This process will be utilized in the future to conduct smoothing kernel
+operations.  This will require two operations:
+
+ * Iteration over the Octs, rather than the particles, and selection of
+   particles based on proximity to an Oct
+ * An octree selector that has lee-way in its selection of particles; i.e.,
+   particles can be fed in as having a ``dx`` that allows them to be selected
+   by octs within which they do not directly reside.
+
+We may find that this specific operation is too slow for applying the smoothing
+kernel, in which case other options will be explored.
+
+Backwards Compatibility
+-----------------------
+
+This has no backwards incompatible changes.
+
+Alternatives
+------------
+
+We were unable to identify any.
