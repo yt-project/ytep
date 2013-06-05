@@ -84,12 +84,14 @@ implemented:
     the count of cells within a given data object.
   * ``_chunk_io(self, dobj)``: this function should yield a series of
     ``YTDataChunk`` objects that have been ordered and created to consolidate IO.
-  * ``_chunk_spatial(self, dobj, ngz, sort = None)``: this should yield a
+  * ``_chunk_spatial(self, dobj, ngz, sort = None, preload = None)``: this should yield a
     series of ``YTDataChunk`` objects which have been created to allow for
     spatial access of the data.  For grids, this means 3D objects, and for
     Octs the behavior is undefined but should be 3D or possibly a string of 3D
     objects.  This is where ghost zone generation will occur, although that
-    has not yet been implemented.
+    has not yet been implemented.  Optionally, the chunk request can also
+    provide a "hint" to the chunking system of which fields will be necessary.
+    This is discussed below.
   * ``_chunk_all(self, dobj)``: this should yield a single chunk that contains
     the entire data object.
 
@@ -147,6 +149,71 @@ I haven't gotten into yet.)
 Essentially, by making the method of subsetting and striding over
 subsetted data more compartmentalized, the code becomes more clear and
 more maintainable.
+
+Field Preloading
+----------------
+
+A common problem with the current chunking system is the problem of preloading
+for data access for spatial fields.  For instance, inside the field generation
+system, this construction is used:
+
+.. code-block:: python
+
+   for io_chunk in self.chunks([], "io"):
+       for i,chunk in enumerate(self.chunks(field, "spatial", ngz = 0)):
+
+At this point in the system, a single field is being generated and all of the
+dependencies for that field can be calculated using
+`_identify_field_dependencies`, but this is not done.  The chunking will first
+break into IO chunks, and then iterate over those chunks in a spatial chunk.
+This results in IO not being conducted on the IO chunks, but instead on each
+individual spatial chunk.  For octree datasets, this is not typically that bad,
+as a spatial chunk there can consist of many items.  However, for patch-based
+datasets (particularly Enzo and the current FLASH implementation) this results
+in far more fine-grained IO access than we want.  As an example, this would not
+allow any batching of IO inside HDF5 files, despite already ordering the access
+to the spatial data in that appropriate order.  When depositing particles in
+Enzo, for instance, this results in a single access to every single grid for
+each particle deposition operation.
+
+For non-spatial fields, IO chunking is typically quite effective and
+appropriate for patch datasets.
+
+To remedy this, we need to construct a language for preloading within an IO
+chunk.  This would necessitate the creation of a ``_io_cache`` attribute
+on ``YTDataChunk``, which would be populated *inside* the ``_chunk_io`` loop,
+if hinting is available.  ``_read_fluid_fields`` and ``_read_particle_fields``
+would then inspect the chunk they are passed, and for any fields that are
+requested, if they are inside the ``_io_cache`` dict (or dict subclass) those
+values would be returned.
+
+As an example implementation, the ``GridGeometryHandler`` base class would
+define a ``_preload`` method for lists of grid objects.  When
+``_chunk_spatial`` is called, it would check if the given chunk type is of type
+``io``.  If so, it would call the geometry handler's ``_preload_subchunks``
+method on that chunk.  ``_preload`` would load the fields inside
+``chunk.objs``, and receive in return a dict-of-dicts, keyed first with the
+``grid.id`` and second with the fields read.  As the ``YTDataChunks`` of type
+``spatial`` are yielded by ``_chunk_spatial``, they would each be populated
+with the fields for the specific spatial chunk.  This would then avoid calling
+the IO routines for each spatial chunk, and instead allow efficient preloading
+of data.
+
+This would change the loop above to look something like this:
+
+.. code-block:: python
+
+   field_deps = self._identify_dependencies(field)
+   for io_chunk in self.chunks([], "io"):
+       for i,chunk in enumerate(self.chunks(field, "spatial", ngz = 0,
+                                            preload = field_deps)):
+
+This should result in much more efficient IO operations as IO for spatial
+fields will be able to be consolidated.  As they are currently implemented,
+Octrees would likely not need this improvement, and so they will not need to
+have this implemented.  However, all frontends may ultimately benefit from
+this, as it could trivially be extended to keep all data resident in memory for
+situations where many passes over a small amount of data are necessary.
 
 Backwards Compatibility
 -----------------------
