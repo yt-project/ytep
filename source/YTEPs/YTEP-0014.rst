@@ -78,7 +78,8 @@ Here is an example filter that would accomplish the filtering task shown above:
 
    add_particle_filter("finest_particles",
         function = finest_particles,
-        requires=[("all","ParticleMassMsun")])
+        filtered_type = "all",
+        requires=["ParticleMassMsun"])
 
    ds = load("DD0040/DD0040")
    sp = ds.h.sphere("max", (1.0, 'mpc'))
@@ -89,7 +90,8 @@ However, more complex filters could be defined as well, relying on additional
 fields.  Furthermore, a side-effect of  future particle field definitions being
 generated for specific particle types (described in issue 598) would be that
 any particle filters defined would also have any particle derived fields added
-on a per-particle-type basis added automatically.
+on a per-particle-type basis added automatically.  The addition of field
+definitions will occur during the creation of derived fields.
 
 Note that we do explicitly specify field dependences in these particle types.
 This may cause issues, as derived fields will first need to be identified, then
@@ -97,6 +99,9 @@ particle filters, then any derived fields for those new ad-hoc particle types
 will be added.  This will require some refactoring of field detection methods,
 which will overall serve to improve the reliability of the code base and field
 detection mechanisms.
+
+Derived fields based on filtered particles are not currently available; only
+derived fields that work on the filtered particle type will be available.
 
 Adding this filtering mechanism will also considerably simplify the Enzo
 frontend, as currently the Enzo frontend defines several different methods for
@@ -114,14 +119,16 @@ dataset will be added and applied.
        return filter
    add_particle_filter("star", 
         function = finest_particles,
-        requires = [("all", "creation_time")])
+        filtered_type = "all",
+        requires = ["creation_time"])
 
    def star_particle_type(pfilter, data):
        filter = data["all", "particle_type"] == 2
        return filter
    add_particle_filter("star",
         function = star_particle_type,
-        requires = [("all", "particle_type")])
+        filtered_type = "all",
+        requires = ["particle_type"])
 
 The correct filter will be identified and added to a dataset.
 
@@ -135,7 +142,9 @@ fields, in that a hierarchy of filtering databases will be available.  The base
 or universal filters will be available across codes (suitable, for instance, in
 direct cross-code comparison) and then frontend-specific filters can be
 created.  This will enable degeneracies of field names and so on to be
-eliminated.  
+eliminated.  The first implementation will require manual calling of
+``add_particle_filter`` on ``StaticOutput`` subclasses *before* instantiation
+of a hierarchy.
 
 However, unlike derived fields, because these filters define actual new
 particle types, they will not by-default be applied universally, but instead
