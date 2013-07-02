@@ -130,7 +130,13 @@ dataset will be added and applied.
         filtered_type = "all",
         requires = ["particle_type"])
 
-The correct filter will be identified and added to a dataset.
+The correct filter will be identified and added to a dataset.  Filters are
+distinct from types in the sense that types have a fast-path that can be passed
+down to IO functions; for instance, this may be because particles are stored in
+a separate location or IO routines are able to quickly identify those particles
+that are able to be loaded.  Filters are better thought of as a set of generic
+validation and selection routines, where those filters are difficult or
+impossible to pass into the IO routines in a general way.
 
 Since this is a multi-map to filter names, we will not be able to store filters
 in a dict-like object, or we will at the very least have to return a list of
