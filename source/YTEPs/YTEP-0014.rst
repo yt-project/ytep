@@ -24,6 +24,7 @@ There has been some disucssion of this in YTEP-0013 and its pull request.
 
   * https://bitbucket.org/yt_analysis/ytep/pull-request/15/ytep-0013-first-class-deposited-particle/diff
   * https://ytep.readthedocs.org/en/latest/YTEPs/YTEP-0013.html
+  * https://bitbucket.org/yt_analysis/yt-3.0/pull-request/59/
 
 Detailed Description
 --------------------
