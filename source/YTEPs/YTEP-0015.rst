@@ -1,0 +1,158 @@
+YTEP-0015: Transfer Function Refactor 
+=====================================
+
+Abstract
+--------
+
+Created: August 13, 2013
+Author: Sam Skillman 
+
+This YTEP proposes a fundamental change in the way transfer functions are 
+constructed, modified, and implemented.  The overall goal is to decrease the
+overhead and difficulty in constructing high-quality transfer functions and 
+displaying their current state to the user.
+
+Status
+------
+
+Status should be one of the following:
+
+ #. Proposed
+ #. In Progress
+
+YTEPs do not need to pass through every stage.
+
+Project Management Links
+------------------------
+
+PR Under Development:
+https://bitbucket.org/yt_analysis/yt/pull-request/538/transfer-function-helper/diff
+
+
+Detailed Description
+--------------------
+
+Transfer functions are currently:
+  * Fragile  -- to log/linear, ranges, field swapping
+  * Complex  -- must have prior knowledge of data to construct valid TF
+  * Difficult to Design -- User must guess where interesting features will be.
+
+The aim of this refactoring is to alleviate these three problems.  To do so, we
+will implement several helper functions that are automate many of the actions
+that are commonly used during the design process of the transfer function. 
+Several operations may be costly, and thus will not be done automatically but
+rather upon request by the user.
+
+This splits up the TransferFunction into two pieces -- the TransferFunction and
+TransferFunctionData.  The former encompasses all the user-facing API in terms
+of designing and modifying a transfer function, and the latter contains the 
+data needed by the volume renderer.
+
+Suggested TF Structure:
+
+.. code-block:: python
+
+    class TransferFunctionData(object):
+        """
+        Contains the data used by the Camera to actually do the volume
+        rendering.  Not accessed by the user in most circumstances.  This
+        contains most of what the TransferFunction used to be.
+        """
+
+    class TransferFunction(object):
+        def __init__(self, data_source=None):
+            self.data_source = data_source
+            self.pf = self.data_source.pf
+            self.rgb_field = None
+            self.bounds = None
+            self.alpha_field = None
+            self._valid = False
+            self.transfer_function_data = None
+        
+        def smart_build(self):
+            """ 
+            Automatically set up best guess bounds, and run initial 1D 
+                profiling of given field. We could make this as automatic
+                or not as we want.
+            """
+            pass
+
+        def set_field(self, field):
+            """
+            Sets the rgb channel to be linked to a given field, invalidating
+            the current profiles/ranges if different than current field.
+            """
+            if field == self.rgb_field: 
+                return
+            self._valid = False
+            assert (field in self.pf.h.field_list)
+            self.rgb_field = field
+
+        def _get_field_bounds(self):
+            return self.data_source.quantities['Extrema'](self.field)[0]
+
+        def set_bounds(self, bounds=None):
+            if bounds is None:
+                bounds = self._get_field_bounds()
+            # Do error checking on log/linear state of rendering.
+            self.bounds = bounds
+
+        def _get_1D_field_histogram(self):
+            """
+            Calculates 1D profile (in mass/volume/count) of current field to
+            aid in placement of transfer function features.
+            """
+            pass
+
+        def plot/show/display(self):
+            """
+            plots, shows, or displays current TF based on how the user is 
+            interacting with yt.  This could save an image to tf_tmp.png,
+            display in an interactive matplotlib backend, display in an IPython 
+            notebook, or directly interact with the user's visual cortex.
+            """
+
+        # add in all the transfer function modifiers here (gaussians, layers,
+        # ramps, map_to_colormap, etc.)
+
+        def set_log(self, log=True):
+            self.log = log
+
+        def clear(self):
+            """Clears out the channel values, but leaves the bounds intact"""
+            pass
+
+        def _get_tf_data(self):
+            """
+            This is what the Cameras call to get the TF information.  This does
+            error checking to make sure the transfer function is valid."""
+            if not self._valid:
+                # Rebuild TransferFunctionData
+                pass
+            return self.transfer_function_data
+
+After this is implemented, the usage pattern I would see would be something
+like:
+
+.. code-block:: python
+
+    tf = TransferFunction(pf.h.all_data())
+    tf.set_field('Density')
+    tf.smart_build() #<--- maybe another name like: auto_build or auto_awesome
+    tf.display()  #<--- Should we make this automatically display if possible?
+
+    cam.set_transfer_function(tf) #<---- links a camera to this tf.
+    # Alternatively we could have done tf = cam.transfer_function and modified
+    # the camera's tf directly.'
+
+    tf.set_log(True) # <--- invalidates the TF
+    tf.do_whatever_modifications(...)
+    cam.snapshot()
+
+
+Backwards Compatibility
+-----------------------
+
+This change will break backwards compatibility with how old TransferFunctions
+were constructed.
+
