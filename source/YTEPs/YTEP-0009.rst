@@ -17,7 +17,7 @@ Status
 
 Status should be one of the following:
 
- #. In Progress
+ #. Implemented in yt-3.0 PR77
 
 YTEPs do not need to pass through every stage.
 
@@ -30,6 +30,10 @@ https://bitbucket.org/samskillman/yt/commits/all/tip/..bookmark%28%22camera-refa
 
 There is a Camera refactor YTEP-0010 that is closely related to the AMRKDTree 
 functional changes suggested in this YTEP.
+
+
+This has been implemented as of:
+https://bitbucket.org/yt_analysis/yt-3.0/pull-request/77/add-legitimate-source-rendering-using-a/diff
 
 
 Detailed Description
