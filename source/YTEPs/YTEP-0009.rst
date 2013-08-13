@@ -116,8 +116,11 @@ Alternatives
   * Wait until rendering is ready in yt-3.0, which will also likely demand
     a breakage of API.
 
-My only reasoning for breaking things for the 2.6+ release is that it is
-a simplification and I've already started using it with great success.  I'm
-also hopeful that this simplification is along the same lines of the idea of
-a simplified volume rendering scene object, as outlined in YTEP-0010.
+After discussion, it was found to be easiest to only implement in yt-3.0, as 
+it is increasingly difficult to manage the two versions and how they handle 
+grids.  Since in yt-3.0 there are explicit mask objects in the pf.h.blocks 
+generator, it was significantly easier than expected to implement the mask
+on the PartitionedGrid object.  I'm also hopeful that this simplification is
+along the same lines of the idea of a simplified volume rendering scene object,
+as outlined in YTEP-0010.
 
