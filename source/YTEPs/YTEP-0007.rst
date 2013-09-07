@@ -16,10 +16,10 @@ integration system.
 Status
 ------
 
-In Progress: A basic implementation has been created, which now needs to be
-modified and changed in accordance with this YTEP.
+Completed
 
-The code can be seen in ``http://bitbucket.org/xarthisius/yt-validation``.
+CI server is running at ``http://tests.yt-project.org``. 
+Scripts used in validation process are stored in ``http://bitbucket.org/xarthisius/yt-validation``.
 
 Project Management Links
 ------------------------
