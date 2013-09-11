@@ -1,0 +1,149 @@
+YTEP-0016: Volume Traversal
+===========================
+
+Abstract
+--------
+
+Created: September 10, 2013
+Author: Matthew Turk
+
+yt should consider volume traversal, accumulation of data, and flexible
+definitions of paths to be first-class operations as well as implementable by
+individuals.  Essentially, we need a method for describing "derived values for
+volumes".
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+There are currently no project management links.  However, some work at
+generalizing volume traversal for cylindrical coordinates can be see in hash
+f4aa69acae57.
+
+Detailed Description
+--------------------
+
+Currently, the only mechanisms for studying or understanding data in yt are
+contained in the following procedures:
+
+ * Derived quantities (generating scalars from fields in volumes)
+ * Derived fields (generating fields from other fields)
+ * Contour identification
+ * Ray casting (on or off axis; i.e., projections or volume rendering)
+ * Streamlines
+ * Contour identification
+ * Surface extraction
+
+Several of these items utilize brick decomposition, but not all.  This is the
+process by which overlapping grids are broken apart until a full tesselation of
+the domain (or data source) is created with no overlaps.  This is done by the
+kD-tree decomposition.
+
+What this YTEP proposes is to make handling bricks of data first class, as well
+as provide easy mechanisms for creating volume traversal mechanisms.  There are
+two components to this: handling bricks of data, and creating fast methods for
+passing through the data and moving between bricks.
+
+Note that this YTEP does not (yet) address situations where the mesh of the
+simulation is too large to fit into memory on a single node; this will be
+addressed at a later time through coarse-grained tile creation.  (i.e., per-SFC
+range in ARTIO for example.)
+
+Brick Iteration
++++++++++++++++
+
+Currently, in yt-3.0, all data objects expose a "block" iterator that returns
+data containers as well as masks of data.  A similar iterator should exist for
+iterating over the "bricks" that compose a given data object.  How this should
+behave is somewhat open for discussion, as the kD-tree itself has a notion of a
+'viewpoint traversal' which may be important.  Furthermore, it is not
+necessarily true that the traversal will be easily defined.  As an example of
+this, bricks may need to traversed according to extrema in some fluid.
+
+Most importantly, the notion of what is returned by this system needs to be
+defined.  Imagining the traversal as being initiated in something like this
+operation:
+
+.. code-block:: python
+
+   data_source = ds.h.sphere(c, (10.0, 'mpc'))
+   for brick in data_source.bricks(view_point):
+       operation(brick)
+
+The notions of what brick is and possessed need to be defined.  There are
+several options:
+
+ 1. An empty ``CoveringGrid`` that knows how to read data.
+ 2. A filled (i.e., data pre-specified) ``PartitionedGrid``, where vertex or
+    cell-centered data must be specified.
+ 3. A slice object and a grid object
+ 4. A new object, designed for this system, which acts as a superset of
+    ``PartitionedGrid``.  This object would include connectivity information as
+    well, as it would not be independent of the tree itself.  The
+    ``PartitionedGrid`` could be modified to fit this.
+
+Regardless of which object is returned, at a minimum a kD-tree (or other
+partitioning) must be created when requested, at the call to bricks,
+potentially cached, and then objects iterated over.  Each of these bricks is
+guaranteed to be the finest data available within the region they cover, and
+they are guaranteed not to overlap with any others.
+
+At the time of writing, the fourth option is the most attractive.  If the
+``PartitionedGrid`` object were to be extended, I believe it would likely be best
+to extend it as follows.  Note that for many of these operations we implicitly
+assume that it is operating on a grid patch; for octree codes, the creation of
+this object will be considerably simpler, and for particle codes we simply
+define these as the leaf nodes from the octree index itself.  Because we need
+to handle particle codes, we must also ensure that these objects can query
+particles.
+
+ * Cache a slice of the grid or data object that it operates on.  (For
+   situations where it fully encompasses the parent region, it need not have a
+   slice.)
+ * Create a mechanism for filtering particles from the data object it operates
+   on.
+ * Enable the object to query new fields from its source object.  This means
+   that at instantiation time we may not regard the object as having a given
+   field, but that this field can be added at a later time by querying.
+ * Provide a mechanism for identifying neighbor objects from a given face
+   index.  This is the connectivity relationship described above; given any one
+   cell that resides on the boundary of a brick, return the brick (which may or
+   may not be a leaf node) that is adjacent.  This would enable identifying the
+   leaf node at a given location within that boundary cell, which may reside at
+   a higher level of refinement and could thus correspond to multiply bricks.
+   This degeneracy results from the fact that we cannot guarantee that
+   neighboring bricks differ by only a single level of refinement.
+ * Provide mechanisms for generating vertex-centered data or cell-centered
+   data quickly.
+
+At the present time, a simple first-pass at implementation could occur with the
+following:
+
+ * Implement a ``bricks`` routine that mandates supplying fields to load,
+   the vertex or cell centering of data, and a viewpoint traversal scheme.
+ * Cache a kD-tree based on these bricks.
+ * Iteratively yield bricks from this tree based on the traversal specified
+   above.
+
+The interface for these bricks, at a minimum, must expose that of the
+``PartitionedGrid`` with one modification: fields should be accessible by
+``__getitem__``, so that any possible changes in the future that would expose
+this would be backwards compatible with usages now.
+
+Volume Traversal
+++++++++++++++++
+
+The second aspect of this YTEP is to define a mechanism for integrating paths
+through bricks.  Currently we do this through strick vectors that cannot be
+re-entrant into a grid.
+
+Backwards Compatibility
+-----------------------
+
+Alternatives
+------------
+
