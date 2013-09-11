@@ -170,8 +170,66 @@ Volume Traversal
 ++++++++++++++++
 
 The second aspect of this YTEP is to define a mechanism for integrating paths
-through bricks.  Currently we do this through strick vectors that cannot be
-re-entrant into a grid.
+through bricks.  Currently we do this through strict vectors that cannot be
+re-entrant into a grid; these vectors cannot change path along the way, and the
+number of them is fixed at the time of the first grid traversal.
+
+As currently implemented, flexibility in volume traversal is defined in terms
+of the mechanism by which values are accumulated.  This includes the definition
+of these objects, all inside ``grid_traversal.pyx``:
+
+ * ``ImageContainer``
+ * ``ImageAccumulator``
+ * ``sampler_function``
+ * Accumulator data (i.e., ``VolumeRenderAccumulator``
+
+Essentially, for a given image type, a sampler can be defined.  This sample
+receives the following arguments: ``VolumeContainer`` (a C-interface to a
+partitioned grid with ``nogil``), ``v_pos`` (vector position), ``v_dir``
+(vector direction), ``enter_t`` (cell-entrance in terms of the parameter),
+``exit_t`` (exit time based on the vector at time of entrance), ``index``
+(index into the data) and ``data``, a pointer to an accumulator (i.e.,
+``ImageAccumulator``) object.
+
+These sampler functions are called for every index that a vector traverses.
+The volumes themselves are traversed inside ``walk_volume`` (and, in the
+nascent cylindrical volume rendering bookmark, ``walk_cylindrical_volume``).
+This assumes cartesian coordinates and simply calls the ``sampler_function``
+for every zone that is crossed.  This enables volume rendering, projecting and
+so on to be conducted simply by swapping out the sampler function and correctly
+interpreting an image object returned.
+
+However, this is not sufficient for arbitrary traversals *or* arbitrary data
+collection.  We need flexibility to define the following things:
+
+ * The mechanism of traversing blocks of data (covered at a higher level by the
+   kD-tree itself, and not necessarily a part of this YTEP)
+ * Bootstrapping traversal of a volume by a given ray object.  This would
+   include identifying the zones that a ray first encounters and setting its
+   initial time of intersection.
+ * Defining a mechanism for updating the indices in the volume that a ray will
+   intersect next
+ * Defining a method for determining when a ray has left an object
+ * Defining a method for selecting the next brick to traverse or connect to
+ * Updating the value of a ray's direction
+
+Many of the problems can be seen simply by considering cylindrical volume
+rendering itself.  If the view point is somewhere outside the cylinder looking
+toward it, rays from an orthonormal image plane will each construct a chord
+through the cylindrical shells.  These chords will each span up to pi along the
+theta direction, and can have the following properties in their traversal:
+
+ * dtheta/dl can switch signs
+ * grids can be periodic with themselves
+ * dr/dl can switch signs
+ * a ray can exit a grid off the r boundary and then re-enter it *later* in the
+   computation
+ * Both dtheta/dl and dr/dl change with each update of the ray's position, and
+   are not even constant over a single zone.
+
+While this demonstrates some of the complexity, we also want to be able to
+support translating streamlines, clump finding and even gravitational lensing
+into this new mechanism for traversing volumes.
 
 Backwards Compatibility
 -----------------------
