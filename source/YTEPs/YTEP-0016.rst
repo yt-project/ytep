@@ -49,9 +49,11 @@ two components to this: handling bricks of data, and creating fast methods for
 passing through the data and moving between bricks.
 
 Note that this YTEP does not (yet) address situations where the mesh of the
-simulation is too large to fit into memory on a single node; this will be
-addressed at a later time through coarse-grained tile creation.  (i.e., per-SFC
-range in ARTIO for example.)
+simulation is too large to fit into memory on a single node.  Because the
+kD-tree is able to build in parallel, this essentially will amount to
+distributing regions of the dataset (where the mesh may not be known) to
+individual processors, allowing build on those processors, and enabling
+individuals to describe reduction steps in their operators.
 
 Brick Iteration
 +++++++++++++++
@@ -64,18 +66,43 @@ behave is somewhat open for discussion, as the kD-tree itself has a notion of a
 necessarily true that the traversal will be easily defined.  As an example of
 this, bricks may need to traversed according to extrema in some fluid.
 
-Most importantly, the notion of what is returned by this system needs to be
-defined.  Imagining the traversal as being initiated in something like this
-operation:
+Traversal Orders
+~~~~~~~~~~~~~~~~
+
+The order that bricks are returned to the individual should be flexible and
+extensible.  A few predefined orders should be implemented:
+
+ * Depth-first traversal
+ * View-point traversal
+ * Breadth-first traversal
+
+Additionally, these should allow for front-to-back or back-to-front yielding.
+An example API for this would be:
 
 .. code-block:: python
 
    data_source = ds.h.sphere(c, (10.0, 'mpc'))
-   for brick in data_source.bricks(view_point):
+   for brick in data_source.bricks.depth_traverse():
        operation(brick)
 
-The notions of what brick is and possessed need to be defined.  There are
-several options:
+By default, ``depth_traverse()`` would also be exposed for simply iterating
+over the ``bricks`` object.  Additional traversals could be extensibly defined.
+Many of these traversal *already* exist for the AMR kD-tree.  A traversal
+should be able to be defined and executed from the following set of
+information:
+
+ * kD-tree object
+ * Arguments defining the traversal itself
+ * Data-centering (optional) and fields (optional)
+
+It should yield ``PartitionedGrid`` objects.
+
+Return Values
+~~~~~~~~~~~~~
+
+Most importantly, the notion of what is returned by this system needs to be
+defined.  The notions of what brick is and possessed need to be defined.  There
+are several options:
 
  1. An empty ``CoveringGrid`` that knows how to read data.
  2. A filled (i.e., data pre-specified) ``PartitionedGrid``, where vertex or
@@ -92,7 +119,7 @@ potentially cached, and then objects iterated over.  Each of these bricks is
 guaranteed to be the finest data available within the region they cover, and
 they are guaranteed not to overlap with any others.
 
-At the time of writing, the fourth option is the most attractive.  If the
+For the purposes of this YTEP, we will assume the fourth option.  If the
 ``PartitionedGrid`` object were to be extended, I believe it would likely be best
 to extend it as follows.  Note that for many of these operations we implicitly
 assume that it is operating on a grid patch; for octree codes, the creation of
@@ -114,17 +141,22 @@ particles.
    cell that resides on the boundary of a brick, return the brick (which may or
    may not be a leaf node) that is adjacent.  This would enable identifying the
    leaf node at a given location within that boundary cell, which may reside at
-   a higher level of refinement and could thus correspond to multiply bricks.
+   a higher level of refinement and could thus correspond to multiple bricks.
    This degeneracy results from the fact that we cannot guarantee that
-   neighboring bricks differ by only a single level of refinement.
+   neighboring bricks differ by only a single level of refinement.  However,
+   because this will be defined at the Python level, rather than specifically
+   for well-defined traversal operations, this is acceptable as we should leave
+   open to the individual how to select the appropriate cell or what to do with
+   it.
  * Provide mechanisms for generating vertex-centered data or cell-centered
    data quickly.
 
 At the present time, a simple first-pass at implementation could occur with the
 following:
 
- * Implement a ``bricks`` routine that mandates supplying fields to load,
-   the vertex or cell centering of data, and a viewpoint traversal scheme.
+ * Implement a ``bricks`` routine that mandates supplying fields to cache or
+   load, the vertex or cell centering of data, and a viewpoint traversal
+   scheme.
  * Cache a kD-tree based on these bricks.
  * Iteratively yield bricks from this tree based on the traversal specified
    above.
