@@ -279,25 +279,34 @@ A base class (listed below) will form the basis for each type of traversal.
 
    class GeometryTraversal:
 
-     cdef int bootstrap_ray(self, ray_state *ray, VolumeContainer *vc):
-         # Return whether the ray hits the vc or not
-         pass
-
-     cdef int increment_ray(self, ray_state *ray, VolumeContainer *vc):
-        pass
+       # set values like domain size or whatever is necessary here
+       def __init__(self, parameter_file)
+       # Return whether the ray hits the vc or not
+       cdef int initialize_ray(self, ray_state *ray, VolumeContainer *vc) nogil
+       cdef int increment_ray(self, ray_state *ray, VolumeContainer *vc) nogil
+       cdef np.float64_t intersection(self, 
+               np.float64_t val, int axis, np.float64_t v_dir[3],
+               np.float64_t v_pos[3]) nogil
+       cdef int walk_volume(self, VolumeContainer *vc, sampler_function *sampler,
+                            ray_state *ray, np.float64_t *return_t = ?) nogil
 
     cdef 
 
 The ``ray_state`` object will be independent of the geometry, and will *always*
 refer to the cartesian state of the ray.  A given geometry traversal will set
 up the ray state (i.e., where it intersects with a volume container) and how to
-increment the ray state as zones are crossed.  The ``bootstrap_ray`` function
+increment the ray state as zones are crossed.  The ``initialize_ray`` function
 will determine the state of the ray as it first touches a brick, and will
 return 0 or 1 if the ray is inside that brick.  The ``increment_ray`` function
 will receive a ray and determine the crossing time in the parameter ``t`` that
 the ray uses as it passes through a cell.  The return value is 0 for the ray
 having left the object and 1 for the ray being within the object and the
-sampler function needing to be called.
+sampler function needing to be called.  ``intersection`` will get the position
+at which a ray intersects a given value, and ``walk_volume`` will typically be
+described in the base class and not overridden elsewhere.  Part of the level of
+abstraction is to enable ``walk_volume`` to largely be the same for each
+geometry, but enabling it to be overridden means we can use the same traversal
+for other operations such as clump finding and so on.
 
 As a first implementation, the following classes will need to be implemented:
 
