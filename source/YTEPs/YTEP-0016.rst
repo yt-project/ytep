@@ -231,9 +231,88 @@ While this demonstrates some of the complexity, we also want to be able to
 support translating streamlines, clump finding and even gravitational lensing
 into this new mechanism for traversing volumes.
 
+Therefore, we need a new mechanism that abstracts (independently) both the
+collecting or accumulating of data as well as the mechanism by which a given
+ray traverses a patch of data, whether that patch is one or several cells
+large.  In this manner we will remain neutral to the nature of the data
+container, which may be an octree, a kD-tree, or a single grid.
+
+Flow Control
+~~~~~~~~~~~~
+
+ 1. At the outermost level, bricks will be traversed in Python, and a
+    collection of rays (either in an ``ImagePlane`` or some other object) will
+    be handed each brick as it comes.
+ 2. Each ray will be "bootstrapped" onto a brick.  This will result either in a
+    traversal or an immediate return.  (At a later time we will consider fast
+    evaluation of which rays to consider.)
+ 3. Each cell traversed by the ray will be "sampled" in some way.
+ 4. The ray state (location, index, direction, etc) will be updated.
+ 5. Rays will traverse until they leave a brick.
+ 6. The next brick will be identified, either from ray positions or from the
+    traversal at the python level.
+
+Note that this does not *yet* enable a ray to request the next brick at a given
+position, which will be necessary.  However, for the purposes of this iteration
+of the YTEP, we take it as given that such communication will be defined at a
+later time, or will be handled on a ray-by-ray basis, where the iteration is
+managed for each ray individually.
+
+Objects to Manage
+~~~~~~~~~~~~~~~~~
+
+To accommodate the flow control outlined above, the following classes will need
+to be implemented, with the following specifications.  These will be in Cython.
+A base class (listed below) will form the basis for each type of traversal.
+
+.. code-block:: python
+
+   struct ray_state:
+       np.float64_t v_dir[3]
+       np.float64_t v_pos[3]
+       np.float64_t tmax[3]
+       int ind[3]
+       int step[3]
+       np.float64_t enter_t
+       np.float64_t exit_t
+       void *sdata
+
+   class GeometryTraversal:
+
+     cdef int bootstrap_ray(self, ray_state *ray, VolumeContainer *vc):
+         # Return whether the ray hits the vc or not
+         pass
+
+     cdef int increment_ray(self, ray_state *ray, VolumeContainer *vc):
+        pass
+
+    cdef 
+
+The ``ray_state`` object will be independent of the geometry, and will *always*
+refer to the cartesian state of the ray.  A given geometry traversal will set
+up the ray state (i.e., where it intersects with a volume container) and how to
+increment the ray state as zones are crossed.  The ``bootstrap_ray`` function
+will determine the state of the ray as it first touches a brick, and will
+return 0 or 1 if the ray is inside that brick.  The ``increment_ray`` function
+will receive a ray and determine the crossing time in the parameter ``t`` that
+the ray uses as it passes through a cell.  The return value is 0 for the ray
+having left the object and 1 for the ray being within the object and the
+sampler function needing to be called.
+
+As a first implementation, the following classes will need to be implemented:
+
+ * ``CartesianTraversal``
+ * ``PolarTraversal``
+ * ``CylindricalTraversal``
+
+At a later time, the ``SphericalTraversal`` object can be implemented.
+
 Backwards Compatibility
 -----------------------
+
+This should retain all backwards compatibility for cartesian systems.
 
 Alternatives
 ------------
 
+I'm not sure of any alternatives currently.
