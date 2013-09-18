@@ -1,0 +1,83 @@
+YTEP-0017: Domain-Specific Output Types
+=======================================
+
+Abstract
+--------
+
+Created: September 18, 2013
+Author: Matthew Turk and Anthony Scopatz
+
+This YTEP is designed to begin the process of generalizing
+astrophysics-specific components of yt toward applications in other domains.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+Any external links to:
+
+  * Pull requests
+  * Related issues in the bug tracker
+  * Previous implementations
+  * Mailing list discussions or Google Docs
+
+Detailed Description
+--------------------
+
+Currently, yt is extremely strongly focused on astrophysical data.  This leads
+to the inclusion of attributes such as `cosmological_simulation`,
+`current_redshift` and so on, as well as some other fundam.  Even within
+astrophysical simulations, these can be irrelevant or unnecessary.
+Furthermore, there may be attributes relevant to other domains (that transcend
+a single subclass of `StaticOutput`) that may be relevant or necessary.
+
+This concept of branding things extends even to the level of the commonly-used
+variable name `pf`, which originated within the original Enzo usage as
+shorthand for "parameter file," and the name `StaticOutput` as in contrast to
+the "streaming" movie format within Enzo.  In order to effectively move beyond
+both astro- and Enzo-centrism, the terminology, attributes, and extensibility
+of datasets should be emphasized and defined.
+
+Problematic Areas
++++++++++++++++++
+
+Domain-Specific Datasets
+++++++++++++++++++++++++
+
+Runtime Extensibility
++++++++++++++++++++++
+
+Implementation
+++++++++++++++
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Backwards Compatibility
+-----------------------
+
+This section should outline backwards compatibility issues.  In particular, it
+should focus on those issues that will appear to the main scripting API: will
+this break old scripts?  Will it break internal uses of the API?
+
+Alternatives
+------------
+
+*This section is optional.*
+
+What other means are there to accomplishing the goals of this YTEP, and why is
+this the best option?
