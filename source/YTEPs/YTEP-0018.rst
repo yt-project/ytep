@@ -1,0 +1,58 @@
+YTEP-0018: Changing dict-like access to Static Output
+=====================================================
+
+Abstract
+--------
+
+Created: September 18, 2013
+Author: Matthew Turk
+
+Currently, accessing a `StaticOutput` like a dictionary will check the
+`parameters`, `units`, `time_units` and `conversion_factors` dictionaries.
+This YTEP proposes changing it such that only `parameters` will be queried.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+Any external links to:
+
+  * Pull requests
+  * Related issues in the bug tracker
+  * Previous implementations
+  * Mailing list discussions or Google Docs
+
+Detailed Description
+--------------------
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Backwards Compatibility
+-----------------------
+
+This section should outline backwards compatibility issues.  In particular, it
+should focus on those issues that will appear to the main scripting API: will
+this break old scripts?  Will it break internal uses of the API?
+
+Alternatives
+------------
+
+*This section is optional.*
+
+What other means are there to accomplishing the goals of this YTEP, and why is
+this the best option?
