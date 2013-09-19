@@ -15,6 +15,8 @@ Status
 
 Proposed
 
+This would only be implemented in yt 3.0.
+
 Project Management Links
 ------------------------
 
@@ -29,21 +31,96 @@ Detailed Description
 --------------------
 
 Currently, yt is extremely strongly focused on astrophysical data.  This leads
-to the inclusion of attributes such as `cosmological_simulation`,
-`current_redshift` and so on, as well as some other fundam.  Even within
+to the inclusion of attributes such as ``cosmological_simulation``,
+``current_redshift`` and so on, as well as some other fundam.  Even within
 astrophysical simulations, these can be irrelevant or unnecessary.
 Furthermore, there may be attributes relevant to other domains (that transcend
-a single subclass of `StaticOutput`) that may be relevant or necessary.
+a single subclass of ``StaticOutput``) that may be relevant or necessary.
 
 This concept of branding things extends even to the level of the commonly-used
-variable name `pf`, which originated within the original Enzo usage as
-shorthand for "parameter file," and the name `StaticOutput` as in contrast to
+variable name ``pf``, which originated within the original Enzo usage as
+shorthand for "parameter file," and the name ``StaticOutput`` as in contrast to
 the "streaming" movie format within Enzo.  In order to effectively move beyond
 both astro- and Enzo-centrism, the terminology, attributes, and extensibility
 of datasets should be emphasized and defined.
 
 Problematic Areas
 +++++++++++++++++
+
+Attributes on StaticOutput
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following attributes are defined on every ``StaticOutput`` regardless of
+whether the dataset is astrophysics, cosmology, or even rectilinear cartesian
+mesh.
+
+  * ``current_time`` (note: this also is not correctly implemented for Enzo)
+  * ``domain_dimensions``
+  * ``domain_left_edge``
+  * ``domain_right_edge``
+  * ``cosmological_simulation``
+  * ``current_redshift``
+  * ``omega_lambda``
+  * ``omega_matter``
+  * ``hubble_constant``
+
+Even if ``cosmological_simulation`` is set to off, the cosmology-related
+parameters will be defined.  Additionally, the default "field type" is ``gas``,
+which is globally set and not necessarily trivial to modify.  Changing the
+units to be less astro-specific (which may not be necessary for length units)
+is part of a larger units-related discussion, rather than part of this YTEP.
+
+Additionally, ``StaticOutput`` is tied extremely strongly to a file on disk.
+Because that is largely internally-facing, changing that may not be subject to
+a YTEP, but rather a simple refactoring.
+
+Below, are a few suggested mechanisms for retaining this information as "first
+class" attributes of a given data set when appropriate, but to remove it from
+those datasets where it is not appropriate.
+
+Naming and Branding
+~~~~~~~~~~~~~~~~~~~
+
+We should consider re-naming some of the objects to better fit their broader
+position.
+
+   * ``StaticOutput`` should be renamed to ``YTDataSet``
+   * ``TimeSeriesData`` should be renamed to ``YTDataSetSeries``
+
+Currently, all datasets expose a ``.hierarchy`` attribute, shortened to ``.h``.
+This naming is a holdover from the time when Enzo ando ther patch-based AMR
+datasets were the primary data examined with yt.  However, this makes
+considerably less sense when seen in light of support of particle datasets,
+semi-structured datasets, unigrid datasets, and eventually unstructured mesh
+datasets.  What we really mean when we say ``.hierarchy`` or ``.h`` is *index*
+or *geometry*.  Currently, the ``StaticOutput`` object also possesses a
+``.geometry`` attribute, although this is a string scalar.
+
+I do not think we should replace the ``.h`` attribute wholesale, and I do not
+necessarily think that data objects should necessarily directly hang off of the
+``StaticOutput`` (or whatever it is renamed) object.  However, I do think that
+we should eliminate ``hierarchy`` in favor of something more generic that is
+more descriptive, and we should consider alternates for creating data objects.
+Regardless of what we decide on, the ``.h`` attribute should remain for the
+time being, and we should also not instantiate our indexing method until
+requested.  However, if the data objects do ultimately reside at the top level
+of the data set (i.e., ``ds.slice`` rather than ``ds.h.slice``) the index
+should still only be created on demand and this should be managed by the
+dataset class.
+
+Options:
+
+   * ``index`` conveys that this is an index of data in the object.  However,
+     this duplicates a Python attribute for lists that finds a given value.
+   * ``mesh`` is a possibility, as
+   * ``geometry`` is another possibility, although this would mean changing the
+     current ``geometry`` attribute to a different name.  We do also create a
+     ``coordinates`` attribute which is an instance of a ``CoordinateHandler``
+     on the dataset object.
+
+Depending on the specific name, we may consider renaming the
+``GeometryHandler`` object to match this, since the current name does not
+correctly reflect that it is an indexing system, not a geometric system.
 
 Domain-Specific Datasets
 ++++++++++++++++++++++++
