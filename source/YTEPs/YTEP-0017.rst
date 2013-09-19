@@ -117,6 +117,11 @@ Options:
      current ``geometry`` attribute to a different name.  We do also create a
      ``coordinates`` attribute which is an instance of a ``CoordinateHandler``
      on the dataset object.
+   * We could move the objects up to the top level, make them still available
+     via the ``.h`` attribute, and then for each specific indexing system call
+     the index something different -- ``mesh``, ``octree``, ``hierarchy``, etc.
+     This would mean that ``.h`` would remain, but ``.hierarchy`` would not,
+     and we'd move objects up a level.
 
 Depending on the specific name, we may consider renaming the
 ``GeometryHandler`` object to match this, since the current name does not
