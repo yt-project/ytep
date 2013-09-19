@@ -19,40 +19,59 @@ Proposed
 Project Management Links
 ------------------------
 
-Any external links to:
-
-  * Pull requests
-  * Related issues in the bug tracker
-  * Previous implementations
-  * Mailing list discussions or Google Docs
+There are no easily-identified project management links.  However, it should be
+noted that over the years, numerous times confusion has arisen as to what
+things like `pf["Time"]` refer to.
 
 Detailed Description
 --------------------
 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
+The conflation of parameters, conversion factors, units and so on causes an
+enormous amount of confusion.  The most common uses of this are:
 
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
+ * Length conversions such as: `1.0/pf['cm']`
+ * Accessing parameters
+ * Occasional unit conversions (typically this causes more problems than it
+   solves)
+
+However, the degeneracy that often arises between unit conversions and
+parameter access is typically quite problematic.  This proposes that we
+simplify the entire procedure to enable *only* accessing parameters.
+Alternately, we can disable *all* dict-like access, which would simplify even
+further, although this may be unintuitive as often we do want to be able to
+access (in a read-only fashion) parameters affiliated with the dataset.
+
+The difficulty in ensuring that conversions can be conducted in a separate
+manner arises from the variable conversion factors even within a given
+frontend; particularly for cosmology simulations, these conversion factors
+(length, time, etc) change over time.
+
+To implement this, we will ensure that:
+
+   1. All places that require a length unit accept a tuple.  This is nearly if
+      not completely implemented.
+   2. For a specified time (until 3.1 is released), dict-like access to the
+      `StaticOutput` object will raise a deprecation warning if the key
+      is not found in `parameters`.  This can be elevated to an exception upon
+      request by the user.
+   3. Ensure the test-suite passes.
+   4. Update all documentation and examples.
+
+By stepping into this gradually, we will follow the example set forth by the
+field refactor and enable individuals to see that the behavior is changing
+without mandating an immediate switch.
 
 Backwards Compatibility
 -----------------------
 
-This section should outline backwards compatibility issues.  In particular, it
-should focus on those issues that will appear to the main scripting API: will
-this break old scripts?  Will it break internal uses of the API?
+In 3.0, this will not break scripts; deprecation warnings *will* be issued.  In
+3.1, this will break a considerable number of scripts that rely on unit
+conversions mediated by the `StaticOutput` object.  This is very worrisome and
+will require the graduated change to disabling dict-like access.
 
 Alternatives
 ------------
 
-*This section is optional.*
-
-What other means are there to accomplishing the goals of this YTEP, and why is
-this the best option?
+We can continue allowing this behavior, but it will continue to cause confusion
+and impede progress toward a cleaner API.  Alternately, we can also disable
+*all* dict-like access to the `StaticOutput` object.
