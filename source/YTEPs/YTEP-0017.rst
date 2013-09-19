@@ -74,7 +74,10 @@ Additionally, ``StaticOutput`` is tied extremely strongly to a file on disk.
 Because that is largely internally-facing, changing that may not be subject to
 a YTEP, but rather a simple refactoring.
 
-Below, are a few suggested mechanisms for retaining this information as "first
+Finally, not all simulation types have a concept of ``domain_dimensions``, even
+if the indexing system does.  This is currently outside the scope of this YTEP.
+
+Below are a few suggested mechanisms for retaining this information as "first
 class" attributes of a given data set when appropriate, but to remove it from
 those datasets where it is not appropriate.
 
@@ -130,36 +133,130 @@ correctly reflect that it is an indexing system, not a geometric system.
 Domain-Specific Datasets
 ++++++++++++++++++++++++
 
+Because some domains will have fundamental parameters that put into context the
+data they represent, this YTEP proposes a plugin system wherein domain-specific
+plugins register themselves and specific frontends identify which plugins are
+applicable to that specific frontend.  This dual-ended handshaking helps ensure
+that plugins ensure they are applicable to a frontend, and that frontends
+identify potential plugins that work for them.
+
+A domain plugin (perhaps called ``DomainPlugin``) will operate *on* a dataset
+object, adding new attributes, but *not* new methods.  This violates common
+object-oriented philosophy and practice, but from an implementation perspective
+it seems to be the cleanest and avoiding the most meta-programming.
+
+On instantiation, a static output normally goes through these steps:
+
+   1. ``_parse_parameter_file``
+   2. ``_setup_coordinate_handler``
+   3. ``_set_units``
+   4. ``_set_derived_attrs``
+   5. ``print_key_parameters``
+   6. ``create_field_info``
+
+This YTEP would propose changing this order to:
+
+   1. ``_parse_parameter_file``
+   2. ``_setup_coordinate_handler``
+   3. ``_set_units``
+   4. ``_set_derived_attrs``
+   5. ``_apply_domain_plugins``
+   6. ``create_field_info``
+   7. ``print_key_parameters``
+
+``_apply_domain_plugins`` would iterate through the intersecting set of
+globally and frontend-specific registered domain-specific plugins, and for each
+one would call the class method: ``is_appropriate`` supplying the dataset
+object (``self``) as the only argument.  If so, the plugin would then return
+True and an instance of it would be appended to the dataset property
+``domain_plugins`` (or some other name, as this collides with ``domain_*``
+referring to simulation spatial information.)  Alternately, we could mandate an
+``_adapt_*`` method (seen below) and in the absence of such a method assume the
+plugin is blacklisted.
+
+These plugins would then, in sequence, have their ``apply`` method called with
+the dataset as the only argument.  They can then add additional attributes to
+the dataset, as well as additional key parameters to print out.  The runtime
+overhead should be negligible.
+
+This extends further to the compartmentalization of field definitions.  We
+leave that somewhat unspecified here, but domain plugins should enable the
+application of specific field objects based on runtime parameters.  This could
+mean, for instance, conversion of face-centered to cell-centered quantities,
+magnetic field analysis, nuclear decay times, and so on.  One mechanism for
+doing this would be to add field objects to the already-created ``field_info``
+object.  (This is why that step must be raised in the list.)
+
+One concern with this is that frontend-specific parameters (i.e.,
+``cosmological_simulation``) are not universal, so an adapter between the
+frontend and the plugin needs to be created.  We propose that this be required
+for each frontend by enabling plugins to call methods on the dataset.  These
+methods will be named ``_adapt_*`` where the suffix is the plugin's shortname.
+These will return dictionaries of parameters which will be rigorously checked
+for contents (i.e., preventing incorrect or incomplete information from being
+passed back.)  Plugins must define these methods.
+
+As an example, here is pseudocode for a cosmological simulation plugin:
+
+.. code-block:: python
+
+   class CosmologyPlugin(DomainPlugin):
+       domain = 'cosmology'
+
+       def __init__(self):
+           pass
+
+       @classmethod
+       def is_appropriate(cls, pf):
+           if not hasattr(pf, '_adapt_cosmology'): return None
+           rv = pf._adapt_cosmology()
+           if rv['cosmological_simulation'] == 1:
+               c = cls()
+               return c
+           return None
+
+       def apply(self, pf):
+           params = pf._adapt_cosmology()
+           pf.cosmological_simulation = rv['cosmological_simulation']
+           pf.cosmology = Cosmology()
+
+This design mechanism is somewhat open for discussion; the problems of adapting
+varying parameters and matching both the generality of the domain plugin and
+the frontend dataset provide challenges.  An alternative is to provide a
+default class method for each plugin that is used by the base dataset object to
+obtain a false value.
+
 Runtime Extensibility
 +++++++++++++++++++++
+
+These domain plugins will be extensible at runtime by specifying an additional
+list of plugins to check, by adding additional plugins to the global (and
+frontend-specific) registry, and by adding to the plugin list for each dataset
+type.
 
 Implementation
 ++++++++++++++
 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
-
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
+Much of the implementation has been described above.  However, these domain
+plugins should reside in a subdirectory of ``data_objects``, specifically named 
+``yt/data_objects/domain_plugins/`` and should be limited to one class per
+file.
 
 Backwards Compatibility
 -----------------------
 
-This section should outline backwards compatibility issues.  In particular, it
-should focus on those issues that will appear to the main scripting API: will
-this break old scripts?  Will it break internal uses of the API?
+   * The backwards compatibility of renaming is likely quite small, except for
+     those cases where names would be changed.
+   * The backwards compatibility of checking for ``cosmological_simulation``
+     would probably require additional field validation (or instead, fields
+     that are added specifically by the cosmology plugin).
+   * Changing ``TimeSeriesData`` to a new name may need to be gradually
+     introduced, retaining backwards compatibility for a while.
+   * Fixing Enzo's ``current_time`` will cause challenges for anyone who is not
+     using internal time conversion factors.  I think this number is likely
+     small.
 
 Alternatives
 ------------
 
-*This section is optional.*
-
-What other means are there to accomplishing the goals of this YTEP, and why is
-this the best option?
+We could continue with the status quo.
