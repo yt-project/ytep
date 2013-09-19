@@ -43,10 +43,10 @@ process by which overlapping grids are broken apart until a full tesselation of
 the domain (or data source) is created with no overlaps.  This is done by the
 kD-tree decomposition.
 
-What this YTEP proposes is to make handling bricks of data first class, as well
+What this YTEP proposes is to make handling tiles of data first class, as well
 as provide easy mechanisms for creating volume traversal mechanisms.  There are
-two components to this: handling bricks of data, and creating fast methods for
-passing through the data and moving between bricks.
+two components to this: handling tiles of data, and creating fast methods for
+passing through the data and moving between tiles.
 
 Note that this YTEP does not (yet) address situations where the mesh of the
 simulation is too large to fit into memory on a single node.  Because the
@@ -60,16 +60,16 @@ Brick Iteration
 
 Currently, in yt-3.0, all data objects expose a "block" iterator that returns
 data containers as well as masks of data.  A similar iterator should exist for
-iterating over the "bricks" that compose a given data object.  How this should
+iterating over the "tiles" that compose a given data object.  How this should
 behave is somewhat open for discussion, as the kD-tree itself has a notion of a
 'viewpoint traversal' which may be important.  Furthermore, it is not
 necessarily true that the traversal will be easily defined.  As an example of
-this, bricks may need to traversed according to extrema in some fluid.
+this, tiles may need to traversed according to extrema in some fluid.
 
 Traversal Orders
 ~~~~~~~~~~~~~~~~
 
-The order that bricks are returned to the individual should be flexible and
+The order that tiles are returned to the individual should be flexible and
 extensible.  A few predefined orders should be implemented:
 
  * Depth-first traversal
@@ -82,11 +82,11 @@ An example API for this would be:
 .. code-block:: python
 
    data_source = ds.h.sphere(c, (10.0, 'mpc'))
-   for brick in data_source.bricks.depth_traverse():
+   for brick in data_source.tiles.depth_traverse():
        operation(brick)
 
 By default, ``depth_traverse()`` would also be exposed for simply iterating
-over the ``bricks`` object.  Additional traversals could be extensibly defined.
+over the ``tiles`` object.  Additional traversals could be extensibly defined.
 Many of these traversal *already* exist for the AMR kD-tree.  A traversal
 should be able to be defined and executed from the following set of
 information:
@@ -114,8 +114,8 @@ are several options:
     ``PartitionedGrid`` could be modified to fit this.
 
 Regardless of which object is returned, at a minimum a kD-tree (or other
-partitioning) must be created when requested, at the call to bricks,
-potentially cached, and then objects iterated over.  Each of these bricks is
+partitioning) must be created when requested, at the call to tiles,
+potentially cached, and then objects iterated over.  Each of these tiles is
 guaranteed to be the finest data available within the region they cover, and
 they are guaranteed not to overlap with any others.
 
@@ -141,9 +141,9 @@ particles.
    cell that resides on the boundary of a brick, return the brick (which may or
    may not be a leaf node) that is adjacent.  This would enable identifying the
    leaf node at a given location within that boundary cell, which may reside at
-   a higher level of refinement and could thus correspond to multiple bricks.
+   a higher level of refinement and could thus correspond to multiple tiles.
    This degeneracy results from the fact that we cannot guarantee that
-   neighboring bricks differ by only a single level of refinement.  However,
+   neighboring tiles differ by only a single level of refinement.  However,
    because this will be defined at the Python level, rather than specifically
    for well-defined traversal operations, this is acceptable as we should leave
    open to the individual how to select the appropriate cell or what to do with
@@ -154,14 +154,14 @@ particles.
 At the present time, a simple first-pass at implementation could occur with the
 following:
 
- * Implement a ``bricks`` routine that mandates supplying fields to cache or
+ * Implement a ``tiles`` routine that mandates supplying fields to cache or
    load, the vertex or cell centering of data, and a viewpoint traversal
    scheme.
- * Cache a kD-tree based on these bricks.
- * Iteratively yield bricks from this tree based on the traversal specified
+ * Cache a kD-tree based on these tiles.
+ * Iteratively yield tiles from this tree based on the traversal specified
    above.
 
-The interface for these bricks, at a minimum, must expose that of the
+The interface for these tiles, at a minimum, must expose that of the
 ``PartitionedGrid`` with one modification: fields should be accessible by
 ``__getitem__``, so that any possible changes in the future that would expose
 this would be backwards compatible with usages now.
@@ -170,7 +170,7 @@ Volume Traversal
 ++++++++++++++++
 
 The second aspect of this YTEP is to define a mechanism for integrating paths
-through bricks.  Currently we do this through strict vectors that cannot be
+through tiles.  Currently we do this through strict vectors that cannot be
 re-entrant into a grid; these vectors cannot change path along the way, and the
 number of them is fixed at the time of the first grid traversal.
 
@@ -240,7 +240,7 @@ container, which may be an octree, a kD-tree, or a single grid.
 Flow Control
 ~~~~~~~~~~~~
 
- 1. At the outermost level, bricks will be traversed in Python, and a
+ 1. At the outermost level, tiles will be traversed in Python, and a
     collection of rays (either in an ``ImagePlane`` or some other object) will
     be handed each brick as it comes.
  2. Each ray will be "bootstrapped" onto a brick.  This will result either in a
