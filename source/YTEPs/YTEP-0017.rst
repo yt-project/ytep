@@ -76,6 +76,9 @@ a YTEP, but rather a simple refactoring.
 
 Finally, not all simulation types have a concept of ``domain_dimensions``, even
 if the indexing system does.  This is currently outside the scope of this YTEP.
+The domain left and right edges also do not always matter for particle
+simulations (except in non-outflow boundary conditions) but are still always
+relevant to the indexing system.
 
 Below are a few suggested mechanisms for retaining this information as "first
 class" attributes of a given data set when appropriate, but to remove it from
@@ -84,11 +87,12 @@ those datasets where it is not appropriate.
 Naming and Branding
 ~~~~~~~~~~~~~~~~~~~
 
-We should consider re-naming some of the objects to better fit their broader
-position.
+Objects will be renamed:
 
-   * ``StaticOutput`` should be renamed to ``YTDataSet``
-   * ``TimeSeriesData`` should be renamed to ``YTDataSetSeries``
+   * ``StaticOutput`` will be renamed to ``Dataset``
+   * ``TimeSeriesData`` will be renamed to ``DatasetSeries`` and will no longer
+     exclusively refer to a time-related set of data, but instead include
+     arbitrary collections of datasets.
 
 Currently, all datasets expose a ``.hierarchy`` attribute, shortened to ``.h``.
 This naming is a holdover from the time when Enzo ando ther patch-based AMR
@@ -119,13 +123,18 @@ Options:
    * ``geometry`` is another possibility, although this would mean changing the
      current ``geometry`` attribute to a different name.  We do also create a
      ``coordinates`` attribute which is an instance of a ``CoordinateHandler``
-     on the dataset object.
+     on the dataset object.  As long as any conditional that is modified based
+     on the content of the *string* ``geometry`` is updated to examine the
+     ``object`` named ``geometry``, we can replace this.
    * We could move the objects up to the top level, make them still available
      via the ``.h`` attribute, and then for each specific indexing system call
      the index something different -- ``mesh``, ``octree``, ``hierarchy``, etc.
      This would mean that ``.h`` would remain, but ``.hierarchy`` would not,
      and we'd move objects up a level.
 
+Upon discussion, it seems that the best option is the third, wherein we create
+a ``geometry`` object (aliased to ``h`` for now, possibly forever) that
+replaces the ``geometry`` attribute and all previous checks on ``geometry``.
 Depending on the specific name, we may consider renaming the
 ``GeometryHandler`` object to match this, since the current name does not
 correctly reflect that it is an indexing system, not a geometric system.
@@ -225,6 +234,11 @@ varying parameters and matching both the generality of the domain plugin and
 the frontend dataset provide challenges.  An alternative is to provide a
 default class method for each plugin that is used by the base dataset object to
 obtain a false value.
+
+As noted during discussion, plugins can and should subclass each other.  How
+this interfaces with which plugin in the order of resolution is not yet clear,
+as (for instance) the base class should not necessarily modify an attribute
+when the subclass would then override.
 
 Runtime Extensibility
 +++++++++++++++++++++
