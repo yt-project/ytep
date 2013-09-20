@@ -13,19 +13,17 @@ astrophysics-specific components of yt toward applications in other domains.
 Status
 ------
 
-Proposed
+Proposed and in completed.
 
 This would only be implemented in yt 3.0.
 
 Project Management Links
 ------------------------
 
-Any external links to:
+The first phase pull request, which is contingent on this being accepted, is
+here:
 
-  * Pull requests
-  * Related issues in the bug tracker
-  * Previous implementations
-  * Mailing list discussions or Google Docs
+  * https://bitbucket.org/yt_analysis/yt-3.0/pull-request/96/rename-generic-objects/diff
 
 Detailed Description
 --------------------
@@ -110,34 +108,14 @@ we should eliminate ``hierarchy`` in favor of something more generic that is
 more descriptive, and we should consider alternates for creating data objects.
 Regardless of what we decide on, the ``.h`` attribute should remain for the
 time being, and we should also not instantiate our indexing method until
-requested.  However, if the data objects do ultimately reside at the top level
-of the data set (i.e., ``ds.slice`` rather than ``ds.h.slice``) the index
-should still only be created on demand and this should be managed by the
-dataset class.
+requested.
 
-Options:
+The resolution decided upon during discussion has been:
 
-   * ``index`` conveys that this is an index of data in the object.  However,
-     this duplicates a Python attribute for lists that finds a given value.
-   * ``mesh`` is a possibility, as
-   * ``geometry`` is another possibility, although this would mean changing the
-     current ``geometry`` attribute to a different name.  We do also create a
-     ``coordinates`` attribute which is an instance of a ``CoordinateHandler``
-     on the dataset object.  As long as any conditional that is modified based
-     on the content of the *string* ``geometry`` is updated to examine the
-     ``object`` named ``geometry``, we can replace this.
-   * We could move the objects up to the top level, make them still available
-     via the ``.h`` attribute, and then for each specific indexing system call
-     the index something different -- ``mesh``, ``octree``, ``hierarchy``, etc.
-     This would mean that ``.h`` would remain, but ``.hierarchy`` would not,
-     and we'd move objects up a level.
-
-Upon discussion, it seems that the best option is the third, wherein we create
-a ``geometry`` object (aliased to ``h`` for now, possibly forever) that
-replaces the ``geometry`` attribute and all previous checks on ``geometry``.
-Depending on the specific name, we may consider renaming the
-``GeometryHandler`` object to match this, since the current name does not
-correctly reflect that it is an indexing system, not a geometric system.
+ * Eliminate the ``hierarchy`` object as a name.  ``geometry`` seems to be the
+   most popular for what the ``GeometryHandler`` object does.
+ * Retain the ``h`` attribute as an alias (for now, possibly forever)
+ * Move data objects up to the top level of ``Dataset``.
 
 Domain-Specific Datasets
 ++++++++++++++++++++++++
