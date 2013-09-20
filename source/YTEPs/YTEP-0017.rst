@@ -91,6 +91,7 @@ Objects will be renamed:
    * ``TimeSeriesData`` will be renamed to ``DatasetSeries`` and will no longer
      exclusively refer to a time-related set of data, but instead include
      arbitrary collections of datasets.
+   * Instead of ``pf`` as shorthand, we will use ``ds``.
 
 Currently, all datasets expose a ``.hierarchy`` attribute, shortened to ``.h``.
 This naming is a holdover from the time when Enzo ando ther patch-based AMR
