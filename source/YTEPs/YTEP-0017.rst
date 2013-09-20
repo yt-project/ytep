@@ -144,12 +144,12 @@ Domain-Specific Datasets
 
 Because some domains will have fundamental parameters that put into context the
 data they represent, this YTEP proposes a plugin system wherein domain-specific
-plugins register themselves and specific frontends identify which plugins are
+"contexts" register themselves and specific frontends identify which plugins are
 applicable to that specific frontend.  This dual-ended handshaking helps ensure
 that plugins ensure they are applicable to a frontend, and that frontends
 identify potential plugins that work for them.
 
-A domain plugin (perhaps called ``DomainPlugin``) will operate *on* a dataset
+A domain plugin (called ``DomainContext``) will operate *on* a dataset
 object, adding new attributes, but *not* new methods.  This violates common
 object-oriented philosophy and practice, but from an implementation perspective
 it seems to be the cleanest and avoiding the most meta-programming.
@@ -169,16 +169,16 @@ This YTEP would propose changing this order to:
    2. ``_setup_coordinate_handler``
    3. ``_set_units``
    4. ``_set_derived_attrs``
-   5. ``_apply_domain_plugins``
+   5. ``_apply_domain_contexts``
    6. ``create_field_info``
    7. ``print_key_parameters``
 
-``_apply_domain_plugins`` would iterate through the intersecting set of
+``_apply_domain_contexts`` would iterate through the intersecting set of
 globally and frontend-specific registered domain-specific plugins, and for each
 one would call the class method: ``is_appropriate`` supplying the dataset
 object (``self``) as the only argument.  If so, the plugin would then return
 True and an instance of it would be appended to the dataset property
-``domain_plugins`` (or some other name, as this collides with ``domain_*``
+``domain_contexts`` (or some other name, as this collides with ``domain_*``
 referring to simulation spatial information.)  Alternately, we could mandate an
 ``_adapt_*`` method (seen below) and in the absence of such a method assume the
 plugin is blacklisted.
@@ -189,7 +189,7 @@ the dataset, as well as additional key parameters to print out.  The runtime
 overhead should be negligible.
 
 This extends further to the compartmentalization of field definitions.  We
-leave that somewhat unspecified here, but domain plugins should enable the
+leave that somewhat unspecified here, but domain contexts should enable the
 application of specific field objects based on runtime parameters.  This could
 mean, for instance, conversion of face-centered to cell-centered quantities,
 magnetic field analysis, nuclear decay times, and so on.  One mechanism for
@@ -200,12 +200,12 @@ One concern with this is that frontend-specific parameters (i.e.,
 ``cosmological_simulation``) are not universal, so an adapter between the
 frontend and the plugin needs to be created.  We propose that this be required
 for each frontend by enabling plugins to call methods on the dataset.  These
-methods will be named ``_adapt_*`` where the suffix is the plugin's shortname.
+methods will be named ``_adapt_*`` where the suffix is the contexts's shortname.
 These will return dictionaries of parameters which will be rigorously checked
 for contents (i.e., preventing incorrect or incomplete information from being
 passed back.)  Plugins must define these methods.
 
-As an example, here is pseudocode for a cosmological simulation plugin:
+As an example, here is pseudocode for a cosmological simulation context:
 
 .. code-block:: python
 
@@ -230,12 +230,12 @@ As an example, here is pseudocode for a cosmological simulation plugin:
            pf.cosmology = Cosmology()
 
 This design mechanism is somewhat open for discussion; the problems of adapting
-varying parameters and matching both the generality of the domain plugin and
+varying parameters and matching both the generality of the domain context and
 the frontend dataset provide challenges.  An alternative is to provide a
-default class method for each plugin that is used by the base dataset object to
+default class method for each context that is used by the base dataset object to
 obtain a false value.
 
-As noted during discussion, plugins can and should subclass each other.  How
+As noted during discussion, context can and should subclass each other.  How
 this interfaces with which plugin in the order of resolution is not yet clear,
 as (for instance) the base class should not necessarily modify an attribute
 when the subclass would then override.
@@ -243,7 +243,7 @@ when the subclass would then override.
 Runtime Extensibility
 +++++++++++++++++++++
 
-These domain plugins will be extensible at runtime by specifying an additional
+These domain context will be extensible at runtime by specifying an additional
 list of plugins to check, by adding additional plugins to the global (and
 frontend-specific) registry, and by adding to the plugin list for each dataset
 type.
@@ -253,7 +253,7 @@ Implementation
 
 Much of the implementation has been described above.  However, these domain
 plugins should reside in a subdirectory of ``data_objects``, specifically named 
-``yt/data_objects/domain_plugins/`` and should be limited to one class per
+``yt/data_objects/domain_contexts/`` and should be limited to one class per
 file.
 
 Backwards Compatibility
@@ -263,7 +263,7 @@ Backwards Compatibility
      those cases where names would be changed.
    * The backwards compatibility of checking for ``cosmological_simulation``
      would probably require additional field validation (or instead, fields
-     that are added specifically by the cosmology plugin).
+     that are added specifically by the cosmology context).
    * Changing ``TimeSeriesData`` to a new name may need to be gradually
      introduced, retaining backwards compatibility for a while.
    * Fixing Enzo's ``current_time`` will cause challenges for anyone who is not
