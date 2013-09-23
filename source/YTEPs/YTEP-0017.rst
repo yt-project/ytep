@@ -92,6 +92,7 @@ Objects will be renamed:
      exclusively refer to a time-related set of data, but instead include
      arbitrary collections of datasets.
    * Instead of ``pf`` as shorthand, we will use ``ds``.
+   * Renaming ``GeometryHandler`` to ``Index``
 
 Currently, all datasets expose a ``.hierarchy`` attribute, shortened to ``.h``.
 This naming is a holdover from the time when Enzo ando ther patch-based AMR
@@ -116,6 +117,9 @@ The resolution decided upon during discussion has been:
  * Eliminate the ``hierarchy`` object as a name.  ``geometry`` seems to be the
    most popular for what the ``GeometryHandler`` object does.
  * Retain the ``h`` attribute as an alias (for now, possibly forever)
+ * Each dataset will have an ``index`` property which will be a ``GridIndex``,
+   ``OctIndex`` etc etc.  This is essentially the same as the ``Hierarchy``
+   attribute.
  * Move data objects up to the top level of ``Dataset``.
 
 Domain-Specific Datasets
