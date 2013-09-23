@@ -53,6 +53,11 @@ collections of data to live internal to the individual implementations of
 ``GeometryHandler`` objects.  This way, Grids can still batch based on Grid
 information, but this abstraction is not needed for Octree IO.
 
+Note that YTEP-0017 redefines ``GeometryHandler`` to ``Index`` -- this reflects
+the fact that the process of data selection and IO is better thought of as a
+process of indexing, and that any subsequent operations should be conducted at
+a higher level.
+
 Main Changes
 ++++++++++++
 
@@ -84,14 +89,14 @@ implemented:
     the count of cells within a given data object.
   * ``_chunk_io(self, dobj)``: this function should yield a series of
     ``YTDataChunk`` objects that have been ordered and created to consolidate IO.
-  * ``_chunk_spatial(self, dobj, ngz, sort = None, preload = None)``: this should yield a
-    series of ``YTDataChunk`` objects which have been created to allow for
-    spatial access of the data.  For grids, this means 3D objects, and for
-    Octs the behavior is undefined but should be 3D or possibly a string of 3D
-    objects.  This is where ghost zone generation will occur, although that
-    has not yet been implemented.  Optionally, the chunk request can also
-    provide a "hint" to the chunking system of which fields will be necessary.
-    This is discussed below.
+  * ``_chunk_spatial(self, dobj, ngz, sort = None, preload_fields = None)``:
+    this should yield a series of ``YTDataChunk`` objects which have been
+    created to allow for spatial access of the data.  For grids, this means 3D
+    objects, and for Octs the behavior is undefined but should be 3D or
+    possibly a string of 3D objects.  This is where ghost zone generation will
+    occur, although that has not yet been implemented.  Optionally, the chunk
+    request can also provide a "hint" to the chunking system of which fields
+    will be necessary.  This is discussed below.
   * ``_chunk_all(self, dobj)``: this should yield a single chunk that contains
     the entire data object.
 
@@ -180,24 +185,13 @@ For non-spatial fields, IO chunking is typically quite effective and
 appropriate for patch datasets.
 
 To remedy this, we need to construct a language for preloading within an IO
-chunk.  This would necessitate the creation of a ``_io_cache`` attribute
-on ``YTDataChunk``, which would be populated *inside* the ``_chunk_io`` loop,
+chunk.  This would necessitate the creation of a ``_field_cache`` attribute
+on ``DataContainer``, which would be populated *inside* the ``_chunk_io`` loop,
 if hinting is available.  ``_read_fluid_fields`` and ``_read_particle_fields``
 would then inspect the chunk they are passed, and for any fields that are
-requested, if they are inside the ``_io_cache`` dict (or dict subclass) those
-values would be returned.
-
-As an example implementation, the ``GridGeometryHandler`` base class would
-define a ``_preload`` method for lists of grid objects.  When
-``_chunk_spatial`` is called, it would check if the given chunk type is of type
-``io``.  If so, it would call the geometry handler's ``_preload_subchunks``
-method on that chunk.  ``_preload`` would load the fields inside
-``chunk.objs``, and receive in return a dict-of-dicts, keyed first with the
-``grid.id`` and second with the fields read.  As the ``YTDataChunks`` of type
-``spatial`` are yielded by ``_chunk_spatial``, they would each be populated
-with the fields for the specific spatial chunk.  This would then avoid calling
-the IO routines for each spatial chunk, and instead allow efficient preloading
-of data.
+requested, if they are inside the ``_field_cache`` dict (or dict subclass)
+those values would be returned.  This is managed by the ``_activate_cache``
+method.
 
 This would change the loop above to look something like this:
 
@@ -206,7 +200,7 @@ This would change the loop above to look something like this:
    field_deps = self._identify_dependencies(field)
    for io_chunk in self.chunks([], "io"):
        for i,chunk in enumerate(self.chunks(field, "spatial", ngz = 0,
-                                            preload = field_deps)):
+                                            preload_fields = field_deps)):
 
 This should result in much more efficient IO operations as IO for spatial
 fields will be able to be consolidated.  As they are currently implemented,
