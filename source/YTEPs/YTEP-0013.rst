@@ -21,6 +21,10 @@ deposition does *not* include smoothing kernels that utilize extended regions
 outside of the target region.  SPH smoothing kernel implementations will be
 defiend in a subsequent YTEP.
 
+Furthermore, we note that this describes fundamentally an interface between the
+particles and an *index*.  For eulerian codes, the index corresponds to the
+fluids; however, for SPH and N-body systems, this is not the case.
+
 Status
 ------
 
@@ -51,18 +55,20 @@ Proposed Syntax
 
 The names of deposited fields can be user-defined, and thus are not explicitly
 restricted. However, as having a deposited fields becomes more common in the yt
-framework and libraries begin to expect and depend on particular names, 
-we do suggest that field names are prefixed with ``deposit_``. This 
-indicates that the returned array is shaped like a fluid field and not
-particle-shaped.  This is distinct from ``gas`` as we may have conflicting or
-overlapping field definitions.
+framework and libraries begin to expect and depend on particular names,
+we suggest that field names are written as ``("deposit", "pname_poperation")``
+where ``pname`` is the name of the particle type and ``poperation`` is some
+semantically-meaningful description of the operation.  ``deposit`` is defined
+as a fluid type in all frontends.  This indicates that the returned array is
+shaped like a fluid field and not particle-shaped.  This is distinct from
+``gas`` as we may have conflicting or overlapping field definitions.
 
 Example Deposited Field
 +++++++++++++++++++++++
 
 Below is example particle deposition field defined in Python::
 
-    @derived_field(name = "deposit_particle_count",
+    @derived_field(name = ("deposit", "particle_count"),
                    validators=[ValidateSpatial()])
     def particle_count(field, data):
         pos = np.column_stack([data["particle_position_%s" % ax]
@@ -146,8 +152,8 @@ cloud-in-cell, SPH smoothing kernel, or simple direct deposition.
 Future SPH Kernel
 +++++++++++++++++
 
-This process will be utilized in the future to conduct smoothing kernel
-operations.  This will require two operations:
+A process very similar to this will be utilized in the future to conduct
+smoothing kernel operations.  This will require two operations:
 
  * Iteration over the Octs, rather than the particles, and selection of
    particles based on proximity to an Oct
@@ -157,6 +163,9 @@ operations.  This will require two operations:
 
 We may find that this specific operation is too slow for applying the smoothing
 kernel, in which case other options will be explored.
+
+An initial implementation of this operation is contained in
+``yt/geometry/particle_smooth.pyx``.
 
 Backwards Compatibility
 -----------------------
