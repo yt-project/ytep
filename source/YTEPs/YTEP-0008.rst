@@ -174,7 +174,7 @@ Version Release Date
 3.0a2   2013-06-01
 3.0a3   2013-07-15
 3.0a4   2013-10-15
-3.0     3014-01-01
+3.0     2014-01-01
 ======= ============ 
 
 This YTEP will be updated as milestones are met and the development trajectory
