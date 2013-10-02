@@ -39,6 +39,15 @@ We can implement this either through not importing into the main namespace
 items we do not want to include, or by explicitly enumerating the items to
 include in an ``__all__`` attribute.
 
+A few comments on specific items:
+
+ * ``TransferFunction`` classes have been removed and we should investigate
+   other ways of exposing them.  One option would be importing the module
+   ``transfer_functions`` and accessing attributes.
+ * ``HaloFinder`` has been removed, so a new method for setting up this process
+   easily and transparently (perhaps with amods) is needed.
+ * ``add_grad`` should probably have a new name.
+
 
 ======================================   =======================================
 Object                                   Include
@@ -61,7 +70,7 @@ Object                                   Include
 ``ChomboFieldInfo``                      No
 ``ChomboStaticOutput``                   No
 ``ClumpContourCallback``                 No
-``ColorTransferFunction``                Yes
+``ColorTransferFunction``                No
 ``ContourCallback``                      No
 ``CoordAxesCallback``                    No
 ``CuttingQuiverCallback``                No
@@ -83,7 +92,7 @@ Object                                   Include
 ``GadgetHDF5StaticOutput``               No
 ``GadgetStaticOutput``                   No
 ``GridBoundaryCallback``                 No
-``HaloFinder``                           Yes
+``HaloFinder``                           No
 ``HomogenizedVolume``                    No
 ``HopCircleCallback``                    No
 ``HopParticleCallback``                  No
@@ -114,7 +123,7 @@ Object                                   Include
 ``ParallelProgressBar``                  No
 ``ParticleCallback``                     No
 ``ParticleTrajectoryCollection``         No
-``PlanckTransferFunction``               Yes
+``PlanckTransferFunction``               No
 ``PlotCallback``                         No
 ``PlotCollection``                       Yes
 ``PlotCollectionInteractive``            Yes
@@ -122,7 +131,7 @@ Object                                   Include
 ``PlutoStaticOutput``                    No
 ``PointAnnotateCallback``                No
 ``ProjectionPlot``                       Yes
-``ProjectionTransferFunction``           Yes
+``ProjectionTransferFunction``           No
 ``PyneMoabHex8StaticOutput``             No
 ``QuiverCallback``                       No
 ``RAMSESFieldInfo``                      No
@@ -202,7 +211,7 @@ Object                                   Include
 ``add_flash_field``                      No
 ``add_gadget_field``                     No
 ``add_gdf_field``                        No
-``add_grad``                             No
+``add_grad``                             Yes
 ``add_moab_field``                       No
 ``add_nyx_field``                        No
 ``add_orion_field``                      No
@@ -219,14 +228,14 @@ Object                                   Include
 ``apply_colormap``                       Yes
 ``available_analysis_modules``           Yes
 ``axis_names``                           Yes
-``bb_apicall``                           Yes
+``bb_apicall``                           No
 ``cPickle``                              No
 ``callback_registry``                    No
 ``ceil``                                 No
 ``cls``                                  No
 ``contextlib``                           No
 ``data_object_registry``                 No
-``defaultdict``                          Yes
+``defaultdict``                          No
 ``deprecate``                            No
 ``derived_field``                        Yes
 ``ensure_dir_exists``                    No
@@ -266,7 +275,7 @@ Object                                   Include
 ``mylog``                                Yes
 ``na``                                   No
 ``name``                                 No
-``np``                                   No
+``np``                                   Yes
 ``numpy``                                No
 ``off_axis_projection``                  Yes
 ``only_on_root``                         Yes
@@ -297,7 +306,7 @@ Object                                   Include
 ``signal_ipython``                       No
 ``signal_print_traceback``               No
 ``signal_problem``                       No
-``simulation``                           No
+``simulation``                           Yes
 ``struct``                               No
 ``subprocess``                           No
 ``sys``                                  No
