@@ -9,7 +9,7 @@ Author: Matthew Turk
 
 Currently, accessing a `StaticOutput` like a dictionary will check the
 `parameters`, `units`, `time_units` and `conversion_factors` dictionaries.
-This YTEP proposes changing it such that only `parameters` will be queried.
+This YTEP proposes changing it such that *no* dictionaries will be queried.
 
 Status
 ------
@@ -36,10 +36,10 @@ enormous amount of confusion.  The most common uses of this are:
 
 However, the degeneracy that often arises between unit conversions and
 parameter access is typically quite problematic.  This proposes that we
-simplify the entire procedure to enable *only* accessing parameters.
-Alternately, we can disable *all* dict-like access, which would simplify even
-further, although this may be unintuitive as often we do want to be able to
-access (in a read-only fashion) parameters affiliated with the dataset.
+simplify the entire procedure to disable all dict-like access, and ensure that
+individuals access ``.parameters`` explicitly.  This may be unintuitive and
+will cause large changes to user-facing code, so we may consider re-enabling
+it.
 
 The difficulty in ensuring that conversions can be conducted in a separate
 manner arises from the variable conversion factors even within a given
@@ -73,5 +73,4 @@ Alternatives
 ------------
 
 We can continue allowing this behavior, but it will continue to cause confusion
-and impede progress toward a cleaner API.  Alternately, we can also disable
-*all* dict-like access to the `StaticOutput` object.
+and impede progress toward a cleaner API.
