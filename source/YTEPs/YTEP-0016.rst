@@ -1,0 +1,326 @@
+YTEP-0016: Volume Traversal
+===========================
+
+Abstract
+--------
+
+Created: September 10, 2013
+Author: Matthew Turk
+
+yt should consider volume traversal, accumulation of data, and flexible
+definitions of paths to be first-class operations as well as implementable by
+individuals.  Essentially, we need a method for describing "derived values for
+volumes".
+
+Status
+------
+
+In progress
+
+Project Management Links
+------------------------
+
+This is being done in the bookmark ``cylindrical_rendering`` in
+http://bitbucket.org/MatthewTurk/yt-3.0 .
+
+Detailed Description
+--------------------
+
+Currently, the only mechanisms for studying or understanding data in yt are
+contained in the following procedures:
+
+ * Derived quantities (generating scalars from fields in volumes)
+ * Derived fields (generating fields from other fields)
+ * Contour identification
+ * Ray casting (on or off axis; i.e., projections or volume rendering)
+ * Streamlines
+ * Contour identification
+ * Surface extraction
+
+Several of these items utilize brick decomposition, but not all.  This is the
+process by which overlapping grids are broken apart until a full tesselation of
+the domain (or data source) is created with no overlaps.  This is done by the
+kD-tree decomposition.
+
+What this YTEP proposes is to make handling tiles of data first class, as well
+as provide easy mechanisms for creating volume traversal mechanisms.  There are
+two components to this: handling tiles of data, and creating fast methods for
+passing through the data and moving between tiles.
+
+Note that this YTEP does not (yet) address situations where the mesh of the
+simulation is too large to fit into memory on a single node.  Because the
+kD-tree is able to build in parallel, this essentially will amount to
+distributing regions of the dataset (where the mesh may not be known) to
+individual processors, allowing build on those processors, and enabling
+individuals to describe reduction steps in their operators.
+
+Brick Iteration
++++++++++++++++
+
+Currently, in yt-3.0, all data objects expose a "block" iterator that returns
+data containers as well as masks of data.  A similar iterator should exist for
+iterating over the "tiles" that compose a given data object.  How this should
+behave is somewhat open for discussion, as the kD-tree itself has a notion of a
+'viewpoint traversal' which may be important.  Furthermore, it is not
+necessarily true that the traversal will be easily defined.  As an example of
+this, tiles may need to traversed according to extrema in some fluid.
+
+Traversal Orders
+~~~~~~~~~~~~~~~~
+
+The order that tiles are returned to the individual should be flexible and
+extensible.  A few predefined orders should be implemented:
+
+ * Depth-first traversal
+ * View-point traversal
+ * Breadth-first traversal
+
+Additionally, these should allow for front-to-back or back-to-front yielding.
+An example API for this would be:
+
+.. code-block:: python
+
+   data_source = ds.h.sphere(c, (10.0, 'mpc'))
+   for brick in data_source.tiles.depth_traverse():
+       operation(brick)
+
+By default, ``depth_traverse()`` would also be exposed for simply iterating
+over the ``tiles`` object.  Additional traversals could be extensibly defined.
+Many of these traversal *already* exist for the AMR kD-tree.  A traversal
+should be able to be defined and executed from the following set of
+information:
+
+ * kD-tree object
+ * Arguments defining the traversal itself
+ * Data-centering (optional) and fields (optional)
+
+It should yield ``PartitionedGrid`` objects.
+
+Return Values
+~~~~~~~~~~~~~
+
+Most importantly, the notion of what is returned by this system needs to be
+defined.  The notions of what brick is and possessed need to be defined.  There
+are several options:
+
+ 1. An empty ``CoveringGrid`` that knows how to read data.
+ 2. A filled (i.e., data pre-specified) ``PartitionedGrid``, where vertex or
+    cell-centered data must be specified.
+ 3. A slice object and a grid object
+ 4. A new object, designed for this system, which acts as a superset of
+    ``PartitionedGrid``.  This object would include connectivity information as
+    well, as it would not be independent of the tree itself.  The
+    ``PartitionedGrid`` could be modified to fit this.
+
+Regardless of which object is returned, at a minimum a kD-tree (or other
+partitioning) must be created when requested, at the call to tiles,
+potentially cached, and then objects iterated over.  Each of these tiles is
+guaranteed to be the finest data available within the region they cover, and
+they are guaranteed not to overlap with any others.
+
+For the purposes of this YTEP, we will assume the fourth option.  If the
+``PartitionedGrid`` object were to be extended, I believe it would likely be best
+to extend it as follows.  Note that for many of these operations we implicitly
+assume that it is operating on a grid patch; for octree codes, the creation of
+this object will be considerably simpler, and for particle codes we simply
+define these as the leaf nodes from the octree index itself.  Because we need
+to handle particle codes, we must also ensure that these objects can query
+particles.
+
+ * Cache a slice of the grid or data object that it operates on.  (For
+   situations where it fully encompasses the parent region, it need not have a
+   slice.)
+ * Create a mechanism for filtering particles from the data object it operates
+   on.
+ * Enable the object to query new fields from its source object.  This means
+   that at instantiation time we may not regard the object as having a given
+   field, but that this field can be added at a later time by querying.
+ * Provide a mechanism for identifying neighbor objects from a given face
+   index.  This is the connectivity relationship described above; given any one
+   cell that resides on the boundary of a brick, return the brick (which may or
+   may not be a leaf node) that is adjacent.  This would enable identifying the
+   leaf node at a given location within that boundary cell, which may reside at
+   a higher level of refinement and could thus correspond to multiple tiles.
+   This degeneracy results from the fact that we cannot guarantee that
+   neighboring tiles differ by only a single level of refinement.  However,
+   because this will be defined at the Python level, rather than specifically
+   for well-defined traversal operations, this is acceptable as we should leave
+   open to the individual how to select the appropriate cell or what to do with
+   it.
+ * Provide mechanisms for generating vertex-centered data or cell-centered
+   data quickly.
+
+At the present time, a simple first-pass at implementation could occur with the
+following:
+
+ * Implement a ``tiles`` routine that mandates supplying fields to cache or
+   load, the vertex or cell centering of data, and a viewpoint traversal
+   scheme.
+ * Cache a kD-tree based on these tiles.
+ * Iteratively yield tiles from this tree based on the traversal specified
+   above.
+
+The interface for these tiles, at a minimum, must expose that of the
+``PartitionedGrid`` with one modification: fields should be accessible by
+``__getitem__``, so that any possible changes in the future that would expose
+this would be backwards compatible with usages now.
+
+Volume Traversal
+++++++++++++++++
+
+The second aspect of this YTEP is to define a mechanism for integrating paths
+through tiles.  Currently we do this through strict vectors that cannot be
+re-entrant into a grid; these vectors cannot change path along the way, and the
+number of them is fixed at the time of the first grid traversal.
+
+As currently implemented, flexibility in volume traversal is defined in terms
+of the mechanism by which values are accumulated.  This includes the definition
+of these objects, all inside ``grid_traversal.pyx``:
+
+ * ``ImageContainer``
+ * ``ImageAccumulator``
+ * ``sampler_function``
+ * Accumulator data (i.e., ``VolumeRenderAccumulator``
+
+Essentially, for a given image type, a sampler can be defined.  This sample
+receives the following arguments: ``VolumeContainer`` (a C-interface to a
+partitioned grid with ``nogil``), ``v_pos`` (vector position), ``v_dir``
+(vector direction), ``enter_t`` (cell-entrance in terms of the parameter),
+``exit_t`` (exit time based on the vector at time of entrance), ``index``
+(index into the data) and ``data``, a pointer to an accumulator (i.e.,
+``ImageAccumulator``) object.
+
+These sampler functions are called for every index that a vector traverses.
+The volumes themselves are traversed inside ``walk_volume`` (and, in the
+nascent cylindrical volume rendering bookmark, ``walk_cylindrical_volume``).
+This assumes cartesian coordinates and simply calls the ``sampler_function``
+for every zone that is crossed.  This enables volume rendering, projecting and
+so on to be conducted simply by swapping out the sampler function and correctly
+interpreting an image object returned.
+
+However, this is not sufficient for arbitrary traversals *or* arbitrary data
+collection.  We need flexibility to define the following things:
+
+ * The mechanism of traversing blocks of data (covered at a higher level by the
+   kD-tree itself, and not necessarily a part of this YTEP)
+ * Bootstrapping traversal of a volume by a given ray object.  This would
+   include identifying the zones that a ray first encounters and setting its
+   initial time of intersection.
+ * Defining a mechanism for updating the indices in the volume that a ray will
+   intersect next
+ * Defining a method for determining when a ray has left an object
+ * Defining a method for selecting the next brick to traverse or connect to
+ * Updating the value of a ray's direction
+
+Many of the problems can be seen simply by considering cylindrical volume
+rendering itself.  If the view point is somewhere outside the cylinder looking
+toward it, rays from an orthonormal image plane will each construct a chord
+through the cylindrical shells.  These chords will each span up to pi along the
+theta direction, and can have the following properties in their traversal:
+
+ * dtheta/dl can switch signs
+ * grids can be periodic with themselves
+ * dr/dl can switch signs
+ * a ray can exit a grid off the r boundary and then re-enter it *later* in the
+   computation
+ * Both dtheta/dl and dr/dl change with each update of the ray's position, and
+   are not even constant over a single zone.
+
+While this demonstrates some of the complexity, we also want to be able to
+support translating streamlines, clump finding and even gravitational lensing
+into this new mechanism for traversing volumes.
+
+Therefore, we need a new mechanism that abstracts (independently) both the
+collecting or accumulating of data as well as the mechanism by which a given
+ray traverses a patch of data, whether that patch is one or several cells
+large.  In this manner we will remain neutral to the nature of the data
+container, which may be an octree, a kD-tree, or a single grid.
+
+Flow Control
+~~~~~~~~~~~~
+
+ 1. At the outermost level, tiles will be traversed in Python, and a
+    collection of rays (either in an ``ImagePlane`` or some other object) will
+    be handed each brick as it comes.
+ 2. Each ray will be "bootstrapped" onto a brick.  This will result either in a
+    traversal or an immediate return.  (At a later time we will consider fast
+    evaluation of which rays to consider.)
+ 3. Each cell traversed by the ray will be "sampled" in some way.
+ 4. The ray state (location, index, direction, etc) will be updated.
+ 5. Rays will traverse until they leave a brick.
+ 6. The next brick will be identified, either from ray positions or from the
+    traversal at the python level.
+
+Note that this does not *yet* enable a ray to request the next brick at a given
+position, which will be necessary.  However, for the purposes of this iteration
+of the YTEP, we take it as given that such communication will be defined at a
+later time, or will be handled on a ray-by-ray basis, where the iteration is
+managed for each ray individually.
+
+Objects to Manage
+~~~~~~~~~~~~~~~~~
+
+To accommodate the flow control outlined above, the following classes will need
+to be implemented, with the following specifications.  These will be in Cython.
+A base class (listed below) will form the basis for each type of traversal.
+
+.. code-block:: python
+
+   struct ray_state:
+       np.float64_t v_dir[3]
+       np.float64_t v_pos[3]
+       np.float64_t tmax[3]
+       int ind[3]
+       int step[3]
+       np.float64_t enter_t
+       np.float64_t exit_t
+       void *sdata
+
+   class GeometryTraversal:
+
+       # set values like domain size or whatever is necessary here
+       def __init__(self, parameter_file)
+       # Return whether the ray hits the vc or not
+       cdef int initialize_ray(self, ray_state *ray, VolumeContainer *vc) nogil
+       cdef int increment_ray(self, ray_state *ray, VolumeContainer *vc) nogil
+       cdef np.float64_t intersection(self, 
+               np.float64_t val, int axis, np.float64_t v_dir[3],
+               np.float64_t v_pos[3]) nogil
+       cdef int walk_volume(self, VolumeContainer *vc, sampler_function *sampler,
+                            ray_state *ray, np.float64_t *return_t = ?) nogil
+
+    cdef 
+
+The ``ray_state`` object will be independent of the geometry, and will *always*
+refer to the cartesian state of the ray.  A given geometry traversal will set
+up the ray state (i.e., where it intersects with a volume container) and how to
+increment the ray state as zones are crossed.  The ``initialize_ray`` function
+will determine the state of the ray as it first touches a brick, and will
+return 0 or 1 if the ray is inside that brick.  The ``increment_ray`` function
+will receive a ray and determine the crossing time in the parameter ``t`` that
+the ray uses as it passes through a cell.  The return value is 0 for the ray
+having left the object and 1 for the ray being within the object and the
+sampler function needing to be called.  ``intersection`` will get the position
+at which a ray intersects a given value, and ``walk_volume`` will typically be
+described in the base class and not overridden elsewhere.  Part of the level of
+abstraction is to enable ``walk_volume`` to largely be the same for each
+geometry, but enabling it to be overridden means we can use the same traversal
+for other operations such as clump finding and so on.
+
+As a first implementation, the following classes will need to be implemented:
+
+ * ``CartesianTraversal``
+ * ``PolarTraversal``
+ * ``CylindricalTraversal``
+
+At a later time, the ``SphericalTraversal`` object can be implemented.
+
+Backwards Compatibility
+-----------------------
+
+This should retain all backwards compatibility for cartesian systems.
+
+Alternatives
+------------
+
+I'm not sure of any alternatives currently.
