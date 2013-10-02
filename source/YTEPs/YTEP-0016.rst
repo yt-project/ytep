@@ -15,14 +15,13 @@ volumes".
 Status
 ------
 
-Proposed
+In progress
 
 Project Management Links
 ------------------------
 
-There are currently no project management links.  However, some work at
-generalizing volume traversal for cylindrical coordinates can be see in hash
-f4aa69acae57.
+This is being done in the bookmark ``cylindrical_rendering`` in
+http://bitbucket.org/MatthewTurk/yt-3.0 .
 
 Detailed Description
 --------------------
