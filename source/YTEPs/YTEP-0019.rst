@@ -30,6 +30,22 @@ As an example, we should expose the ``load`` command primarily, and encourage
 directly importing frontend-specific code if that code needs to be interacted
 with.
 
+This YTEP concerns two changes in functionality.
+
+ * Reduce the number of items in ``yt.mods``.
+ * Make ``yt.mods`` a superset of functionality of ``yt/__init__.py``.  This
+   means ``startup_tasks.py`` (which includes argument parsing, parallel
+   initialization, configuration system reading, and so on.)
+
+This will change some aspects of behavior, as it will make operations that
+currently require the ``ytcfg`` variable to be modified *before* any other
+``startup_tasks`` code is executed no longer possible.  This number is
+extremely small, and the primary one is loglevel setting, which is easily
+exposed in ``mylog.setLevel``.
+
+Primarily, we want to make ``yt`` exist better as a module as well as an
+environment.
+
 Current Imports
 +++++++++++++++
 
@@ -122,7 +138,7 @@ Object                                   Include
 ``OrionStaticOutput``                    No
 ``ParallelProgressBar``                  No
 ``ParticleCallback``                     No
-``ParticleTrajectoryCollection``         No
+``ParticleTrajectoryCollection``         Yes
 ``PlanckTransferFunction``               No
 ``PlotCallback``                         No
 ``PlotCollection``                       Yes
@@ -227,7 +243,7 @@ Object                                   Include
 ``annotate_image``                       Yes
 ``apply_colormap``                       Yes
 ``available_analysis_modules``           Yes
-``axis_names``                           Yes
+``axis_names``                           No
 ``bb_apicall``                           No
 ``cPickle``                              No
 ``callback_registry``                    No
@@ -294,7 +310,7 @@ Object                                   Include
 ``print_tb``                             Yes
 ``projload``                             No
 ``quantity_info``                        No
-``quartiles``                            No
+``quartiles``                            Yes
 ``read_struct``                          No
 ``resource``                             No
 ``rootloginfo``                          No
@@ -330,6 +346,19 @@ Object                                   Include
 ``ytcfg``                                Yes
 ``ytcfgDefaults``                        No
 
+Changing ``yt/__init__.py`` to Import
++++++++++++++++++++++++++++++++++++++
+
+The second aspect of this YTEP is to change the ``yt`` module to include
+everything that is in ``yt.mods``, but without the side effects that come from
+``yt.startup_tasks``.  Because importing submodules necessarily will then
+import ``__init__.py``, this means submodules cannot be imported without the
+whole of ``yt`` that is exposed in ``yt.__init__.py`` being imported.
+
+This primarily will affect configuration options, which are largely no longer
+necessary to modify directly at runtime.  Additionally, the old behavior can
+still be preserved by ``yt.mods``.
+
 Backwards Compatibility
 -----------------------
 
@@ -339,8 +368,14 @@ items that are not typically used in scripts.  This list can be modified.
 Note that importing frontends into a namespace will still enable them to be
 used in ``load``.
 
+Importing ``yt.mods`` will still act as before, with option parsing and the
+like.  Importing ``yt.config`` will result in the config file being parsed
+once; this means runtime options will need to be modified differently.
+
 Alternatives
 ------------
 
 We could identify additional means of reducing the namespace pollution, but
 this is the main one that I see.
+
+We could also not put anything into ``yt/__init__.py``.
