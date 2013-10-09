@@ -1,0 +1,396 @@
+=============================
+YTEP-0011: Symbol units in yt
+=============================
+
+Abstract
+--------
+
+| Created: March 7, 2013  
+| Authors: Casey Stark, Nathan Goldbaum, and Anna Rosen
+
+This YTEP describes adding symbolic units to yt using the `sympy`_ package. The
+main benefit is to make sure units are carried through calculations in a
+*transparent* and *intuitive* manner. The new components are:
+
+ - a `Unit` class, which describes the dimensionality (powers of mass, length,
+   time, temperature) and conversion factor of any unit.
+ - a `UnitRegistry` class, which defines valid atomic units (ex: "g" for gram).
+ - a `YTArray` class, a subclass of NumPy `ndarray` that attaches a `Unit`
+   object.
+ - a `Quantity` class, a subclass of `YTArray` which is restricted to a single
+   element (for handling scalars).
+
+.. _sympy: http://sympy.org/
+
+Status
+------
+In Progress: work is ongoing in a fork, no pull request has been issued yet.
+
+Project Management Links
+------------------------
+
+The code can be found in Casey Stark's fork of yt-3.0:
+https://bitbucket.org/caseywstark/yt-3.0
+
+The work is based on Casey's dimensionful library:
+https://github.com/caseywstark/dimensionful
+
+Detailed Description
+--------------------
+
+Background
+==========
+
+The current system for units is functional but not terribly flexible.
+All data are treated as scalars and it is up to the user to convert data from
+CGS, which yt uses internally, to their chosen unit system. A sample workflow
+might look like this::
+
+  from yt.mods import *
+  from yt.utilities.physical_constants import mass_sun_cgs
+  pf = load('IsolatedGalaxy/galaxy0030/galaxy0030')
+  dd = pf.h.all_data()
+  mass = dd['CellMass']
+  print "Mass in CGS: ", mass
+  print "Mass in Solar Masses: ", dd['CellMass']/mass_sun_cgs
+  print "Mass in code units: ", dd['CellMass']/pf['Mass']
+
+This model works well if a user always uses CGS units. If the user needs a
+quantity in a different unit system, they run into trouble.  This is
+illustrated above in the example to convert to 'solar mass' units, since this
+isn't a proper unit, the conversion isn't stored inside the `pf` dict, so a
+user will either need to import the unit definition from yt, or add their own
+definition to their script.  The situation is a little bit better for length
+conversions::
+
+  dx = dd['dx']
+  print "Cell dx in code units: ", dx
+  print "Cell dx in centimeters: ", dx*pf['Length']
+  print "Cell dx in megaparsecs: ", dx*pf['mpc']
+
+This works pretty nicely, since all of the various length units are stored in
+the `pf` dictionary.  However, this example illustrates another problem; here
+`dx` is returned in code units, while most quantities are returned in CGS.  If
+we wanted to enforce that all quantities be returned in CGS, we would need to
+painstakingly go through the codebase, tweaking the field definitions and
+places where fields are used so that units are handled properly.  Clearly, a
+better solution is needed.
+
+Cosmological units are also handled in a somewhat ad hoc way.  Each of the code
+frontends need to detect that a simulation was performed using comoving units,
+and define new scaled, comoving and scaled comoving units (i.e. 'kpccm',
+'kpchcm' and 'kpch').  This encourages duplication of code in each of the
+frontends and makes likely that different frontends will ignore some of the
+cosmological units that are defined in the Enzo frontend. In addition, this is
+not documented in the frontend docs, making it easier for newly supported codes
+to miss this. Cosmological units are also not labeled correctly in plots.
+
+To ensure units to display nicely on plots, the unit definition is
+currently encoded as a raw string in LaTeX format::
+
+  add_field("MagneticEnergy",function=_MagneticEnergy,
+            units=r"\rm{ergs}\/\rm{cm}^{-3}",
+            display_name=r"\rm{Magnetic}\/\rm{Energy}")
+
+This is harmful for readability and has the effect that user-defined or
+automatically generated fields are not assigned units.
+
+Proposed Solution
+=================
+
+We propose to handle units in a more automatic fashion, leveraging the symbolic
+math library, sympy.  Instead of returning a NumPy `ndarray` when users query
+for fields, the `__getitem__` selector on data objects will return a `YTArray`,
+a subclass of `ndarray`.  This preserves `ndarray`'s array operations,
+including broadcasting, views, deep and shallow copies, and all the nice
+properties of `ndarray`.  Additonally, `YTArray` has a `Unit` object attached
+to it that tracks units associated with each value in the array.  This is
+encoded in the `__repr__` method of `YTArray`::
+
+  >> dd['Density']
+  YTArray([  4.92775113e-31,   4.94005233e-31,   4.93824694e-31, ...,
+           1.12879234e-25,   1.59561490e-25,   1.09824903e-24]) g/cm**3
+
+`YTArray` defines several user-visible member functions: `convert_to_units`,
+`convert_to_cgs`, `in_units`, and `in_cgs`.  The first two functions do
+in-place operations while the second two return copies of the original array in
+the new unit::
+
+  >> dens = dd['Density']
+  >> print dens
+  [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
+   1.59561490e-25   1.09824903e-24] g/cm**3
+
+  >> dens.convert_to_units('Msun/pc**3')
+  >> print dens
+  [  7.27920765e-09   7.29737882e-09   7.29471191e-09 ...,   1.66743685e-03
+   2.35702085e-03   1.62231868e-02] Msun/pc**3
+
+  >> dd['Density'].in_units('Msun/pc**3')
+  YTArray([  7.27920765e-09,   7.29737882e-09,   7.29471191e-09, ...,
+           1.66743685e-03,   2.35702085e-03,   1.62231868e-02]) Msun/pc**3
+
+One possibly confusing wrinkle in this is that the unit conversions are always
+done 'in place' so if a user tries to query `dd['Density']` again, they'll find
+that it has been converted to solar masses per cubic parsec.  Since the unit
+metadata is preserved and the array values are still correct in the new unit
+system, all numerical operations will still be correct.
+
+One of the nicest aspects of this new unit system is that the symbolic algebra
+for unitful operations is performed automatically by `sympy`_::
+
+  >> print dd['CellMass']/dd['CellVolume']
+  [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
+   1.59561490e-25   1.09824903e-24] g/cm**3
+
+  >> print dd['Density']
+  [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
+   1.59561490e-25   1.09824903e-24] g/cm**3
+
+We will also create a new `Quantity` class to handle scalars that are
+associated with units.  In the proposed implementation, `Quantity` is a
+subclass of `YTArray` with the requirement that it is limited to one element.
+`Quantity` is primarily useful for physical constants and ensures that the
+units are propogated correctly when composing quantities from arrays, physical
+constants, and unitless scalars::
+
+  >> from yt.utilities.physical_constants import boltzmann_constant
+  >> print dd['Temperature']*boltzmann_constant
+  [  1.28901607e-12   1.29145540e-12   1.29077208e-12 ...,   1.63255263e-12
+   1.59992074e-12   1.40453862e-12] erg
+
+With this new capability, we will have no need for fields defined only to
+handle different units (e.g. Radius, RadiusCode, Radiuspc, etc.).  Instead,
+there will only be one definition and if a user needs the field in a different
+unit system, they can quickly convert using `convert_to_units` or `in_units`::
+
+  >> add_field("MagneticEnergy",function=_MagneticEnergy,
+               units='ergs/cm**3', display_name = 'Magnetic Energy')
+
+This will also replace the way we handle cosmological units.  When the
+`StaticOutput` object is instantiated, it will create a `UnitRegistry` class
+that will contain a full set of units that are defined for the simulation.  This
+is particularly useful for cosmological simulations, since it makes it easy to
+ensure cosmological units are defined automatically.
+
+Unit labels for plots will be programatically generated. This will leverage
+`sympy`_'s LaTeX output module.  Even though the field definitions will have
+their units encoded in plain text, we will be able to automatically generate
+LaTeX to supply to matplotlib's mathtext parser.
+
+Implementation
+==============
+
+We stick to the CGS perspective of units, which conflicts with other popular
+unit libraries (almost all SI). Because we use CGS, we have 4 base dimensions
+of ``mass``, ``length``, ``time``, and ``temperature``. The matching CGS base
+units are grams, centimeters, seconds, and Kelvins. All units can be described
+as combinations of these base dimensions and with a conversion factor to
+equivalent CGS units. We provide `sympy` `Symbol` objects for the 4 base
+dimensions. The dimensionality of all other units should be `sympy` `Expr`
+objects made up of the base dimension object and the `sympy` operation objects
+`Mul` and `Pow`.
+
+Let's use some common units as examples: gram (``g``), erg (``erg``), and solar
+mass per cubic megaparsec (``Msun / Mpc**3``). ``g`` is an atomic, CGS base
+unit, ``erg`` is an atomic unit in CGS, but is not a base unit, and
+``Msun/Mpc**3`` is a combination of atomic units, which are not in CGS, and one
+of them even has a prefix. The dimensions of ``g`` are ``mass`` and the cgs
+factor is ``1``. The dimensions of ``erg`` are ``mass * length**2 * time**-2``
+and the cgs factor is ``1``. The dimensions of ``Msun/Mpc**3`` are ``mass /
+length**3`` and the cgs factor is about ``6.8e-41``.
+
+We use the `UnitRegistry` class to define all valid atomic units. All unit
+registries contain a unit symbol lookup table (dict) containing the valid
+units' dimensionality and cgs conversion factor. Here is what it would look
+like with the above units::
+
+  {"g": (mass, 1.0),
+   "erg": (mass * length**2 * time**-2, 1.0),
+   "Msun": (mass, 1.98892e+33),
+   "pc": (length, 3.08568e18)}
+
+Note that we only define *atomic* units here. There should be no operations in
+the registry symbol strings. When we parse non-atomic units like
+``Msun/Mpc**3``, we use the registry just to look up the symbols. The unit
+system in yt knows how handle units like ``Mpc`` by looking up unit symbols
+with and without prefixes and modify the conversion factor appropriately. The
+`UnitRegistry` class provides the `add` and `remove` methods which allow users
+to add and remove atomic unit definitions.
+
+We construct a ``Unit`` object by providing a string containing atomic unit
+symbols, combined with operations in Python syntax, and the registry those
+atomic unit symbols are defined in. We use `sympy`'s new parsing features to
+create the unit expression from the user-provided string. Here's how this works
+on ``Msun/Mpc**3``::
+
+  >>> from sympy.parsing.sympy_parser import parse_expr
+  >>> unit_expr = parse_expr("Msun/Mpc**3")
+  >>> from sympy.printing import print_tree
+  >>> print_tree(unit_expr)
+      Mul: Msun/Mpc**3
+      +-Symbol: Msun
+      | comparable: False
+      +-Pow: Mpc**(-3)
+        +-Symbol: Mpc
+        | comparable: False
+        +-Integer: -3
+          real: True
+          ...
+
+yt units looks up the symbols in the unit expression for matching atomic unit
+symbols in the registry. It then combines the dimensions and cgs factors of the
+atomic units using the given operations. The ``Unit`` object holds the
+``sympy`` unit expression, the ``sympy`` dimensions expression, and the cgs
+conversion factor. ``Unit`` also provides the methods
+``same_dimensions_as(other_units)`` which returns True if the other units have
+equivalent dimensions and ``get_cgs_equivalent``, which returns the equivalent
+cgs base units. ``Unit`` also defines the mul, div, pow, and eq operations with
+other unit objects.
+
+The `YTArray` class works by tacking a Unit object onto an ndarray instance.
+Besides the conversion methods already listed, most of the implementation of
+YTArray depends on defining all the operations on YTArray instances. We want to
+preserve the normal ndarray operations, while getting the correct units on the
+resulting `YTArray` (be it in-place or a copy). The proper way to handle
+operations on ndarray subclasses is explained in the numpy docs page,
+`subclassing ndarray`_. We follow this approach and describe the desired
+behavior in the section below.
+
+.. _subclassing ndarray: http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
+
+This implementation will provide three new utilities modules:
+yt.utilities.units, yt.utilities.yt_array, and yt.utilities.quantity.
+yt.utilities.units contains the base dimensions objects, some common derived
+dimensions objects, a default unit symbol LUT, the UnitRegsitry class, and the
+Unit class. yt.utilities.yt_array contains the YTArray class.
+yt.utilities.quantity contains the Quantity class.
+
+Handling code units
+-------------------
+
+Code frontend developers should add code base units to their static output. In
+the `set_units` method, developers can use self.unit_registry.add to define
+"code_mass", "code_length", and "code_time". We recommend also defining other
+common code units such as "code_velocity", "code_potential", etc. If users want
+to work in code units, they can now use::
+
+    >>> dd["density"].in_units("code_density")
+
+Handling cosmological units
+---------------------------
+
+We also want to handle comoving length units and the hubble little "h" unit. In
+StaticOutput.set_units, we implement this by checking if the simulation is
+cosmological, and if so adding those units to the dataset's unit registry.
+Comoving length unit symbols are "(length symbol)cm", like "pccm".
+
+LaTeX printing
+--------------
+
+We are still working on this design. This might require one extra element in
+the atomic unit definitions for things like "Msun -> M_{\odot}". Besides that
+sort of symbol replacement, sympy's printing function ``print_latex`` can
+handle this completely.
+
+YTArray operations
+------------------
+
+When working interactively, it is important to make sure quick workflows are
+possible. To this end, we want to make it possible to use our new dimensionful
+operations while still leveraging the syntactic simplicity of defining an array
+using a python list or something equally simple and straightforward. We want to
+avoid mandating that all user-defined data be a `YTArray` or `Quantity`. This
+means we need to define operations between native Python objects like float and
+lists of floats, numpy floats, numpy ndarray, and `YTArray`. In the table
+below, we have enumerated all combinations of `YTArray`, scalar (native Python
+float or np.float64), and `ndarray` in binary operations. In most cases,
+unitful operations are well defined, however in cases where the unitful
+operations are not well defined, we raise a new exception,
+`YTInvalidUnitOperation`. In case a user does not want to deal with catching
+this exception, we provide a new configuration option
+"ignore_invalid_unit_operation".
+
++-----------+--------------------+-------------------------------------------------+
+| Operation | Combination        | Result (pseudocode)                             |
++===========+====================+=================================================+
+| mul, div  | scalar, YTArray    | | YTArray, units = input_units (op) 1           |
+|           | ndarray, YTArray   |                                                 |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | YTArray, units = left_units (op) right_units  |
++-----------+--------------------+-------------------------------------------------+
+| add, sub  | scalar, YTArray    | | if YTArray is dimensionless:                  |
+|           | ndarray, YTArray   | |     return YTArray                            |
+|           |                    | | if ytcfg["ignore_invalid_unit_operation"]:    |
+|           |                    | |     return YTArray (unit preserved)           |
+|           |                    | | raise YTInvalidUnitOperation                  |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | if left_units same dimensions as right_units: |
+|           |                    | |     return YTArray, in left_units             |
+|           |                    | | else:                                         |
+|           |                    | |     raise YTInvalidUnitOperation              |
++-----------+--------------------+-------------------------------------------------+
+| pow       | scalar, YTArray    | | if YTArray is dimensionless:                  |
+|           | ndarray, YTArray   | |     return scalar**YTArray                    |
+|           |                    | | else:                                         |
+|           |                    | |     raise YTInvalidUnitOperation              |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, scalar    | | return YTArray**scalar (note units change)    |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, ndarray   | | if YTArray is dimensionless:                  |
+|           |                    | |     return YTArray**ndarray                   |
+|           |                    | | raise YTInvalidUnitOperation [1]_             |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | if YTArray and YTArray are dimensionless:     |
+|           |                    | |     return YTArray**YTArray                   |
+|           |                    | | raise YTInvalidUnitOperation [1]_             |
++-----------+--------------------+-------------------------------------------------+
+| le, lt,   | scalar, YTArray    | | if YTArray is dimensionless:                  |
+| ge, gt,   | ndarray, YTArray   | |     return (op)                               |
+| eq        |                    | | if ytcfg["ignore_invalid_unit_operation"]:    |
+|           |                    | |     return YTArray (unit preserved)           |
+|           |                    | | raise YTInvalidUnitOperation                  |
+|           +--------------------+-------------------------------------------------+
+|           | YTArray, YTArray   | | if left_units same dimensions as right units: |
+|           |                    | |     return left (op) (right in left units)    |
+|           |                    | | else:                                         |
+|           |                    | |     raise YTInvalidUnitOperation              |
++-----------+--------------------+-------------------------------------------------+
+
+.. [1] This one is a little tricky, since it is defined for ndarrays.
+       Technically, it's a well-defined unitful operation if the ndarray is the
+       exponent. Unfortunately, this will make all the elements of the ndarray
+       have different units, so we don't allow it in practice.
+
+Now we list the behavior of unary operations on YTArray objects.
+
++-----------+---------------------------------+
+| Operation | Result (pseudocode)             |
++===========+=================================+
+| abs, sqrt | YTArray                         |
++-----------+---------------------------------+
+| exp       | | if YTArray is dimensionless:  |
+|           | |     return exp(YTArray)       |
+|           | | raise YTInvalidUnitOperation  |
++-----------+---------------------------------+
+
+Testing
+=======
+
+We have written a set of unit tests that check to make sure all valid and
+invalid unit operations succeed or fail as appropriate.  We will also need to
+verify that the extant unit and answer tests pass before this can be accepted.
+
+
+Backwards Compatibility
+-----------------------
+
+This is a serious break in backwards compatibility.  Once this is accepted,
+units will no longer be stored in the `StaticOutput` dict.  This means that all
+scripts which use the `pf[unit]` construction will no longer be valid.  We will
+also need to eliminate instances of this construction within the yt codebase.
+
+We will need to check to make sure the analysis modules and external tools that
+operate on yt data can either work appropriately with `YTArray` or figure out a
+way to degrade to `ndarray` gracefully.
+

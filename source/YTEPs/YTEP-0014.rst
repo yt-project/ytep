@@ -1,0 +1,174 @@
+YTEP-0014: Field Filters
+========================
+
+Abstract
+--------
+
+Created: July 2nd, 2013
+Author: Matthew Turk
+
+This YTEP outlines a method for defining generic, evaluated filters to apply to
+particles used in derived fields.  Currently it does not extend to fluid
+quantities, as that will require rethinking the method of presenting and
+handling Eulerian quantities.
+
+Status
+------
+
+Proposed.  Target is 3.0a3.
+
+Project Management Links
+------------------------
+
+There has been some disucssion of this in YTEP-0013 and its pull request.
+
+  * https://bitbucket.org/yt_analysis/ytep/pull-request/15/ytep-0013-first-class-deposited-particle/diff
+  * https://ytep.readthedocs.org/en/latest/YTEPs/YTEP-0013.html
+  * https://bitbucket.org/yt_analysis/yt-3.0/pull-request/59/
+
+Detailed Description
+--------------------
+
+Currently, filtering particles is done ad-hoc by derived fields.  Typically
+something like this is done:
+
+.. code-block:: python
+   
+   def finest_particles(field, data):
+       filter = data["ParticleMassMsun"] <= 340000
+       pos = data["Coordinates"][filter, :]
+       d = data.deposit(pos, [data["all", "ParticleMass"][filter]],
+                        method = _method)
+       d /= data["CellVolume"]
+       return d
+
+This is not ideal, as it requires new fields to be defined for every single
+particle filtering *and* field combination.  This requires every single derived
+field that is desired to be filtered individually, including derived fields
+that are used as dependencies in another field.  This is not workable, and a
+new mechanism for definining filtered particle types is needed.  However,
+rather than declaring a completely new domain-specific language for defining
+particles to select inside a given field specification, this YTEP defines a
+method for declaring filters that can be applied to particles inside a
+contextmanager.  This means that all particles used *inside* the context
+manager will be pre-filtered.
+
+However, to avoid over-complication, the filtering step will be defined inside
+functions similar to derived fields and will *not* be auto-detected.  Instead,
+all filters defined will be allowed to be applied and in the case of a
+filtering-needed field not being found, an exception will be allowed to be
+raised.  However, field dependencies noted in the creation of a filter will be
+taken into account when filters are added to a given dataset.
+
+These filters will be added and viewed as a new particle type.  For instance,
+if a dataset has only "all" particles, a new filter could be added that
+filtered out particles that should be regarded as "star" particles and that
+filter will then be presented as a new particle type "star".
+
+Filters are only meant to act on homogeneous groups of particles.  For
+instance, a given filter could not select sets of particles with hetereogeneous
+attributes and combine them.
+
+Here is an example filter that would accomplish the filtering task shown above:
+
+.. code-block:: python
+
+   def finest_particles(pfilter, data):
+       filter = data["all","ParticleMassMsun"] <= 34000
+       return filter
+
+   add_particle_filter("finest_particles",
+        function = finest_particles,
+        filtered_type = "all",
+        requires=["ParticleMassMsun"])
+
+   ds = load("DD0040/DD0040")
+   sp = ds.h.sphere("max", (1.0, 'mpc'))
+   sp.quantities["TotalQuantity"]( [("finest_particles", "ParticleMassMsun")] )
+   
+
+However, more complex filters could be defined as well, relying on additional
+fields.  Furthermore, a side-effect of  future particle field definitions being
+generated for specific particle types (described in issue 598) would be that
+any particle filters defined would also have any particle derived fields added
+on a per-particle-type basis added automatically.  The addition of field
+definitions will occur during the creation of derived fields.
+
+Note that we do explicitly specify field dependences in these particle types.
+This may cause issues, as derived fields will first need to be identified, then
+particle filters, then any derived fields for those new ad-hoc particle types
+will be added.  This will require some refactoring of field detection methods,
+which will overall serve to improve the reliability of the code base and field
+detection mechanisms.
+
+Derived fields based on filtered particles are not currently available; only
+derived fields that work on the filtered particle type will be available.
+
+Adding this filtering mechanism will also considerably simplify the Enzo
+frontend, as currently the Enzo frontend defines several different methods for
+identify star particles.  (Other frontends, where attributes of particles
+separate them into different classes, will also benefit.)  As an example, for
+Enzo 2.X-class simulations, the definition of a star is through *either* a
+``creation_time`` attribute or a ``particle_type`` attribute.  This will enable
+definition of filters, and only the one that is applicable to the specific
+dataset will be added and applied.
+
+.. code-block:: python
+
+   def star_creation_time(pfilter, data):
+       filter = data["all", "creation_time"] > 0
+       return filter
+   add_particle_filter("star", 
+        function = finest_particles,
+        filtered_type = "all",
+        requires = ["creation_time"])
+
+   def star_particle_type(pfilter, data):
+       filter = data["all", "particle_type"] == 2
+       return filter
+   add_particle_filter("star",
+        function = star_particle_type,
+        filtered_type = "all",
+        requires = ["particle_type"])
+
+The correct filter will be identified and added to a dataset.  Filters are
+distinct from types in the sense that types have a fast-path that can be passed
+down to IO functions; for instance, this may be because particles are stored in
+a separate location or IO routines are able to quickly identify those particles
+that are able to be loaded.  Filters are better thought of as a set of generic
+validation and selection routines, where those filters are difficult or
+impossible to pass into the IO routines in a general way.
+
+Since this is a multi-map to filter names, we will not be able to store filters
+in a dict-like object, or we will at the very least have to return a list of
+possible filters when accessing via dict.  This will likely not serve as a
+large barrier, as the set of filters will not be user-exposed.
+
+In addition to this, we will define a similar system for filters as is done for
+fields, in that a hierarchy of filtering databases will be available.  The base
+or universal filters will be available across codes (suitable, for instance, in
+direct cross-code comparison) and then frontend-specific filters can be
+created.  This will enable degeneracies of field names and so on to be
+eliminated.  The first implementation will require manual calling of
+``add_particle_filter`` on ``StaticOutput`` subclasses *before* instantiation
+of a hierarchy.
+
+However, unlike derived fields, because these filters define actual new
+particle types, they will not by-default be applied universally, but instead
+universal filters will need to be activated by the user.  Frontends can decide
+on a frontend-by-frontend basis whether or not new frontend-specific filters
+will be added by default.
+
+Backwards Compatibility
+-----------------------
+
+This should not break any backwards compatibility by itself.  However, should
+functions in yt begin to rely on these filters, those functions will no longer
+be backwards compatible.
+
+Alternatives
+------------
+
+I have not presently identified any alternatives, other than construction of a
+domain-specific language for describing filters that would then be embedded in
+the particle type.  I believe that will raise complexity considerably.

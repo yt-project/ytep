@@ -1,0 +1,145 @@
+YTEP-0012: Halo Redesign
+========================
+
+Abstract
+--------
+
+Created: March 7, 2013
+
+Author: Britton Smith, Cameron Hummels, Chris Moody, Mark Richardson, Yu Lu
+
+In yt 3.0, operations relating to the analysis of halos (halo finding, 
+merger tree creation, and individual halo analysis) will be brought together 
+into a single framework.  This will enable the analysis of individual halos 
+through time without the need to bridge the gap between halo finding, merger tree 
+creation, and halo profiling on one's own.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+  * `Issue tracker <https://bitbucket.org/yt_analysis/yt/issue/522/unified-halo-analysis>`_
+
+Detailed Description
+--------------------
+
+Halo Analysis in yt 2.x
++++++++++++++++++++++++
+
+Currently, analyzing halos from a cosmological simulation works in the following way.  
+First, a halo finder is run, which produces a halo catalog in the form of an ascii 
+file.  Each of the halo finders implemented in yt produce halo catalogs with slightly 
+different formats, including various quantities that also differ.  To perform any 
+additional analysis on the halos that have been found, one then uses the 
+``HaloProfiler``.  The ``HaloProfiler`` reads the various halos catalogs from their 
+files and performs a limited set of specific functionality, namely one-dimensional 
+radial profiles and projections.  There is also a function that accepts a callback 
+function for performing custom analysis.  The analysis products for each of these are 
+stored in separate locations.  Any figures to be made from these analyses require the 
+user to write their own scripts that are responsible for all file i/o, sorting, and 
+plotting.
+
+Analysis of a halo as it evolves over time first requires the creation of a merger 
+tree.  For this to work, the particles that belong to each halo need to have been 
+written out during the halo finding step.  Most of the merger trees work by manually 
+specifying a list of dataset filenames over which the merger tree is to be calculated.  
+A separate database file is created that contains the entire merger tree and helper 
+functions exist to tracks a given halo's lineage over time.  There is little 
+comprehensive framework for performing halo time series analysis.  With the 
+functionality existing currently, halo time series analysis can be managed in one 
+of two ways.  The first, and more expensive by far, is to run the ``HaloProfiler`` 
+on all halos in all datasets and then use the merger tree database file to correlate 
+halos from multiple times in the user's hand-built plotting script.  The second 
+is to use the merger tree information to specify a single halo index to be analyzed 
+with the ``HaloProfiler``.  This is accomplished by creating a filter for a specific 
+halo index, and cannot account for halos coming from multiple parents or having 
+multiple children.  There are numerous other ways in which these approaches are 
+very limiting.
+
+Proposed Halo Analysis in yt 3.0
+++++++++++++++++++++++++++++++++
+
+All of the functionality described above will be managed by a series of new objects 
+working in a hierarchy.  These will be ``HaloCatalogTimeSeries``, ``HaloCatalog``, 
+and ``Halo``, decribed in further detail below.  The files created by the operations 
+described here will allow for the full state of the ``HaloCatalogTimeSeries`` object 
+to be restored by running the same commands that were used to create them.  This will 
+allow the user to create a single script that will be run first on a supercomputer to 
+perform all of the dataset-requiring analysis and then later on a local machine to 
+load the halo data into memory for further analysis and plotting.
+
+``HaloCatalogTimeSeries``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This object will accept a ``TimeSeriesData`` object containing all the datasets to be 
+used.  Its two primary functions will be to perform halo finding on all datasets and 
+creating the merger tree.  Each of these two steps will be performed with separate 
+functions calls where the arguments given will be a callable halo finding or merger 
+tree function and a dictionary containing additional configuration paramters specific to 
+the provided callables.  The data structure contained in memory will be a time-sorted 
+list of ``HaloCatalog`` objects, one for each dataset.  It will also contain
+a dictionary of dictionaries showing the merger tree information for each halo.  The 
+on-disk format for ``HaloCatalogTimeSeries`` objects will likely need to be refined, but 
+will ideally preserve the system of pointers connecting ``Halo`` objects to their past and 
+future counterparts (described further in the ``Halo`` section).  The data stored here will 
+potentially be far too large for a single file.  Instead, a system of multiple files that 
+is capable of quickly reconstructing the ``Halo`` pointer structure may be better.
+
+The other primary function will be to create halo tables that are flattened numpy 
+structured arrays of various halo quantities from all or a selection of all halos 
+(e.g. by timestep) from all halo catalogs.  This will enable easy slicing and 
+plotting of properties from multiple halos.
+
+``HaloCatalog``
+^^^^^^^^^^^^^^^
+
+This will be a light-weight container for ``Halo`` objects from a single dataset.  It 
+will be responsible for writing ``Halo`` objects to and restoring from disk.  It
+will be a numpy structured array.  The manner in which ``HaloCatalog`` objects will be 
+written to disk will be specified similar to how halo finders and merger tree generators 
+given to ``HaloCatalogTimeSeries`` objects, i.e., by providing a callable writer function.  
+This will allow users to write to any number of standardized formats, such as the 
+`IRATE <http://www.physics.uci.edu/~etolleru/irate-docs/formatspec.html>`_ format.
+
+``Halo``
+^^^^^^^^
+
+The ``Halo`` object will contain all quantities associated with a given halo 
+calculated either during the halo finding step or by analysis performed later.  
+By default, particle information will be saved to disk after halo finding has been 
+performed since it is required for merger tree generation.  However, particle 
+information will not remain attached to the ``Halo`` object since it takes a great 
+deal of memory to store this information.  
+Instead, there will be several halo quantities calculatd at instantiation using 
+these particles including center-of-mass phase-space coordinates, densest point,
+shape of halo, and merger tree information (matching against previous and later 
+timesteps to determine lineage of a halo).  However, the option will exist
+for reloading particle information for later analysis.  This technique of frontloading 
+analysis that requires particle information is how some halo finders, such as 
+Rockstar, currently operate.
+
+The ``Halo`` object will also have pointers to the ``Halo`` objects that are 
+their past and future instances, essentially the most massive pro/postgenitors 
+with the largest match of particles inventories.  This will allow one to perform 
+any additional analysis on a single halo lineage simply by traversing this 
+linked list.  Further analysis on ``Halo`` objects will be facilitated by 
+associating quantities with callable functions.  If the user attempts to access 
+a halo quantity whose value is not currently stored within the ``Halo`` object, 
+it will run the associated callable to create it.  At any time, the 
+``HaloCatalogTimeSeries`` object can be directed to update the files on disk with 
+any new quantities that have been calculated.
+
+Backwards Compatibility
+-----------------------
+
+This will be a completely new framework for performing this type of analysis.  
+Other than working with existing halo finders and potentially reading in the 
+output they produce now, there will be no compatibility with pre-existing 
+machinery.  For these reasons, this development will be confined to yt 3.0.
+
+Alternatives
+------------

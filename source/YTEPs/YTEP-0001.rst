@@ -53,13 +53,26 @@ collections of data to live internal to the individual implementations of
 ``GeometryHandler`` objects.  This way, Grids can still batch based on Grid
 information, but this abstraction is not needed for Octree IO.
 
+Note that YTEP-0017 redefines ``GeometryHandler`` to ``Index`` -- this reflects
+the fact that the process of data selection and IO is better thought of as a
+process of indexing, and that any subsequent operations should be conducted at
+a higher level.
+
 Main Changes
 ++++++++++++
 
-  * Data objects no longer have a ``_grids`` attribute
+  * Data objects no longer have a ``_grids`` attribute.  
   * Parallelism is restructured to iterate over chunks (decided on by the
     geometry handler) rather than grids
   * Grids do not exist outside of the grid geometry handler
+  * To specifically break backwards compatibility, a ``blocks`` property has
+    been added which will iterate and yield block-like data (i.e., grids) and
+    the mask of the blocks.  This should encompass the use case of both
+    iterating over the ``_grids`` attribute, obtaining the mask that selects
+    points inside a region, and having a 3D dataset.  This should be used
+    exceedingly rarely, but it will be implemented for all types of data.  All
+    routines that call upon ``_grids`` directly must be updated to use
+    ``blocks``.
 
 Implementation
 ++++++++++++++
@@ -76,12 +89,14 @@ implemented:
     the count of cells within a given data object.
   * ``_chunk_io(self, dobj)``: this function should yield a series of
     ``YTDataChunk`` objects that have been ordered and created to consolidate IO.
-  * ``_chunk_spatial(self, dobj, ngz, sort = None)``: this should yield a
-    series of ``YTDataChunk`` objects which have been created to allow for
-    spatial access of the data.  For grids, this means 3D objects, and for
-    Octs the behavior is undefined but should be 3D or possibly a string of 3D
-    objects.  This is where ghost zone generation will occur, although that
-    has not yet been implemented.
+  * ``_chunk_spatial(self, dobj, ngz, sort = None, preload_fields = None)``:
+    this should yield a series of ``YTDataChunk`` objects which have been
+    created to allow for spatial access of the data.  For grids, this means 3D
+    objects, and for Octs the behavior is undefined but should be 3D or
+    possibly a string of 3D objects.  This is where ghost zone generation will
+    occur, although that has not yet been implemented.  Optionally, the chunk
+    request can also provide a "hint" to the chunking system of which fields
+    will be necessary.  This is discussed below.
   * ``_chunk_all(self, dobj)``: this should yield a single chunk that contains
     the entire data object.
 
@@ -140,6 +155,60 @@ Essentially, by making the method of subsetting and striding over
 subsetted data more compartmentalized, the code becomes more clear and
 more maintainable.
 
+Field Preloading
+----------------
+
+A common problem with the current chunking system is the problem of preloading
+for data access for spatial fields.  For instance, inside the field generation
+system, this construction is used:
+
+.. code-block:: python
+
+   for io_chunk in self.chunks([], "io"):
+       for i,chunk in enumerate(self.chunks(field, "spatial", ngz = 0)):
+
+At this point in the system, a single field is being generated and all of the
+dependencies for that field can be calculated using
+`_identify_field_dependencies`, but this is not done.  The chunking will first
+break into IO chunks, and then iterate over those chunks in a spatial chunk.
+This results in IO not being conducted on the IO chunks, but instead on each
+individual spatial chunk.  For octree datasets, this is not typically that bad,
+as a spatial chunk there can consist of many items.  However, for patch-based
+datasets (particularly Enzo and the current FLASH implementation) this results
+in far more fine-grained IO access than we want.  As an example, this would not
+allow any batching of IO inside HDF5 files, despite already ordering the access
+to the spatial data in that appropriate order.  When depositing particles in
+Enzo, for instance, this results in a single access to every single grid for
+each particle deposition operation.
+
+For non-spatial fields, IO chunking is typically quite effective and
+appropriate for patch datasets.
+
+To remedy this, we need to construct a language for preloading within an IO
+chunk.  This would necessitate the creation of a ``_field_cache`` attribute
+on ``DataContainer``, which would be populated *inside* the ``_chunk_io`` loop,
+if hinting is available.  ``_read_fluid_fields`` and ``_read_particle_fields``
+would then inspect the chunk they are passed, and for any fields that are
+requested, if they are inside the ``_field_cache`` dict (or dict subclass)
+those values would be returned.  This is managed by the ``_activate_cache``
+method.
+
+This would change the loop above to look something like this:
+
+.. code-block:: python
+
+   field_deps = self._identify_dependencies(field)
+   for io_chunk in self.chunks([], "io"):
+       for i,chunk in enumerate(self.chunks(field, "spatial", ngz = 0,
+                                            preload_fields = field_deps)):
+
+This should result in much more efficient IO operations as IO for spatial
+fields will be able to be consolidated.  As they are currently implemented,
+Octrees would likely not need this improvement, and so they will not need to
+have this implemented.  However, all frontends may ultimately benefit from
+this, as it could trivially be extended to keep all data resident in memory for
+situations where many passes over a small amount of data are necessary.
+
 Backwards Compatibility
 -----------------------
 
@@ -152,8 +221,17 @@ All Octree code will need to be updated for 3.0.  All frontends for grids will
 need to be updated, as this requires somewhat different IO systems to be in
 place.  Updating the grid patch handling will require minimal code change.
 
-Currently, because of how chunking is handled, ghost zones are not available.
-This is a lack of implementation, not an impossibility.
+Ghost zones have been implemented, but will require further study to ensure
+that the results are correctly being calculated.  Ghost zone-requiring fields
+are progressing.
+
+To accommodate situations where data objects or processing routines (not
+derived fields) require information about the shape, connectivity and masking
+of data, a ``blocks`` attribute has been implemented.  This attribute will
+yield masks of data and 3D-shaped data containers, enabling most old
+grids-using routines to work.  By focusing on blocks of data rather than grids,
+we emphasize that these may be of any size, and may also be generated rather
+than code-inherent data.
 
 Alternatives
 ------------

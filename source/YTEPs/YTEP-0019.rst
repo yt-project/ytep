@@ -1,0 +1,381 @@
+YTEP-0019: Reduce items in main import
+======================================
+
+Abstract
+--------
+
+Created: October 2, 2013
+Author: Matthew Turk
+
+Currently, ``yt.mods`` includes a huge number of items, polluting the namespace
+considerably.  Many of these are not necessary, as they are seldom used.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+Detailed Description
+--------------------
+
+Currently, the number of items in the ``yt.mods`` namespace is enourmous.
+There are 276 items (including module builtins.)  By providing a better
+set of namespaces, we can make all of these items accessible without polluting
+the namespace itself.
+
+As an example, we should expose the ``load`` command primarily, and encourage
+directly importing frontend-specific code if that code needs to be interacted
+with.
+
+This YTEP concerns two changes in functionality.
+
+ * Reduce the number of items in ``yt.mods``.
+ * Make ``yt.mods`` a superset of functionality of ``yt/__init__.py``.  This
+   means ``startup_tasks.py`` (which includes argument parsing, parallel
+   initialization, configuration system reading, and so on.)
+
+This will change some aspects of behavior, as it will make operations that
+currently require the ``ytcfg`` variable to be modified *before* any other
+``startup_tasks`` code is executed no longer possible.  This number is
+extremely small, and the primary one is loglevel setting, which is easily
+exposed in ``mylog.setLevel``.
+
+Primarily, we want to make ``yt`` exist better as a module as well as an
+environment.
+
+Current Imports
++++++++++++++++
+
+These are the items currently imported, and their proposed status.
+
+We can implement this either through not importing into the main namespace
+items we do not want to include, or by explicitly enumerating the items to
+include in an ``__all__`` attribute.
+
+A few comments on specific items:
+
+ * ``TransferFunction`` classes have been removed and we should investigate
+   other ways of exposing them.  One option would be importing the module
+   ``transfer_functions`` and accessing attributes.
+ * ``HaloFinder`` has been removed, so a new method for setting up this process
+   easily and transparently (perhaps with amods) is needed.
+ * ``add_grad`` should probably have a new name.
+
+
+======================================   =======================================
+Object                                   Include
+======================================   =======================================
+
+``ARTFieldInfo``                         No
+``ARTIOFieldInfo``                       No
+``ARTIOStaticOutput``                    No
+``ARTStaticOutput``                      No
+``AnalysisTask``                         No
+``ArrowCallback``                        No
+``AthenaFieldInfo``                      No
+``AthenaStaticOutput``                   No
+``BinnedProfile1D``                      Yes
+``BinnedProfile2D``                      Yes
+``BinnedProfile3D``                      Yes
+``Camera``                               No
+``CastroFieldInfo``                      No
+``CastroStaticOutput``                   No
+``ChomboFieldInfo``                      No
+``ChomboStaticOutput``                   No
+``ClumpContourCallback``                 No
+``ColorTransferFunction``                No
+``ContourCallback``                      No
+``CoordAxesCallback``                    No
+``CuttingQuiverCallback``                No
+``DummyProgressBar``                     No
+``EnzoFieldInfo``                        No
+``EnzoSimulation``                       No
+``EnzoStaticOutput``                     No
+``EnzoStaticOutputInMemory``             No
+``EnzoTestOutputFileNonExistent``        No
+``FLASHFieldInfo``                       No
+``FLASHStaticOutput``                    No
+``FieldInfo``                            No
+``FixedResolutionBuffer``                Yes
+``FlashRayDataCallback``                 No
+``GDFFieldInfo``                         No
+``GDFStaticOutput``                      No
+``GUIProgressBar``                       No
+``GadgetFieldInfo``                      No
+``GadgetHDF5StaticOutput``               No
+``GadgetStaticOutput``                   No
+``GridBoundaryCallback``                 No
+``HaloFinder``                           No
+``HomogenizedVolume``                    No
+``HopCircleCallback``                    No
+``HopParticleCallback``                  No
+``ImageArray``                           Yes
+``ImageLineCallback``                    No
+``InvalidSimulationTimeSeries``          No
+``LabelCallback``                        No
+``LinePlotCallback``                     No
+``LooseVersion``                         No
+``MagFieldCallback``                     No
+``MarkerAnnotateCallback``               No
+``MaterialBoundaryCallback``             No
+``MissingParameter``                     No
+``MoabFieldInfo``                        No
+``MoabHex8StaticOutput``                 No
+``MosaicFisheyeCamera``                  No
+``NoCUDAException``                      No
+``NoStoppingCondition``                  No
+``NyxFieldInfo``                         No
+``NyxStaticOutput``                      No
+``OWLSFieldInfo``                        No
+``OWLSStaticOutput``                     No
+``ObliqueFixedResolutionBuffer``         Yes
+``OffAxisProjectionPlot``                Yes
+``OffAxisSlicePlot``                     Yes
+``OrionFieldInfo``                       No
+``OrionStaticOutput``                    No
+``ParallelProgressBar``                  No
+``ParticleCallback``                     No
+``ParticleTrajectoryCollection``         Yes
+``PlanckTransferFunction``               No
+``PlotCallback``                         No
+``PlotCollection``                       Yes
+``PlotCollectionInteractive``            Yes
+``PlutoFieldInfo``                       No
+``PlutoStaticOutput``                    No
+``PointAnnotateCallback``                No
+``ProjectionPlot``                       Yes
+``ProjectionTransferFunction``           No
+``PyneMoabHex8StaticOutput``             No
+``QuiverCallback``                       No
+``RAMSESFieldInfo``                      No
+``RAMSESStaticOutput``                   No
+``SlicePlot``                            Yes
+``SphereCallback``                       No
+``StreamFieldInfo``                      No
+``StreamHandler``                        No
+``StreamStaticOutput``                   No
+``StreamlineCallback``                   No
+``TextLabelCallback``                    No
+``TigerFieldInfo``                       No
+``TigerStaticOutput``                    No
+``TimeSeriesData``                       Yes
+``TimestampCallback``                    No
+``TipsyFieldInfo``                       No
+``TipsyStaticOutput``                    No
+``TitleCallback``                        No
+``UnitBoundaryCallback``                 No
+``ValidateDataField``                    Yes
+``ValidateGridType``                     Yes
+``ValidateParameter``                    Yes
+``ValidateProperty``                     Yes
+``ValidateSpatial``                      Yes
+``VelocityCallback``                     Yes
+``YTAxesNotOrthogonalError``             No
+``YTCannotParseFieldDisplayName``        No
+``YTCannotParseUnitDisplayName``         No
+``YTCloudError``                         No
+``YTCoordinateNotImplemented``           No
+``YTCouldNotGenerateField``              No
+``YTDataSelectorNotImplemented``         No
+``YTDomainOverflow``                     No
+``YTEllipsoidOrdering``                  No
+``YTEmptyClass``                         No
+``YTException``                          No
+``YTFieldNotFound``                      No
+``YTFieldNotParseable``                  No
+``YTFieldTypeNotFound``                  No
+``YTGeometryNotSupported``               No
+``YTHubRegisterError``                   No
+``YTIllDefinedBounds``                   No
+``YTIllDefinedFilter``                   No
+``YTInvalidWidthError``                  No
+``YTNoAPIKey``                           No
+``YTNoDataInObjectError``                No
+``YTNoFilenamesMatchPattern``            No
+``YTNoOldAnswer``                        No
+``YTNotDeclaredInsideNotebook``          No
+``YTNotInsideNotebook``                  No
+``YTObjectNotImplemented``               No
+``YTOutputNotIdentified``                No
+``YTParticleDepositionNotImplemented``   No
+``YTRockstarMultiMassNotSupported``      No
+``YTSimulationNotIdentified``            No
+``YTSphereTooSmall``                     No
+``YTTooManyVertices``                    No
+``YTUnitNotRecognized``                  No
+``__builtins__``                         No
+``__doc__``                              No
+``__file__``                             No
+``__level``                              No
+``__name__``                             No
+``__package__``                          No
+``__startup_tasks``                      No
+``_fn``                                  No
+``absolute_import``                      No
+``add_art_field``                        No
+``add_artio_field``                      No
+``add_athena_field``                     No
+``add_castro_field``                     No
+``add_chombo_field``                     No
+``add_enzo_1d_field``                    No
+``add_enzo_2d_field``                    No
+``add_enzo_field``                       No
+``add_field``                            Yes
+``add_flash_field``                      No
+``add_gadget_field``                     No
+``add_gdf_field``                        No
+``add_grad``                             Yes
+``add_moab_field``                       No
+``add_nyx_field``                        No
+``add_orion_field``                      No
+``add_owls_field``                       No
+``add_pluto_field``                      No
+``add_quantity``                         No
+``add_ramses_field``                     No
+``add_stream_field``                     No
+``add_tiger_field``                      No
+``add_tipsy_field``                      No
+``amods``                                Yes
+``analysis_task``                        No
+``annotate_image``                       Yes
+``apply_colormap``                       Yes
+``available_analysis_modules``           Yes
+``axis_names``                           No
+``bb_apicall``                           No
+``cPickle``                              No
+``callback_registry``                    No
+``ceil``                                 No
+``cls``                                  No
+``contextlib``                           No
+``data_object_registry``                 No
+``defaultdict``                          No
+``deprecate``                            No
+``derived_field``                        Yes
+``ensure_dir_exists``                    No
+``ensure_list``                          No
+``ensure_numpy_array``                   No
+``ensure_tuple``                         No
+``fix_axis``                             No
+``fix_length``                           No
+``floor``                                No
+``get_available_modules``                No
+``get_hg_version``                       No
+``get_image_suffix``                     No
+``get_ipython_api_version``              No
+``get_memory_usage``                     Yes
+``get_multi_plot``                       Yes
+``get_num_threads``                      No
+``get_pbar``                             Yes
+``get_script_contents``                  No
+``get_version_stack``                    Yes
+``get_yt_supp``                          Yes
+``get_yt_version``                       Yes
+``glob``                                 No
+``humanize_time``                        No
+``imgur_upload``                         No
+``insert_ipython``                       Yes
+``inspect``                              No
+``inv_axis_names``                       No
+``is_root``                              Yes
+``iterable``                             Yes
+``just_one``                             No
+``load``                                 Yes
+``load_amr_grids``                       Yes
+``load_hexahedral_mesh``                 Yes
+``load_particles``                       Yes
+``load_uniform_grid``                    Yes
+``my_plugin_name``                       No
+``mylog``                                Yes
+``na``                                   No
+``name``                                 No
+``np``                                   Yes
+``numpy``                                No
+``off_axis_projection``                  Yes
+``only_on_root``                         Yes
+``ortho_find``                           Yes
+``os``                                   No
+``parallel_objects``                     Yes
+``parallel_profile``                     Yes
+``particle_filter``                      Yes
+``paste_traceback``                      No
+``paste_traceback_detailed``             No
+``pb``                                   No
+``pdb``                                  No
+``pdb_run``                              No
+``periodic_position``                    Yes
+``physical_constants``                   Yes
+``print_tb``                             Yes
+``projload``                             No
+``quantity_info``                        No
+``quartiles``                            Yes
+``read_struct``                          No
+``resource``                             No
+``rootloginfo``                          No
+``rootonly``                             Yes
+``rpdb``                                 No
+``scale_image``                          Yes
+``show_colormaps``                       Yes
+``signal``                               No
+``signal_ipython``                       No
+``signal_print_traceback``               No
+``signal_problem``                       No
+``simulation``                           Yes
+``struct``                               No
+``subprocess``                           No
+``sys``                                  No
+``time``                                 No
+``time_execution``                       No
+``time_function``                        No
+``traceback``                            No
+``traceback_writer_hook``                No
+``types``                                No
+``unparsed_args``                        Yes
+``update_hg``                            No
+``warnings``                             No
+``wraps``                                No
+``write_bitmap``                         Yes
+``write_fits``                           Yes
+``write_image``                          Yes
+``write_projection``                     Yes
+``x_dict``                               No
+``y_dict``                               No
+``yt_counters``                          No
+``ytcfg``                                Yes
+``ytcfgDefaults``                        No
+
+Changing ``yt/__init__.py`` to Import
++++++++++++++++++++++++++++++++++++++
+
+The second aspect of this YTEP is to change the ``yt`` module to include
+everything that is in ``yt.mods``, but without the side effects that come from
+``yt.startup_tasks``.  Because importing submodules necessarily will then
+import ``__init__.py``, this means submodules cannot be imported without the
+whole of ``yt`` that is exposed in ``yt.__init__.py`` being imported.
+
+This primarily will affect configuration options, which are largely no longer
+necessary to modify directly at runtime.  Additionally, the old behavior can
+still be preserved by ``yt.mods``.
+
+Backwards Compatibility
+-----------------------
+
+This may break compatibility, although nearly all of the items removed are
+items that are not typically used in scripts.  This list can be modified.
+
+Note that importing frontends into a namespace will still enable them to be
+used in ``load``.
+
+Importing ``yt.mods`` will still act as before, with option parsing and the
+like.  Importing ``yt.config`` will result in the config file being parsed
+once; this means runtime options will need to be modified differently.
+
+Alternatives
+------------
+
+We could identify additional means of reducing the namespace pollution, but
+this is the main one that I see.
+
+We could also not put anything into ``yt/__init__.py``.

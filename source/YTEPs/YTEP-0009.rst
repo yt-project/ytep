@@ -1,0 +1,126 @@
+YTEP-0009: AMRKDTree for Data Sources 
+=====================================
+
+Abstract
+--------
+
+Created: February 28, 2012
+Author: Sam Skillman
+
+This proposal outlines the changes (functional and API) necessary for the 
+ability to render volumes using arbitrary data sources.  This will still
+operate with the idea of grids and masks.  However, this should lead as a 
+stepping stone to non-grid-based rendering.
+
+Status
+------
+
+Status should be one of the following:
+
+ #. Implemented in yt-3.0 PR77
+
+YTEPs do not need to pass through every stage.
+
+Project Management Links
+------------------------
+
+Currently the development of this capability is in the camera-refactor
+bookmark at:
+https://bitbucket.org/samskillman/yt/commits/all/tip/..bookmark%28%22camera-refactor%22%29
+
+There is a Camera refactor YTEP-0010 that is closely related to the AMRKDTree 
+functional changes suggested in this YTEP.
+
+
+This has been implemented as of:
+https://bitbucket.org/yt_analysis/yt-3.0/pull-request/77/add-legitimate-source-rendering-using-a/diff
+
+
+Detailed Description
+--------------------
+
+Functional Background:
+
+The volume rendering has long operated on either the entire domain or (at best)
+a sub-rectangular-prism using left and right edges.  This is fairly limiting in
+that a user may not need (or want) to render the entire volume, and may want
+to restrict the volume shown by something other than a single box.  A majority
+of the reasoning behind the recent ``AMRKDTree`` was to allow for more generic
+adding of grids/data to the homogenized volume.
+
+The primary problem with attempting to do this is that the volume rendering
+acts on a rectangular brick of data, and the traversal of this brick is fairly 
+far removed from a AMR3DData object.  Therefore, we either need to modify the 
+traversal, or somehow mask out the data being handed to the traversal.
+
+The latter approach can be accomplished using the following code:
+
+.. code-block:: python
+
+    def _source_mask(field, data):
+        return 1.0*self.source._get_cut_mask(data)
+    self.pf.field_info.add_field('source_mask', function=_source_mask, take_log=False)
+
+then when creating the vertex centered data:
+
+.. code-block:: python
+
+    mask = grid.get_vertex_centered_data('source_mask',smoothed=False,no_ghost=self.no_ghost).astype('float64')
+    mask = np.clip(mask, 0.0, 1.0)
+    mask[mask<1.0] = np.inf
+    for i,field in enumerate(self.fields):
+        vcd = grid.get_vertex_centered_data(field,smoothed=True,no_ghost=self.no_ghost).astype('float64')
+        vcd = vcd*mask
+
+However, this approach is full of quirks since what we really want is to mask
+out an entire cell, and not some set of vertices.  Therefore, we propose to
+modify the ``PartitionedGrid`` object to include an integer mask that is used
+during traversal to mask out the individual cells.  
+
+
+API Background:
+
+The method for specifying a data source in a volume rendering has not been
+suggested.  Currently, the rectangular volume that is used for rendering uses
+a ``le`` and ``re`` pair of keywords to specify the left and right edges.  When
+moving to a data source, we should simplify the volume selection by simply
+supplying a ``data_source=`` keyword.  
+
+Changes to the Camera interfaces suggested in YTEP-0010 will handle the move
+to using a data_source.
+
+In my working solution, I have set the AMRKDTree __init__ function to have the
+following form:
+
+.. code-block:: python
+
+    class AMRKDTree(ParallelAnalysisInterface)
+        def __init__(self, pf, min_level=None, max_level=None, data_source=None):
+
+
+Backwards Compatibility
+-----------------------
+
+This YTEP breaks the following backwards compatibility:
+
+  * AMRKDTree API
+
+It will additionally break internal uses of the API for the Camera, other
+cameras inheriting the __init__ of Camera, and the AMRKDTree.
+
+Alternatives
+------------
+
+  * Do nothing
+  * Add more keyword arguments to everything
+  * Wait until rendering is ready in yt-3.0, which will also likely demand
+    a breakage of API.
+
+After discussion, it was found to be easiest to only implement in yt-3.0, as 
+it is increasingly difficult to manage the two versions and how they handle 
+grids.  Since in yt-3.0 there are explicit mask objects in the pf.h.blocks 
+generator, it was significantly easier than expected to implement the mask
+on the PartitionedGrid object.  I'm also hopeful that this simplification is
+along the same lines of the idea of a simplified volume rendering scene object,
+as outlined in YTEP-0010.
+
