@@ -64,8 +64,10 @@ Necessary Features
 These are items that are necessary for developers to migrate from using and
 developing yt 2.6 to yt 3.0.
 
-This is intentionally left empty, as items from "feature parity" will be
+This is intentionally left mostly empty, as items from "feature parity" will be
 migrated up.
+
+ * ``field_cuts`` (which is a related to ``cut_region``, which I've left below)
 
 Feature Parity
 ++++++++++++++
