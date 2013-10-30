@@ -1,0 +1,95 @@
+.. _ytep-3000:
+
+YTEP-3000: Let's all start using yt 3.0!
+========================================
+
+Abstract
+--------
+
+Created: October 30, 2013
+Author: Matthew Turk
+
+This is a YTEP suggesting we all start using yt 3.0 for development, and where
+the blockers to adoption are enumerated.
+
+Status
+------
+
+In Progress
+
+Project Management Links
+------------------------
+
+Basically all the project management links up to this point have been talking
+about this.
+
+Detailed Description
+--------------------
+
+This YTEP outlines the items necessary to be implemented before yt 3.0 can be
+released, and before we can attempt to move development and day-to-day usage
+for developers to the 3.0 codebase.
+
+There are essentially three categories of work items: release blockers,
+necessary features to migrate usage and development, and feature parity
+requirements.
+
+Release Blockers
+++++++++++++++++
+
+These are components that need implementing before yt 3.0 can be released.
+This is not the same as reaching a "complete" implementation; the important
+work is to ensure that subsequent API breakages are minimal.
+
+ * Field renaming (:ref:`YTEP-0003 <ytep-0003>`), which has been completed in
+   the units refactor.
+ * De-astroification of yt and renaming of generic objects
+   (YTEP-00017, not yet accepted), which has been mostly
+   accomplished in the rebranding bookmark.
+ * Units unification (:ref:`YTEP-0011 <ytep-0011>`) of which a big part is
+   turning all fields into field "plugins."  This work is currently making
+   great progress.
+ * Smoothing kernel implementation for particles.  This has largely been
+   finished, but needs documentation and flexibility.
+ * Forest-of-octrees implementation for particles.  50% complete.
+ * Removing dict-like access to static output (:ref:`YTEP-0018 <ytep-0018>`),
+   done in the "rebranding" bookmark.
+ * Considerable amount of documentation.
+
+I do not believe there are any other blockers to yt 3.0.
+
+Necessary Features
+++++++++++++++++++
+
+These are items that are necessary for developers to migrate from using and
+developing yt 2.6 to yt 3.0.
+
+This is intentionally left empty, as items from "feature parity" will be
+migrated up.
+
+Feature Parity
+++++++++++++++
+
+These are items that existed in yt 2.6 that do not exist in yt 3.0 yet.
+
+ * Contour finding.  This is in progress, and a pull request has been issued.
+   It requires some of the other feature parity items for implementation.
+ * ``cut_region`` is not yet implemented
+ * ``extract_region`` is not yet implemented (although I am no longer sure it
+   is preferable to ``cut_region``)
+ * A handful of hierarchy attributes have not yet been implemented
+ * A few frontends still need polishing during the port, including Athena, GDF
+   and the like.  These are small items but will need assistance from
+   individual frontend maintainers.
+ * The sidecar storage has not been ported.
+
+Backwards Compatibility
+-----------------------
+
+This does not add any new backwards incompatible items, it is merely a call to
+action.
+
+Alternatives
+------------
+
+Call a mulligan, start over?
