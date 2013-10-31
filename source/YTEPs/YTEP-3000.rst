@@ -34,6 +34,10 @@ There are essentially three categories of work items: release blockers,
 necessary features to migrate usage and development, and feature parity
 requirements.
 
+Several developers have expressed that a major blocker is concluding work they
+have begun on yt 2.6 and the 2.x branch; this document is meant to supplement
+that, rather than replace it.
+
 Release Blockers
 ++++++++++++++++
 
@@ -84,6 +88,7 @@ These are items that existed in yt 2.6 that do not exist in yt 3.0 yet.
    and the like.  These are small items but will need assistance from
    individual frontend maintainers.
  * The sidecar storage has not been ported.
+ * Boolean regions have not been implemented
 
 Backwards Compatibility
 -----------------------
