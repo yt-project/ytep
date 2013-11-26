@@ -78,17 +78,13 @@ Feature Parity
 
 These are items that existed in yt 2.6 that do not exist in yt 3.0 yet.
 
- * Contour finding.  This is in progress, and a pull request has been issued.
-   It requires some of the other feature parity items for implementation.
- * ``cut_region`` is not yet implemented
- * ``extract_region`` is not yet implemented (although I am no longer sure it
-   is preferable to ``cut_region``)
- * A handful of hierarchy attributes have not yet been implemented
+ * A handful of hierarchy attributes have not yet been implemented.
  * A few frontends still need polishing during the port, including Athena, GDF
    and the like.  These are small items but will need assistance from
    individual frontend maintainers.
  * The sidecar storage has not been ported.
- * Boolean regions have not been implemented
+ * Boolean regions have not been implemented.  They can likely be implemented
+   in the same manner as ``cut_region`` has been.
 
 Backwards Compatibility
 -----------------------
