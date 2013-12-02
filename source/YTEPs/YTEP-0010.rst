@@ -16,8 +16,7 @@ retaining functionality for individual images.
 Status
 ------
 
-These are proposed changes to be partially implemented at the yt
-developers conference in March 2013.
+Open to changes through pull requests.
 
 Project Management Links
 ------------------------
