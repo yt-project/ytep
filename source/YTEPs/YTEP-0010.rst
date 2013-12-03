@@ -148,33 +148,33 @@ complexity of individual operations by adding in a slightly larger set
 of objects that are more flexible.
 
 New classes: 
-  * Scene 
-    Meant to be the main class for dealing with volumetric
-    visualization. It is constructed using a static output instance,
-    which it uses to set up a default camera based on domain extents.
-    It also instantiates a list of objects to be rendered, which
-    include RenderSource instances for volume rendering and streamlines.
+  * Scene
+        Meant to be the main class for dealing with volumetric
+        visualization. It is constructed using a static output instance,
+        which it uses to set up a default camera based on domain extents.
+        It also instantiates a list of objects to be rendered, which
+        include RenderSource instances for volume rendering and streamlines.
   * RenderSource
-    Base class for rendering types.  This can be (minimally) volumetric data
-    for volume rendering, path data for streamlines, point data for particles,
-    and other yet to be determined data types.
+        Base class for rendering types.  This can be (minimally) volumetric data
+        for volume rendering, path data for streamlines, point data for particles,
+        and other yet to be determined data types.
   * Camera
-    A lightweight camera representing the location and orientation of the
-    camera.  This can be specified in a number of ways, but to uniquely define
-    it, we need position of camera, pointing vector, and an optional north
-    vector (which is used to determine the image "up" direction which specifies
-    the image "up" direction).
+        A lightweight camera representing the location and orientation of the
+        camera.  This can be specified in a number of ways, but to uniquely define
+        it, we need position of camera, pointing vector, and an optional north
+        vector (which is used to determine the image "up" direction which specifies
+        the image "up" direction).
   * Timeline
-    The timeline object represents how the scene changes with time.  It is
-    valid from t=0 to t=1, but this can be mapped on to any number of output
-    frames during the render.  One can modify the Timeline object by setting
-    events such as keyframes to change the underlying scene components at any
-    point in the timeline.
+        The timeline object represents how the scene changes with time.  It is
+        valid from t=0 to t=1, but this can be mapped on to any number of output
+        frames during the render.  One can modify the Timeline object by setting
+        events such as keyframes to change the underlying scene components at any
+        point in the timeline.
   * CameraPath
-    In dealing with movies, one can set key frames of where and in what
-    orientation one wants the camera to be at certain times.  A smoothing
-    function (like a spline) can connect up these keyframes into a smooth
-    camera path for application on the timeline. 
+        In dealing with movies, one can set key frames of where and in what
+        orientation one wants the camera to be at certain times.  A smoothing
+        function (like a spline) can connect up these keyframes into a smooth
+        camera path for application on the timeline. 
 
 Sample Scripts for Proposed Infrastructure
 ++++++++++++++++++++++++++++++++++++++++++
