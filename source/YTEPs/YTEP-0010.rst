@@ -88,7 +88,7 @@ Here we note some of the shortcomings of the current camera implementation:
  #. Too much overhead in generating a simple rendering for the end user.  Needs
     helper functions to use sensible defaults so the user must only call one
     or two commands before generating a rendering.
- #  Too much complexity in the camera object constructor due to a large
+ #. Too much complexity in the camera object constructor due to a large
     number of parameters and keyword options.
  #. Volume renderings and off-axis projections are too distinct from each other.
  #. Not enough focus on time series or persistence of a camera from
@@ -110,7 +110,7 @@ to enable more transparency and usability of this important functionality.
     be situated in a scene, and should not contain references to the
     volumes.
  *  Add a "scene" object which then contains components like data sources
-    (i.e. volumes, streamlines, surfaces),  cameras, transfer functions, etc.
+    (i.e. volumes, streamlines, particles),  cameras, transfer functions, etc.
     The scene remains a structure for modifying the underlying components in
     that scene throughout the duration of the scene.
  *  Make a camera a reusable object for a given movie which can be modified
@@ -160,7 +160,7 @@ New classes:
              of the camera.  This can be specified in a number of ways, but to
              uniquely define it, we need position of camera, pointing vector, 
              and an optional north vector (which is used to determine the image
-             "up" direction which specifies the image "up" directionn).
+             "up" direction which specifies the image "up" direction).
   * Timeline - The timeline object represents how the scene changes with time.
                It is valid from t=0 to t=1, but this can be mapped on to 
                any number of output frames during the render.  One can 
