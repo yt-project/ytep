@@ -210,4 +210,7 @@ VorticityRPGrowthY                      vorticity_radiation_pressure_growth_y
 VorticityRPGrowthZ                      vorticity_radiation_pressure_growth_z
 VorticityRPGrowthMagnitude              vorticity_radiation_pressure_growth_magnitude
 VorticityRPGrowthTimescale              vorticity_radiation_pressure_growth_timescale
+x-velocity                              velocity_x
+y-velocity                              velocity_y
+z-velocity                              velocity_z
 ======================================  =======================================
