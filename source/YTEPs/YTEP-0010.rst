@@ -110,9 +110,9 @@ to enable more transparency and usability of this important functionality.
     be situated in a scene, and should not contain references to the
     volumes.
  *  Add a "scene" object which then contains components like data sources
-    (i.e. volumes),  cameras, transfer functions, etc.  The scene remains
-    a structure for modifying the underlying components in that scene 
-    throughout the duration of the scene.
+    (i.e. volumes, streamlines, surfaces),  cameras, transfer functions, etc.
+    The scene remains a structure for modifying the underlying components in
+    that scene throughout the duration of the scene.
  *  Make a camera a reusable object for a given movie which can be modified
     in virtually any way (location, transfer function, underlying pf) through 
     a series callback functions, or modifying the scene object directly.
@@ -148,15 +148,19 @@ complexity of individual operations by adding in a slightly larger set
 of objects that are more flexible.
 
 New classes: 
-  * Scene - Meant to be the main class for dealing with renderings.
-            In constructor it creates a default volume, camera, transfer
-            function, and timeline of length 0, but any of these 
-            can be changed in callbacks or directly after creation.
+  * Scene - Meant to be the main class for dealing with volumetric
+            visualization. It is constructed using a static output instance,
+            which it uses to set up a default camera based on domain extents.
+            It also instantiates a list of objects to be rendered, which
+            include RenderSource instances for volume rendering and streamlines.
+  * RenderSource - Base class for rendering types.  This can be (minimally)
+        volumetric data for volume rendering, path data for streamlines, point 
+        data for particles, and other yet to be determined data types.
   * Camera - A lightweight camera representing the location and orientation
              of the camera.  This can be specified in a number of ways, but to
              uniquely define it, we need position of camera, pointing vector, 
-             and north vector (which will be confirmed to be orthogonal to its 
-             pointing vector).
+             and an optional north vector (which is used to determine the image
+             "up" direction which specifies the image "up" directionn).
   * Timeline - The timeline object represents how the scene changes with time.
                It is valid from t=0 to t=1, but this can be mapped on to 
                any number of output frames during the render.  One can 
@@ -177,7 +181,8 @@ running this short script:
 
 >>> from yt.mods import *
 >>> pf = load("Enzo_64/DD0043/data0043")
->>> sc = scene(pf)
+>>> sc = Scene(pf)
+>>> sc.add_volume_rendering()
 >>> sc.render()
 
 where the scene constructor uses helper functions to set up all of the 
@@ -192,14 +197,12 @@ the end user to change things through a series of callbacks:
 
 >>> from yt.mods import *
 >>> pf = load("Enzo_64/DD0043/data0043")
->>> sc = scene(pf)
+>>> sc = Scene(pf)
 ### Change the rendered volume to be a sphere of radius 100 kpc
 >>> sp = pf.h.sphere([0.5,0.5,0.5],100/pf['kpccm'])
->>> sc.set_keyframe(source = sp)
+>>> sc.add_volume_rendering(sp)
 ### Change the camera position and orientation
->>> cam = camera(pos = [0,100,0], point = [0,0,0], north = [0,0,1], 
-                  scale = pf['kpccm'])
->>> sc.set_camera(camera = cam)
+>>> sc.camera.move(pos=[0,(100,'kpccm'),0], point=[0,0,0], north=[0,0,1])
 >>> sc.render()
 
 In order to create a short movie making a rotation around the center from 
@@ -219,11 +222,30 @@ set the timeline to match the timeseries data with a framerate of 12 frames/sec.
 >>> sc.timeline.set_num_frames(50)
 >>> sc.render()
 
+A primary end goal is to allow for the following functionality:
+
+>>> from yt.mods import *
+>>> pf = load("Enzo_64/DD0043/data0043")
+>>> sc = Scene(pf)
+### Change the rendered volume to be a sphere of radius 100 kpc
+>>> sp = pf.h.sphere([0.5,0.5,0.5],100/pf['kpccm'])
+>>> vr_handle = sc.add_volume_rendering(sp)
+### Here vr_handle is an instance of a VolumeRenderSource(RenderSource)
+>>> vr_handle.transfer_function.clear()
+>>> vr_handle.transfer_function.map_to_colormap(mi, ma, cmap='RdBu')
+>>> streamlines = Streamlines(pf,...) # Create streamlines
+>>> stream_handle = sc.add_streamlines(streamlines)
+>>> stream_handle.set_opacity(0.1)
+>>> stream_handle.set_radius((0.1,'kpc'))
+>>> sc.add_particles(sp)
+>>> particle_handler = sc.get_particle_handle()
+>>> particle_handler.transfer_function.set_color_field('density')
+>>> particle_handler.transfer_function.set_alpha(0.1)
+>>> sc.render()
+
 Backwards Compatibility
 -----------------------
 
-If we remove any of the old movie making functionality (e.g. rotations,
-translations, pitches, yaws, and zooms), we will break old scripts.  So
-it might be worthwhile to leave those simpler functions present in the code
-for backwards compatibility, and add the new movie path framework as a 
-more advanced tool.  But potentially this is going to break everything.
+This will break all backwards compatibility with the pf.h.camera interface.
+We will attempt to keep as many of the useful modifications (pitch, roll, yaw,
+etc.) as similar as possible to ease the pain.
