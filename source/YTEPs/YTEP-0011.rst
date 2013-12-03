@@ -17,20 +17,20 @@ main benefit is to make sure units are carried through calculations in a
  - a `UnitRegistry` class, which defines valid atomic units (ex: "g" for gram).
  - a `YTArray` class, a subclass of NumPy `ndarray` that attaches a `Unit`
    object.
- - a `Quantity` class, a subclass of `YTArray` which is restricted to a single
+ - a `YTQuantity` class, a subclass of `YTArray` which is restricted to a single
    element (for handling scalars).
 
 .. _sympy: http://sympy.org/
 
 Status
 ------
-In Progress: work is ongoing in a fork, no pull request has been issued yet.
+In Progress: work is ongoing and there is an open PR for discussion.
 
 Project Management Links
 ------------------------
 
-The code can be found in Casey Stark's fork of yt-3.0:
-https://bitbucket.org/caseywstark/yt-3.0
+The code can be found in the unit refactor pull request:
+https://bitbucket.org/yt_analysis/yt/pull-request/662/unit-refactor/diff#comment-897255
 
 The work is based on Casey's dimensionful library:
 https://github.com/caseywstark/dimensionful
@@ -147,10 +147,10 @@ for unitful operations is performed automatically by `sympy`_::
   [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
    1.59561490e-25   1.09824903e-24] g/cm**3
 
-We will also create a new `Quantity` class to handle scalars that are
-associated with units.  In the proposed implementation, `Quantity` is a
+We will also create a new `YTQuantity` class to handle scalars that are
+associated with units.  In the proposed implementation, `YTQuantity` is a
 subclass of `YTArray` with the requirement that it is limited to one element.
-`Quantity` is primarily useful for physical constants and ensures that the
+`YTQuantity` is primarily useful for physical constants and ensures that the
 units are propogated correctly when composing quantities from arrays, physical
 constants, and unitless scalars::
 
@@ -160,7 +160,7 @@ constants, and unitless scalars::
    1.59992074e-12   1.40453862e-12] erg
 
 With this new capability, we will have no need for fields defined only to
-handle different units (e.g. Radius, RadiusCode, Radiuspc, etc.).  Instead,
+handle different units (e.g. RadiusCode, Radiuspc, etc.).  Instead,
 there will only be one definition and if a user needs the field in a different
 unit system, they can quickly convert using `convert_to_units` or `in_units`::
 
@@ -172,6 +172,15 @@ This will also replace the way we handle cosmological units.  When the
 that will contain a full set of units that are defined for the simulation.  This
 is particularly useful for cosmological simulations, since it makes it easy to
 ensure cosmological units are defined automatically.
+
+Additionally, this will allow us to encode a concept of code units directly into
+the unit system.  Every `StaticOutput` object will have a `length_unit`,
+`time_unit`, and `mass_unit` attribute that the user can quickly and easily
+query to discover the base units of the simulation.  Additionally, we will allow
+conversions to internal `code_length`, `code_mass`, and `code_time` units.
+On-disk data will also be available to the user, presented in unconverted code
+units.  Code units will preserve dimensionality: it will be only length units
+will be convertible to `code_length`, for example.
 
 Unit labels for plots will be programatically generated. This will leverage
 `sympy`_'s LaTeX output module.  Even though the field definitions will have
@@ -259,23 +268,26 @@ behavior in the section below.
 
 .. _subclassing ndarray: http://docs.scipy.org/doc/numpy/user/basics.subclassing.html
 
-This implementation will provide three new utilities modules:
-yt.utilities.units, yt.utilities.yt_array, and yt.utilities.quantity.
-yt.utilities.units contains the base dimensions objects, some common derived
-dimensions objects, a default unit symbol LUT, the UnitRegsitry class, and the
-Unit class. yt.utilities.yt_array contains the YTArray class.
-yt.utilities.quantity contains the Quantity class.
+This implementation will provide two new utilities modules: yt.utilities.units,
+and yt.utilities.yt_array.  yt.utilities.units contains the base dimensions
+objects, some common derived dimensions objects, a default unit symbol LUT, the
+UnitRegsitry class, and the Unit class. yt.utilities.yt_array contains the
+YTArray and YTQuantity classes.
 
 Handling code units
 -------------------
 
 Code frontend developers should add code base units to their static output. In
 the `set_units` method, developers can use self.unit_registry.add to define
-"code_mass", "code_length", and "code_time". We recommend also defining other
+`code_mass`, `code_length`, and `code_time`. We recommend also defining other
 common code units such as "code_velocity", "code_potential", etc. If users want
 to work in code units, they can now use::
 
     >>> dd["density"].in_units("code_density")
+
+Additionally, the `_set_code_unit_attributes` function should be used to attach
+`length_unit`, `time_unit`, `mass_unit`, and any other future domain specific
+base units we would like to support.
 
 Handling cosmological units
 ---------------------------
@@ -288,10 +300,19 @@ Comoving length unit symbols are "(length symbol)cm", like "pccm".
 LaTeX printing
 --------------
 
-We are still working on this design. This might require one extra element in
-the atomic unit definitions for things like "Msun -> M_{\odot}". Besides that
-sort of symbol replacement, sympy's printing function ``print_latex`` can
-handle this completely.
+We will make use of sympy's LaTeX pretty-printing functionality to generate axis
+and colorbar labels automatically for unit symbols.  The LaTeX strings used for
+atomic units are encoded in the `latex_symbol_lut`.  This is necessary because,
+for the purposes of LaTeX representation, sympy interprets symbol names as if
+they were algebraic variables, and so get displayed using an italic font.  Since
+our symbols represent units, we want to display them in a roman font and so need
+to wrap them in ``\rm{}``.  New units do not need to be explicitly added to the
+look-up-table, by default the LaTeX symbol will simply be the string name of the
+unit, wrapped using ``\rm{}``.
+
+Using these LaTeX representations of atomic unit symbols, we then use sympy to
+generate labels, composing the LaTeX expressions for compound units according
+to the algebraic relationships between the atomic unit symbols.
 
 YTArray operations
 ------------------
@@ -307,9 +328,10 @@ below, we have enumerated all combinations of `YTArray`, scalar (native Python
 float or np.float64), and `ndarray` in binary operations. In most cases,
 unitful operations are well defined, however in cases where the unitful
 operations are not well defined, we raise a new exception,
-`YTInvalidUnitOperation`. In case a user does not want to deal with catching
-this exception, we provide a new configuration option
-"ignore_invalid_unit_operation".
+`YTInvalidUnitOperation`. In the future, we may add a new configuration option,
+"ignore_invalid_unit_operation", that will prevent this exception from being
+raised, allowing users to do 'dirty' unit operations, but losing the runtime
+unit checking provided by the unit system.
 
 +-----------+--------------------+-------------------------------------------------+
 | Operation | Combination        | Result (pseudocode)                             |
@@ -393,4 +415,3 @@ also need to eliminate instances of this construction within the yt codebase.
 We will need to check to make sure the analysis modules and external tools that
 operate on yt data can either work appropriately with `YTArray` or figure out a
 way to degrade to `ndarray` gracefully.
-

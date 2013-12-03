@@ -6,7 +6,7 @@ Abstract
 
 Created: December 11, 2012
 
-Author: Casey Stark
+Author: Casey Stark, Nathan Goldbaum
 
 Let's clean up field names in yt, ex "SoundSpeed" -> "sound_speed". The
 proposed work will serve to remove Enzo-isms and encourage more consistent
@@ -15,9 +15,7 @@ field names across frontends.
 Status
 ------
 
-Proposed.
-
-I started working on the edits in my yt-3.0 fork.
+Implemented in an open pull request. https://bitbucket.org/yt_analysis/yt/pull-request/662/unit-refactor
 
 Project Management Links
 ------------------------
@@ -38,19 +36,32 @@ are more standard in Python.
 Solution
 ^^^^^^^^
 
-Editing field names inside the ``universal_fields`` module. I am not sure what
-changes we will need beyond this.
+The field names must be updated to lowercase_underscored format.  This means all
+of the field names in `universal_fields.py` as well as all of the frontends and
+all of the field name references elsewhere in the code base need to be updated.
 
 Testing
 ^^^^^^^
 
-I am relying on the existing tests in yt-3.0, but I am afraid it's not enough.
+The existing unit testing framework as well as an updated set of field detection
+tests.  If there are additional fixes required in untested parts of the code
+base, we will update them as we find them.
 
 Backwards Compatibility
 -----------------------
 
-This will certainly break some old scripts. This was the motivation for
-starting this in yt-3.0.
+We will provide a compatibility layer, allowing yt to map from the old field
+names to the new ones.  This compatibility layer will only be optionall enabled.
+
+Right now, one can turn it on via the `_setup_deprecated_fields` function:
+
+.. code-block:: python
+
+   from yt.mods import *
+   pf = load('IsolatedGalaxy/galaxy0030/galaxy0030')
+   pf._setup_deprecated_fields()
+
+In the future we might also enable this via a config parameter.
 
 Field Names
 -----------
