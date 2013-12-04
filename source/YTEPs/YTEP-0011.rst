@@ -6,7 +6,7 @@ Abstract
 --------
 
 | Created: March 7, 2013  
-| Authors: Casey Stark, Nathan Goldbaum, and Anna Rosen
+| Authors: Casey Stark, Nathan Goldbaum, Anna Rosen, Matt Turk
 
 This YTEP describes adding symbolic units to yt using the `sympy`_ package. The
 main benefit is to make sure units are carried through calculations in a
@@ -179,8 +179,9 @@ the unit system.  Every `StaticOutput` object will have a `length_unit`,
 query to discover the base units of the simulation.  Additionally, we will allow
 conversions to internal `code_length`, `code_mass`, and `code_time` units.
 On-disk data will also be available to the user, presented in unconverted code
-units.  Code units will preserve dimensionality: it will be only length units
-will be convertible to `code_length`, for example.
+units.  Code units will preserve dimensionality: an array or quantity that has
+units of `cm` units will be convertible to `code_length`, but not to
+`code_mass`, for example.
 
 Unit labels for plots will be programatically generated. This will leverage
 `sympy`_'s LaTeX output module.  Even though the field definitions will have
