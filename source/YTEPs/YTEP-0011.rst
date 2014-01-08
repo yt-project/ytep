@@ -347,7 +347,7 @@ package. This package will contain five submodules:
   raw scalar data.
 
 Handling code units
--------------------
+===================
 
 Code frontend developers should add code base units to their StaticOutput
 subclasses. In the ``set_units`` method, developers can use
@@ -366,7 +366,7 @@ attach ``length_unit``, ``time_unit``, ``mass_unit``, ``velocity_unit`` and any
 other domain specific base units a frontend developer wants to add.
 
 Handling cosmological units
----------------------------
+===========================
 
 We also want to handle comoving length units and the hubble little "h" unit. In
 ``StaticOutput.set_units``, we implement this by checking if the simulation is
@@ -379,7 +379,7 @@ The little "h" symbol is treated as a base unit, ``h``, which defaults to unity.
 when loading a cosmological simulation.
 
 LaTeX printing
---------------
+==============
 
 We will make use of sympy's LaTeX pretty-printing functionality to generate axis
 and colorbar labels automatically for unit symbols.  The LaTeX strings used for
@@ -396,14 +396,14 @@ generate labels, composing the LaTeX expressions for compound units according
 to the algebraic relationships between the atomic unit symbols.
 
 Creating YTArray and YTQuantity instances
------------------------------------------
+=========================================
 
 In the current implementation, there are two ways to create new array and
 quantity objects, via a constructor, and by multiplying scalar data by a unit
 quantity.
 
 Creation via a constructor
-==========================
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The primary internal interface for creating new arrays and quantities is through
 the class constructor for YTArray.  The constructor takes three arguments. The
@@ -443,7 +443,7 @@ This example illustrates that the array is being created using
 ``code_length`` is equivalent to ``cm``.
 
 Creation by multiplication
-==========================
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 New YTArray and YTQuantity instances can also be created by multiplying YTArray
 or YTQuantity instances by float or ndarray instances. To make it easier to
@@ -473,7 +473,7 @@ names.  For example::
     1000.0 dimensionless
 
 YTArray operations
-------------------
+==================
 
 When working interactively, it is important to make sure quick workflows are
 possible. To this end, we want to make it possible to use our new dimensionful
@@ -555,7 +555,7 @@ Now we list the behavior of unary operations on YTArray objects.
 +-----------+---------------------------------+
 
 Testing
-=======
+-------
 
 We have written a set of unit tests that check to make sure all valid and
 invalid unit operations succeed or fail as appropriate.  We will also need to
