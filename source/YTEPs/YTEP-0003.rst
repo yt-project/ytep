@@ -1,3 +1,5 @@
+.. _YTEP-0003:
+
 YTEP-0003: Standardizing field names
 ====================================
 
