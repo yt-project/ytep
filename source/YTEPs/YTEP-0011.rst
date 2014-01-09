@@ -170,7 +170,7 @@ correct.
 One of the nicest aspects of this new unit system is that the symbolic algebra
 for unitful operations is performed automatically by sympy:
 
-   >>> print dd['CellMass']/dd['CellVolume']
+   >>> print dd['cell_mass']/dd['cell_volume']
    [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
       1.59561490e-25   1.09824903e-24] g/cm**3
 
@@ -187,7 +187,7 @@ correctly when composing quantities from arrays, physical constants, and
 unitless scalars:
 
   >>> from yt.utilities.physical_constants import boltzmann_constant
-  >>> print dd['Temperature']*boltzmann_constant
+  >>> print dd['temperature']*boltzmann_constant
   [  1.28901607e-12   1.29145540e-12   1.29077208e-12 ...,   1.63255263e-12
      1.59992074e-12   1.40453862e-12] erg
 
