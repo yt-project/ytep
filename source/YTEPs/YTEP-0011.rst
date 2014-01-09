@@ -8,7 +8,7 @@ Abstract
 | Created: March 7, 2013  
 | Authors: Nathan Goldbaum, Casey Stark, Anna Rosen, Matt Turk
 
-This YTEP describes adding symbolic units to yt using the sympy_ package. The
+This YTEP describes adding symbolic units to ``yt`` using the sympy_ package. The
 main benefit is to make sure units are carried through calculations in a
 *transparent* and *intuitive* manner. The new components are:
 
@@ -34,7 +34,7 @@ The code can be found in the unit refactor pull request:
 
 https://bitbucket.org/yt_analysis/yt/pull-request/662/unit-refactor/diff#comment-897255
 
-The latest work is in Matt Turk's fork in yt in the ``unitrefactor`` bookmark:
+The latest work is in Matt Turk's fork in ``yt`` in the ``unitrefactor`` bookmark:
 
 https://bitbucket.org/MatthewTurk/yt/commits/branch/unitrefactor
 
@@ -50,7 +50,7 @@ Background
 
 The current system for units is functional but not terribly flexible.
 All data are treated as scalars and it is up to the user to convert data from
-CGS, which yt uses internally, to their chosen unit system. A sample workflow
+CGS, which ``yt`` uses internally, to their chosen unit system. A sample workflow
 might look like this::
 
   from yt.mods import *
@@ -109,38 +109,56 @@ We propose to handle units in a more automatic fashion, leveraging the symbolic
 math library sympy.  Instead of returning a NumPy ``ndarray`` when users query
 for fields, the ``__getitem__`` selector on data objects will return a
 ``YTArray``, a subclass of ``ndarray``.  This preserves ``ndarray``'s array
-operations, including broadcasting, views, deep and shallow copies, and all the
-nice properties of ``ndarray``.  Additonally, ``YTArray`` has a ``Unit`` object
-attached to it that tracks units associated with each value in the array.  This
-is encoded in the ``__repr__`` method of ``YTArray``::
+operations, including deep and shallow copies, broadcasting, and views.
 
-  >> dd['density']
-  YTArray([  4.92775113e-31,   4.94005233e-31,   4.93824694e-31, ...,
-           1.12879234e-25,   1.59561490e-25,   1.09824903e-24]) g/cm**3
+Additonally, ``YTArray`` has a ``Unit`` object attached to it that tracks units
+associated with each value in the array.  This is encoded in the ``__repr__``
+method of ``YTArray``:
 
-``YTArray`` defines several user-visible member functions: ``convert_to_units``,
-``convert_to_cgs``, ``in_units``, and ``in_cgs``.  The first two functions do
-in-place operations while the second two return copies of the original array in
-the new unit::
+   >>> dd['density']
+   YTArray([  4.92775113e-31,   4.94005233e-31,   4.93824694e-31, ...,
+              1.12879234e-25,   1.59561490e-25,   1.09824903e-24]) g/cm**3
 
-  >> dens = dd['density']
-  >> print dens
-  [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
-   1.59561490e-25   1.09824903e-24] g/cm**3
+``YTArray`` defines several user-visible member functions:
 
-  >> dens.convert_to_units('Msun/pc**3')
-  >> print dens
-  [  7.27920765e-09   7.29737882e-09   7.29471191e-09 ...,   1.66743685e-03
-   2.35702085e-03   1.62231868e-02] Msun/pc**3
+* ``convert_to_units``
 
-  >> dd['density'].in_units('Msun/pc**3')
-  YTArray([  7.27920765e-09,   7.29737882e-09,   7.29471191e-09, ...,
-           1.66743685e-03,   2.35702085e-03,   1.62231868e-02]) Msun/pc**3
+  Converts an array to a valid unit, specified by a string argument.  Valid
+  units possess the same ``dimension`` expression as the current unit.
 
-In-place unit conversions, like those done by ``convert_to_units``, change the
-underlying ``ndarray`` floating point data for an array.  A copy-conversion,
-like the one done by ``in_units`` returns a *copy* of the array, converted to
-the requested unit, leaving the data in the original array untouched. 
+* ``convert_to_cgs``
+
+  Converts the array to CGS units.
+
+* ``in_units``
+
+  Returns a copy of the array in a valid unit, specified by a string
+  argument. Valid units possess the same ``dimension`` expression as the current
+  unit.
+
+* ``in_cgs``
+
+  Returns a copy of the array in CGS units.
+
+It's important to remember that ``convert_to_cgs`` and ``convert_to_units`` do
+in-place conversion of an existing array and ``in_units`` and ``in_cgs`` return
+a copy of the original array in the new unit.  This can get complicated if one
+isn't careful about the distinction between creating copies and references, as
+illustrated in the following example:
+
+   >>> dens = dd['density']
+   >>> print dens
+   [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
+      1.59561490e-25   1.09824903e-24] g/cm**3
+
+   >>> dens.convert_to_units('Msun/pc**3')
+   >>> print dens
+   [  7.27920765e-09   7.29737882e-09   7.29471191e-09 ...,   1.66743685e-03
+      2.35702085e-03   1.62231868e-02] Msun/pc**3
+
+   >>> dd['density'].in_units('Msun/pc**3')
+   YTArray([  7.27920765e-09,   7.29737882e-09,   7.29471191e-09, ...,
+              1.66743685e-03,   2.35702085e-03,   1.62231868e-02]) Msun/pc**3
 
 In the example above, if a user tries to query ``dd['density']`` again, they
 will find that it has been converted to solar masses per cubic parsec, since a
@@ -150,15 +168,15 @@ are still correct in the new unit system, all numerical operations will still be
 correct.
 
 One of the nicest aspects of this new unit system is that the symbolic algebra
-for unitful operations is performed automatically by sympy::
+for unitful operations is performed automatically by sympy:
 
-  >> print dd['CellMass']/dd['CellVolume']
-  [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
-   1.59561490e-25   1.09824903e-24] g/cm**3
+   >>> print dd['CellMass']/dd['CellVolume']
+   [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
+      1.59561490e-25   1.09824903e-24] g/cm**3
 
-  >> print dd['density']
-  [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
-   1.59561490e-25   1.09824903e-24] g/cm**3
+   >>> print dd['density']
+   [  4.92775113e-31   4.94005233e-31   4.93824694e-31 ...,   1.12879234e-25
+      1.59561490e-25   1.09824903e-24] g/cm**3
 
 YTArray is primarily useful for attaching units to NumPy ``ndarray``
 instances. For scalar data, we have created the new ``YTQuantity`` class.  In
@@ -166,12 +184,12 @@ the proposed implementation, ``YTQuantity`` is a subclass of ``YTArray`` with
 the requirement that it is limited to one element.  ``YTQuantity`` is primarily
 useful for physical constants and ensures that the units are propogated
 correctly when composing quantities from arrays, physical constants, and
-unitless scalars::
+unitless scalars:
 
   >>> from yt.utilities.physical_constants import boltzmann_constant
   >>> print dd['Temperature']*boltzmann_constant
   [  1.28901607e-12   1.29145540e-12   1.29077208e-12 ...,   1.63255263e-12
-   1.59992074e-12   1.40453862e-12] erg
+     1.59992074e-12   1.40453862e-12] erg
 
 With this new capability, we will have no need for fields defined only to handle
 different units (e.g. ``RadiusCode``, ``Radiuspc``, etc.).  Instead, there will
@@ -190,21 +208,23 @@ scaling to physical coordinates directly into the unit system.  We do this via
 
 Every ``StaticOutput`` object will have a ``length_unit``, ``time_unit``,
 ``mass_unit``, and ``velocity_unit`` attribute that the user can quickly and
-easily query to discover the base units of the simulation.  For example::
+easily query to discover the base units of the simulation.  For example:
 
     >>> from yt.mods import *
     >>> ds = load("Enzo_64/DD0043/data0043")
     >>> print ds.length_unit
     128 Mpccm/h
 
-Additionally, we will allow conversions to internal ``code_length``,
-``code_mass``, and ``code_time`` units.  Code units will preserve
-dimensionality: an array or quantity that has units of ``cm`` units will be
+Additionally, we will allow conversions to coordinates int the simulation
+coordinate system defined by the on-disk data.  Data in code units will be
+available by converting to ``code_length``, ``code_mass``, ``code_time``,
+``code_velocity``, or any combination of those  units.  Code units will preserve
+dimensionality: an array or quantity that has units of ``cm`` will be
 convertible to ``code_length``, but not to ``code_mass``.
 
 On-disk data will also be available to the user, presented in unconverted code
-units.  To obtain on-disk data, a user will need only query a data object using
-an on-disk field name::
+units.  To obtain on-disk data, a user need only query a data object using an
+on-disk field name:
 
     >>> from yt.mods import *
     >>> ds = load("Enzo_64"/DD0043/data0043")
@@ -218,7 +238,7 @@ an on-disk field name::
 
 Here, the first data object query is returned in code units, while the second is
 returned in CGS.  This is because ``Density`` is an on-disk field, while
-``density`` is a 'standard' yt field.  See :ref:`YTEP-0003`.
+``density`` is a 'standard' ``yt`` field.  See :ref:`YTEP-0003`.
 
 Unit labels for plots will be programatically generated. This will leverage
 the sympy LaTeX output module.  Even though the field definitions will have
@@ -228,16 +248,27 @@ LaTeX to supply to matplotlib's mathtext parser.
 Implementation
 ==============
 
-We stick to the CGS perspective of units, which conflicts with other popular
-unit libraries (almost all SI). Our unit system has 4 base dimensions, ``mass``,
-``length``, ``time``, and ``temperature``.  The unitless ``dimensionless``
-dimension, which we use to represent angles and scalars is also technically a
-base dimension, although a trivial one. The matching CGS base units are grams,
-centimeters, seconds, Kelvin. All units can be described as combinations of
-these base dimensions along with a conversion factor to equivalent CGS units. We
-provide sympy ``Symbol`` objects for the base dimensions. The dimensionality of
-all other units should be ``sympy`` ``Expr`` objects made up of the base
-dimension object and the ``sympy`` operation objects ``Mul`` and ``Pow``.
+Our unit system has 6 base dimensions, ``mass``, ``length``, ``time``,
+``temperature``, ``metallicity``, and ``angle``.  The unitless ``dimensionless``
+dimension, which we use to represent scalars is also technically a base
+dimension, although a trivial one.
+
+For each dimension, we choose a base unit. Our system's base units are grams,
+centimeters, seconds, Kelvin, metal mass fraction, and radian. All units can be
+described as combinations of these base dimensions along with a conversion
+factor to equivalent base units.
+
+The choice of CGS as the base unit system is somewhat arbitrary.  Most unit
+systems choose SI as the reference unit system. We use CGS to stay consistent
+with the rest of the ``yt`` codebase and to reflect the standard practice in
+astrophysics.  In any case, using a *physical* coordinate system makes it
+possible to compare quantities and arrays produced by different datasets,
+possibly with different conversion factors to CGS and to code units.  We go into
+:ref:`more detail <unit-mix>` on this point below.
+
+We provide sympy ``Symbol`` objects for the base dimensions. The dimensionality
+of all other units should be ``sympy`` ``Expr`` objects made up of the base
+dimension objects and the ``sympy`` operation objects ``Mul`` and ``Pow``.
 
 Let's use some common units as examples: gram (``g``), erg (``erg``), and solar
 mass per cubic megaparsec (``Msun / Mpc**3``). ``g`` is an atomic, CGS base
@@ -253,22 +284,22 @@ registries contain a unit symbol lookup table (dict) containing the valid
 units' dimensionality and cgs conversion factor. Here is what it would look
 like with the above units::
 
-  {"g": (mass, 1.0),
-   "erg": (mass * length**2 * time**-2, 1.0),
-   "Msun": (mass, 1.98892e+33),
-   "pc": (length, 3.08568e18)}
+    { "g":    (mass, 1.0),
+      "erg":  (mass * length**2 * time**-2, 1.0),
+      "Msun": (mass, 1.98892e+33),
+      "pc":   (length, 3.08568e18), }
 
 Note that we only define *atomic* units here. There should be no operations in
 the registry symbol strings. When we parse non-atomic units like
 ``Msun/Mpc**3``, we use the registry to look up the symbols. The unit system in
-yt knows how handle units like ``Mpc`` by looking up unit symbols with and
+yt knows how to handle units like ``Mpc`` by looking up unit symbols with and
 without prefixes and modify the conversion factor appropriately. 
 
 We construct a ``Unit`` object by providing a string containing atomic unit
 symbols, combined with operations in Python syntax, and the registry those
-atomic unit symbols are defined in. We use `sympy`'s new parsing features to
+atomic unit symbols are defined in. We use sympy's string parsing features to
 create the unit expression from the user-provided string. Here's how this works
-on ``Msun/Mpc**3``::
+on ``Msun/Mpc**3``:
 
   >>> from sympy.parsing.sympy_parser import parse_expr
   >>> unit_expr = parse_expr("Msun/Mpc**3")
@@ -287,25 +318,33 @@ on ``Msun/Mpc**3``::
 When presented with a new unit specification string, a new ``Unit`` is created
 by first decomposing the unit specification into atomic unit symbols.  This may
 require considering SI prefixes, which we allow for a whitelisted subset of
-atomic unit symbols.  The ``Unit`` instance is then created by combining a sympy
-expression for the unit and the appropriate CGS factors, found by combining the
-CGS factors of the base unit and optional SI prefix. 
+atomic unit symbols, listed in the table of unit symbols below. The ``Unit``
+instance is then created by combining a sympy expression for the unit and the
+appropriate CGS factors, found by combining the CGS factors of the base unit and
+optional SI prefixes.
 
-``Unit`` objects have the ``sympy`` unit expression, the ``sympy`` dimensions
-expression, the ``UnitRegistry`` instance, and the cgs conversion factor as
-instance members, available via the ``expr``, ``dimensions``, ``registry``, and
-``cgs_value`` attributes, respectively. 
+``Unit`` objects are assosiated with four instance members, a unit
+``Expression`` object, a dimensionality ``Expression`` object, a
+``UnitRegistry`` instance, and a scalar conversion factor to CGS units.  These
+data are available for a ``Unit`` object by accessing the ``expr``,
+``dimensions``, ``registry``, and ``cgs_value`` attributes, respectively.
 
-``Unit`` also provides the methods ``same_dimensions_as(other_units)`` which
-returns True if the ``other`` unit object has equivalent dimensions, and
-``get_cgs_equivalent``, which returns the equivalent cgs base units. ``Unit``
-defines the ``mul``, ``div``, ``pow``, and ``eq`` operations with other unit
-objects, making it easy to compose compound units algebraically.
+``Unit`` provides the methods ``same_dimensions_as``, which returns True if
+passed a ``Unit`` object that has equivalent dimensions, ``get_cgs_equivalent``,
+which returns the equivalent cgs base units of the ``Unit``, and the
+``is_code_unit`` property, which is ``True`` if the unit is composed purely of
+code base units and ``False`` otherwise. ``Unit`` defines the ``mul``, ``div``,
+``pow``, and ``eq`` operations with other unit objects, making it easy to
+compose compound units algebraically.
 
 The ``UnitRegistry`` class provides the ``add``, ``remove``, and ``modify``
 methods which allows users to add, remove, and modify atomic unit definitions
 present in ``UnitRegistry`` objects.  A dictionary lookup table is also attached
 to the ``UnitRegistry`` object, providing an interface to look up unit symbols.
+In general, unit registries should only be adjusted inside of a code frontend,
+since otherwise quantities and arrays might be created with inconsistent unit
+metadata. Once a unit object is created, it will not recieve updates if the
+original unit registry is modified.
 
 We also provide a singleton ``default_unit_registry`` instance that frontend
 developers can copy and modify to build a simulation-specific unit symbol
@@ -349,21 +388,81 @@ package. This package will contain five submodules:
 Handling code units
 ===================
 
-Code frontend developers should add code base units to their StaticOutput
-subclasses. In the ``set_units`` method, developers can use
-self.unit_registry.modify to adjust the predefined ``code_mass``,
-``code_length``, ``code_time``, and ``code_velocity`` symbols in the default
-unit registry. If there are frontend specific code units, like MHD units, they
-should also be defined here. If users want to work in code units, they can now
-ask for data in code units, just like any other unit system.  For example:
+If users want to work in code units, they can now ask for data in code units,
+just like any other unit system.  For example:
 
     >>> dd["density"].in_units("code_mass/code_length**3")
 
 will return the density field in code units.
 
-Additionally, the ``_set_code_unit_attributes`` function should be used to
-attach ``length_unit``, ``time_unit``, ``mass_unit``, ``velocity_unit`` and any
-other domain specific base units a frontend developer wants to add.
+Code units are tightly coupled to on-disk parameters. To handle this fact of
+life, the ``yt`` unit system can modify, add, and remove unit symbols via the
+``UnitRegistry``.
+
+Associating arrays with a coordinate system
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To create quantities and arrays in units defined by a simulation coordinate
+system, we associate a ``UnitRegistry`` instance with ``StaticOutput``
+instances.  This unit registry contains the metadata necessary to convert the
+array to CGS from some other known unit system and is available via
+the ``unit_registry`` attribute that is attached to all ``StaticOutput``
+instances.
+
+To avoid repetive references to the ``unit_registry``, we also define two new
+member functions in the ``StaticOutput`` base class, ``quan`` and ``arr``.
+These functions simply pass the appropriate ``unit_registry`` object to the
+``YTQuantity`` and ``YTArray`` constructors, returning the resulting quantity or
+array.
+
+We have modified the definition for ``set_code_units`` in the ``StaticOutput``
+base class.  In this new implemenation, the predefined ``code_mass``,
+``code_length``, ``code_time``, and ``code_velocity`` symbols are adjusted to
+the appropriate values and ``length_unit``, ``time_unit``, ``mass_unit``,
+``velocity_unit`` attributes are attached to the ``StaticOutput`` instance. If
+there are frontend specific code units, like MHD units, they should also be
+defined in subclasses by extending this function.
+
+.. _unit-mix:
+
+Mixing modified unit registries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It becomes necessary to consider mixing unit registries whenever data needs to
+be compared between disparate datasets.  The most straightforward example is a
+cosmological simulation time series, where the code units evolve with time,
+although the problem is quite general -- we want to be able to compare any two
+datasets, even if they are unrelated.
+
+For this reason, we have designed the unit system to refer to a physical
+coordinate system (CGS, with a few additions to handle common non-CGS fields).
+This means that operations on quantities with different unit registries will
+always agree since the final calculation is always performed in CGS.
+
+The examples below illustrate the consistency of this choice:
+
+    >>> from yt.mods import *
+    >>> pf1 = load('Enzo_64/DD0002/data0002')
+    >>> pf2 = load('Enzo_64/DD0043/data0043')
+    >>> print pf1.length_unit, pf2.length_unit
+    128 Mpccm/h, 128 Mpccm/h
+    >>> print 6.26145538088e+25 cm 5.55517285026e+26 cm
+    >>> print pf1.length_unit*pf2.length_unit
+    145359.100149 Mpccm**2/h**2
+    >>> print pf2.length_unit*pf1.length_unit
+    1846.7055432 Mpccm**2/h**2
+
+Note that in both cases, the answer is not the seemingly trivial
+:math:`128^2\/=\/16384\,\rm{Mpccm}^2/h^2`.  This is because the new quantity
+returned by the multiplication operation inherits the unit registry from the
+left object in binary operations.  This convention is enforced for all binary
+operations on two YTarray objects.  In any case, results are always consistent
+in CGS:
+
+    >>> print (pf1.length_unit*pf2.length_unit).in_cgs()
+    3.4783466935e+52 cm**2
+    >>> print pf1.length_unit.in_cgs()*pf2.length_unit.in_cgs()
+    3.4783466935e+52 cm**2
 
 Handling cosmological units
 ===========================
@@ -402,8 +501,8 @@ In the current implementation, there are two ways to create new array and
 quantity objects, via a constructor, and by multiplying scalar data by a unit
 quantity.
 
-Creation via a constructor
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Class Constructor
+^^^^^^^^^^^^^^^^^
 
 The primary internal interface for creating new arrays and quantities is through
 the class constructor for YTArray.  The constructor takes three arguments. The
@@ -417,7 +516,7 @@ Unit specification strings must be algebraic combinations of unit symbol names,
 using standard Python mathematical syntax (i.e. ``**`` for the power function,
 not ``^``).
 
-Here is a simple example of ``YTArray`` creation::
+Here is a simple example of ``YTArray`` creation:
 
     >>> from yt.units import yt_array, YTQuantity
     >>> YTArray([1, 2, 3], 'cm')
@@ -431,7 +530,7 @@ attached to the ``StaticOutput`` base class.  These were added to syntactically
 simplify the creation of arrays with the `UnitRegistry` instance associated with
 a dataset.  These functions work exactly like the ``YTArray`` and ``YTQuantity``
 constructors, but pass the ``UnitRegistry`` instance attached to the dataset to
-the underlying constructor call.  For example::
+the underlying constructor call.  For example:
 
     >>> from yt.mods import *
     >>> ds = load("Enzo_64/DD0043/data0043")
@@ -442,14 +541,14 @@ This example illustrates that the array is being created using
 ``ds.unit_registry``, rather than the ``default_unit_registry``, for which
 ``code_length`` is equivalent to ``cm``.
 
-Creation by multiplication
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Multiplication
+^^^^^^^^^^^^^^
 
 New YTArray and YTQuantity instances can also be created by multiplying YTArray
 or YTQuantity instances by float or ndarray instances. To make it easier to
 create arrays using this mechanism, we have populated the ``yt.units`` namespace
 with predefined ``YTQuantity`` instances that correspond to common unit symbol
-names.  For example::
+names.  For example:
 
     >>> from yt.units import meter, gram, kilogram, second, joule
     >>> kilogram*meter**2/second**2 == joule
@@ -510,8 +609,8 @@ variants, which all have the same behavior with respect to passing units.
 |           |                    | |     raise YTInvalidUnitOperation              |
 +-----------+--------------------+-------------------------------------------------+
 | pow       | scalar, YTArray    | | if YTArray is dimensionless:                  |
-|           | ndarray, YTArray   | |     return scalar**YTArray                    |
-|           |                    | | else:                                         |
+|           |                    | |     return scalar**YTArray                    |
+|           | ndarray, YTArray   | | else:                                         |
 |           |                    | |     raise YTInvalidUnitOperation              |
 |           +--------------------+-------------------------------------------------+
 |           | YTArray, scalar    | | return YTArray**scalar (note units change)    |
@@ -554,8 +653,150 @@ Now we list the behavior of unary operations on YTArray objects.
 |           | | raise YTInvalidUnitOperation  |
 +-----------+---------------------------------+
 
-Testing
--------
+Unit symbol names
+=================
+
+In the table below we provide a listing of all units that are in the current
+implementation.  We also list the dimensions of the unit, if the unit is in the
+whitelist to be prefixable with SI abbreviations, the dimensions of the unit,
+and the adopted CGS conversion factor.
+
++------------------+----------------+-------------+-----------------------+
+|Unit name         |Dimensions      |SI           |CGS Conversion factor  |
+|                  |                |Prefixable?  |                       |
+|                  |                |             |                       |
++==================+================+=============+=======================+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Base units                                                              |
++------------------+----------------+-------------+-----------------------+
+| g                | mass           | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| m                | length         | yes         | 100.0                 |
++------------------+----------------+-------------+-----------------------+
+| s                | time           | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| K                | temperature    | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| radian           | angle          | no          | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| gauss            | magnetic_field | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Code units                                                              |
++------------------+----------------+-------------+-----------------------+
+| code_mass        | mass           | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| code_length      | length         | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| code_time        | time           | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| code_velocity    | velocity       | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| code_magnetic    | magnetic_field | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| code_temperatre  | temperature    | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| code_metallicity | metallicity    | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+| unitary          | length         | no          | Domain width          |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Misc CGS                                                                |
++------------------+----------------+-------------+-----------------------+
+| dyne             | force          | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| erg              | energy         | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| esu              | charge         | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+| gauss            | magnetic_field | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Misc SI                                                                 |
++------------------+----------------+-------------+-----------------------+
+| J                | energy         | yes         | 1.0e7                 |
++------------------+----------------+-------------+-----------------------+
+| W                | power          | yes         | 1.0e7                 |
++------------------+----------------+-------------+-----------------------+
+| Hz               | rate           | yes         | 1.0                   |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Imperial units                                                          |
++------------------+----------------+-------------+-----------------------+
+| ft               | length         | no          | 30.48                 |
++------------------+----------------+-------------+-----------------------+
+| mile             | length         | no          | 160934                |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Cosmological "units"                                                    |
++------------------+----------------+-------------+-----------------------+
+| h                | dimensionless  | no          | ?                     |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Time units                                                              |
++------------------+----------------+-------------+-----------------------+
+| min              | time           | no          | 60                    |
++------------------+----------------+-------------+-----------------------+
+| hr               | time           | no          | 3600                  |
++------------------+----------------+-------------+-----------------------+
+| day              | time           | no          | 86400                 |
++------------------+----------------+-------------+-----------------------+
+| yr               | time           | yes         | 31557600              |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Solar units                                                             |
++------------------+----------------+-------------+-----------------------+
+| Msun             | mass           | no          | 1.98841586e33         |
++------------------+----------------+-------------+-----------------------+
+| Rsun             | length         | no          | 6.9550e10             |
++------------------+----------------+-------------+-----------------------+
+| Lsun             | power          | no          | 3.8270e33             |
++------------------+----------------+-------------+-----------------------+
+| Tsun             | temperature    | no          | 5870.0                |
++------------------+----------------+-------------+-----------------------+
+| Zsun             | metallicity    | no          | 0.02041               |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Astronomical Distances                                                  |
++------------------+----------------+-------------+-----------------------+
+| AU               | length         | no          | 1.49597871e13         |
++------------------+----------------+-------------+-----------------------+
+| ly               | length         | no          | 9.4605284e17          |
++------------------+----------------+-------------+-----------------------+
+| pc               | length         | yes         | 3.0856776e18          |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Angles                                                                  |
++------------------+----------------+-------------+-----------------------+
+| degree           | angle          | no          | :math:`\pi`/180       |
++------------------+----------------+-------------+-----------------------+
+| arcmin           | angle          | no          | :math:`\pi`/10800     |
++------------------+----------------+-------------+-----------------------+
+| arcsec           | angle          | no          | :math:`\pi`/648000    |
++------------------+----------------+-------------+-----------------------+
+| mas              | angle          | no          | :math:`\pi`/648000000 |
++------------------+----------------+-------------+-----------------------+
+|                                                                         |
++------------------+----------------+-------------+-----------------------+
+| Physical units                                                          |
++------------------+----------------+-------------+-----------------------+
+| eV               | energy         | no          | 1.602176562e-12       |
++------------------+----------------+-------------+-----------------------+
+| amu              | mass           | no          | 1.660538921e-24       |
++------------------+----------------+-------------+-----------------------+
+| me               | mass           | no          | 9.10938291e-28        |
++------------------+----------------+-------------+-----------------------+
+
 
 We have written a set of unit tests that check to make sure all valid and
 invalid unit operations succeed or fail as appropriate.  We will also need to
@@ -567,8 +808,8 @@ Backwards Compatibility
 This is a serious break in backwards compatibility.  Once this is accepted,
 units will no longer be stored in the ``StaticOutput`` dict.  This means that all
 scripts which use the ``pf[unit]`` construction will no longer be valid.  We will
-also need to eliminate instances of this construction within the yt codebase.
+also need to eliminate instances of this construction within the ``yt`` codebase.
 
 We will need to check to make sure the analysis modules and external tools that
-operate on yt data can either work appropriately with ``YTArray`` or figure out a
+operate on ``yt`` data can either work appropriately with ``YTArray`` or figure out a
 way to degrade to ``ndarray`` gracefully.
