@@ -333,7 +333,7 @@ data are available for a ``Unit`` object by accessing the ``expr``,
 passed a ``Unit`` object that has equivalent dimensions, ``get_cgs_equivalent``,
 which returns the equivalent cgs base units of the ``Unit``, and the
 ``is_code_unit`` property, which is ``True`` if the unit is composed purely of
-code base units and ``False`` otherwise. ``Unit`` defines the ``mul``, ``div``,
+code units and ``False`` otherwise. ``Unit`` also defines the ``mul``, ``div``,
 ``pow``, and ``eq`` operations with other unit objects, making it easy to
 compose compound units algebraically.
 
@@ -384,116 +384,6 @@ package. This package will contain five submodules:
 
   Contains a host of predefined unit quantities, useful for applying units to
   raw scalar data.
-
-Handling code units
-===================
-
-If users want to work in code units, they can now ask for data in code units,
-just like any other unit system.  For example:
-
-    >>> dd["density"].in_units("code_mass/code_length**3")
-
-will return the density field in code units.
-
-Code units are tightly coupled to on-disk parameters. To handle this fact of
-life, the ``yt`` unit system can modify, add, and remove unit symbols via the
-``UnitRegistry``.
-
-Associating arrays with a coordinate system
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To create quantities and arrays in units defined by a simulation coordinate
-system, we associate a ``UnitRegistry`` instance with ``StaticOutput``
-instances.  This unit registry contains the metadata necessary to convert the
-array to CGS from some other known unit system and is available via
-the ``unit_registry`` attribute that is attached to all ``StaticOutput``
-instances.
-
-To avoid repetive references to the ``unit_registry``, we also define two new
-member functions in the ``StaticOutput`` base class, ``quan`` and ``arr``.
-These functions simply pass the appropriate ``unit_registry`` object to the
-``YTQuantity`` and ``YTArray`` constructors, returning the resulting quantity or
-array.
-
-We have modified the definition for ``set_code_units`` in the ``StaticOutput``
-base class.  In this new implemenation, the predefined ``code_mass``,
-``code_length``, ``code_time``, and ``code_velocity`` symbols are adjusted to
-the appropriate values and ``length_unit``, ``time_unit``, ``mass_unit``,
-``velocity_unit`` attributes are attached to the ``StaticOutput`` instance. If
-there are frontend specific code units, like MHD units, they should also be
-defined in subclasses by extending this function.
-
-.. _unit-mix:
-
-Mixing modified unit registries
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-It becomes necessary to consider mixing unit registries whenever data needs to
-be compared between disparate datasets.  The most straightforward example is a
-cosmological simulation time series, where the code units evolve with time,
-although the problem is quite general -- we want to be able to compare any two
-datasets, even if they are unrelated.
-
-For this reason, we have designed the unit system to refer to a physical
-coordinate system (CGS, with a few additions to handle common non-CGS fields).
-This means that operations on quantities with different unit registries will
-always agree since the final calculation is always performed in CGS.
-
-The examples below illustrate the consistency of this choice:
-
-    >>> from yt.mods import *
-    >>> pf1 = load('Enzo_64/DD0002/data0002')
-    >>> pf2 = load('Enzo_64/DD0043/data0043')
-    >>> print pf1.length_unit, pf2.length_unit
-    128 Mpccm/h, 128 Mpccm/h
-    >>> print pf1.length_unit.in_cgs(), pf2.length_unit.in_cgs()
-    6.26145538088e+25 cm 5.55517285026e+26 cm
-    >>> print pf1.length_unit*pf2.length_unit
-    145359.100149 Mpccm**2/h**2
-    >>> print pf2.length_unit*pf1.length_unit
-    1846.7055432 Mpccm**2/h**2
-
-Note that in both cases, the answer is not the seemingly trivial
-:math:`128^2\/=\/16384\,\rm{Mpccm}^2/h^2`.  This is because the new quantity
-returned by the multiplication operation inherits the unit registry from the
-left object in binary operations.  This convention is enforced for all binary
-operations on two YTarray objects.  In any case, results are always consistent
-in CGS:
-
-    >>> print (pf1.length_unit*pf2.length_unit).in_cgs()
-    3.4783466935e+52 cm**2
-    >>> print pf1.length_unit.in_cgs()*pf2.length_unit.in_cgs()
-    3.4783466935e+52 cm**2
-
-Handling cosmological units
-===========================
-
-We also want to handle comoving length units and the hubble little "h" unit. In
-``StaticOutput.set_units``, we implement this by checking if the simulation is
-cosmological, and if so adding comoving units to the dataset's unit registry.
-Comoving length unit symbols are still named following the pattern "(length
-symbol)cm", i.e. "pccm".
-
-The little "h" symbol is treated as a base unit, ``h``, which defaults to unity.
-``StaticOutput.set_units`` should update the ``h`` symbol to the correct value
-when loading a cosmological simulation.
-
-LaTeX printing
-==============
-
-We will make use of sympy's LaTeX pretty-printing functionality to generate axis
-and colorbar labels automatically for unit symbols.  The LaTeX strings used for
-atomic units are encoded in the ``latex_symbol_lut``.  This is necessary because,
-for the purposes of LaTeX representation, sympy interprets symbol names as if
-they were algebraic variables, and so get displayed using an italic font.  Since
-our symbols represent units, we want to display them in a roman font and need
-to wrap them in ``\rm{}``.  New units do not need to be explicitly added to the
-look-up-table, by default the LaTeX symbol will simply be the string name of the
-unit, wrapped using ``\rm{}``.
-
-Using these LaTeX representations of atomic unit symbols, we then use sympy to
-generate labels, composing the LaTeX expressions for compound units according
-to the algebraic relationships between the atomic unit symbols.
 
 Creating YTArray and YTQuantity instances
 =========================================
@@ -571,6 +461,116 @@ names.  For example:
     1.001 kg
     >>> print kilogram/gram
     1000.0 dimensionless
+
+Handling code units
+===================
+
+If users want to work in code units, they can now ask for data in code units,
+just like any other unit system.  For example:
+
+    >>> dd["density"].in_units("code_mass/code_length**3")
+
+will return the density field in code units.
+
+Code units are tightly coupled to on-disk parameters. To handle this fact of
+life, the ``yt`` unit system can modify, add, and remove unit symbols via the
+``UnitRegistry``.
+
+Associating arrays with a coordinate system
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To create quantities and arrays in units defined by a simulation coordinate
+system, we associate a ``UnitRegistry`` instance with ``StaticOutput``
+instances.  This unit registry contains the metadata necessary to convert the
+array to CGS from some other known unit system and is available via
+the ``unit_registry`` attribute that is attached to all ``StaticOutput``
+instances.
+
+To avoid repetive references to the ``unit_registry``, we also define two new
+member functions in the ``StaticOutput`` base class, ``quan`` and ``arr``.
+These functions simply pass the appropriate ``unit_registry`` object to the
+``YTQuantity`` and ``YTArray`` constructors, returning the resulting quantity or
+array.
+
+We have modified the definition for ``set_code_units`` in the ``StaticOutput``
+base class.  In this new implemenation, the predefined ``code_mass``,
+``code_length``, ``code_time``, and ``code_velocity`` symbols are adjusted to
+the appropriate values and ``length_unit``, ``time_unit``, ``mass_unit``,
+``velocity_unit`` attributes are attached to the ``StaticOutput`` instance. If
+there are frontend specific code units, like MHD units, they should also be
+defined in subclasses by extending this function.
+
+.. _unit-mix:
+
+Mixing modified unit registries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It becomes necessary to consider mixing unit registries whenever data needs to
+be compared between disparate datasets.  The most straightforward example where
+this comes up is a cosmological simulation time series, where the code units
+evolve with time.  The problem is quite general -- we want to be able to
+compare any two datasets, even if they are unrelated.
+
+We have designed the unit system to refer to a physical coordinate system based
+on CGS conversion factors.  This means that operations on quantities with
+different unit registries will always agree since the final calculation is
+always performed in CGS.
+
+The examples below illustrate the consistency of this choice:
+
+    >>> from yt.mods import *
+    >>> pf1 = load('Enzo_64/DD0002/data0002')
+    >>> pf2 = load('Enzo_64/DD0043/data0043')
+    >>> print pf1.length_unit, pf2.length_unit
+    128 Mpccm/h, 128 Mpccm/h
+    >>> print pf1.length_unit.in_cgs(), pf2.length_unit.in_cgs()
+    6.26145538088e+25 cm 5.55517285026e+26 cm
+    >>> print pf1.length_unit*pf2.length_unit
+    145359.100149 Mpccm**2/h**2
+    >>> print pf2.length_unit*pf1.length_unit
+    1846.7055432 Mpccm**2/h**2
+
+Note that in both cases, the answer is not the seemingly trivial
+:math:`128^2\/=\/16384\,\rm{Mpccm}^2/h^2`.  This is because the new quantity
+returned by the multiplication operation inherits the unit registry from the
+left object in binary operations.  This convention is enforced for all binary
+operations on two YTarray objects.  In any case, results are always consistent
+in CGS:
+
+    >>> print (pf1.length_unit*pf2.length_unit).in_cgs()
+    3.4783466935e+52 cm**2
+    >>> print pf1.length_unit.in_cgs()*pf2.length_unit.in_cgs()
+    3.4783466935e+52 cm**2
+
+Handling cosmological units
+===========================
+
+We also want to handle comoving length units and the hubble little "h" unit. In
+``StaticOutput.set_units``, we implement this by checking if the simulation is
+cosmological, and if so adding comoving units to the dataset's unit registry.
+Comoving length unit symbols are still named following the pattern "(length
+symbol)cm", i.e. "pccm".
+
+The little "h" symbol is treated as a base unit, ``h``, which defaults to unity.
+``StaticOutput.set_units`` should update the ``h`` symbol to the correct value
+when loading a cosmological simulation.
+
+LaTeX printing
+==============
+
+We will make use of sympy's LaTeX pretty-printing functionality to generate axis
+and colorbar labels automatically for unit symbols.  The LaTeX strings used for
+atomic units are encoded in the ``latex_symbol_lut``.  This is necessary because,
+for the purposes of LaTeX representation, sympy interprets symbol names as if
+they were algebraic variables, and so get displayed using an italic font.  Since
+our symbols represent units, we want to display them in a roman font and need
+to wrap them in ``\rm{}``.  New units do not need to be explicitly added to the
+look-up-table, by default the LaTeX symbol will simply be the string name of the
+unit, wrapped using ``\rm{}``.
+
+Using these LaTeX representations of atomic unit symbols, we then use sympy to
+generate labels, composing the LaTeX expressions for compound units according
+to the algebraic relationships between the atomic unit symbols.
 
 YTArray operations
 ==================
