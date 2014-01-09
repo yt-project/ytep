@@ -446,7 +446,8 @@ The examples below illustrate the consistency of this choice:
     >>> pf2 = load('Enzo_64/DD0043/data0043')
     >>> print pf1.length_unit, pf2.length_unit
     128 Mpccm/h, 128 Mpccm/h
-    >>> print 6.26145538088e+25 cm 5.55517285026e+26 cm
+    >>> print pf1.length_unit.in_cgs(), pf2.length_unit.in_cgs()
+    6.26145538088e+25 cm 5.55517285026e+26 cm
     >>> print pf1.length_unit*pf2.length_unit
     145359.100149 Mpccm**2/h**2
     >>> print pf2.length_unit*pf1.length_unit
