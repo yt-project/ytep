@@ -323,7 +323,7 @@ instance is then created by combining a sympy expression for the unit and the
 appropriate CGS factors, found by combining the CGS factors of the base unit and
 optional SI prefixes.
 
-``Unit`` objects are assosiated with four instance members, a unit
+``Unit`` objects are associated with four instance members, a unit
 ``Expression`` object, a dimensionality ``Expression`` object, a
 ``UnitRegistry`` instance, and a scalar conversion factor to CGS units.  These
 data are available for a ``Unit`` object by accessing the ``expr``,
