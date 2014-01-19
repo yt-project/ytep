@@ -486,7 +486,7 @@ array to CGS from some other known unit system and is available via
 the ``unit_registry`` attribute that is attached to all ``StaticOutput``
 instances.
 
-To avoid repetive references to the ``unit_registry``, we also define two new
+To avoid repetitive references to the ``unit_registry``, we also define two new
 member functions in the ``StaticOutput`` base class, ``quan`` and ``arr``.
 These functions simply pass the appropriate ``unit_registry`` object to the
 ``YTQuantity`` and ``YTArray`` constructors, returning the resulting quantity or
@@ -681,7 +681,7 @@ and the adopted CGS conversion factor.
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 | Radian                    | radian           | angle                | no          | 1.0                   |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
-| Gauss                     | gauss            |    magnetic_field    | yes         | 1.0                   |
+| Gauss                     | gauss            | magnetic_field       | yes         | 1.0                   |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 |                                                                                                           |
 +-----------------------------------------------------------------------------------------------------------+
@@ -695,8 +695,7 @@ and the adopted CGS conversion factor.
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 | Code velocity units       | code_velocity    | velocity             | no          | ?                     |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
-| Code magnetic field units | code_magnetic    |    magnetic_field    | no          | ?                     |
-|                           |                  |                      |             |                       |
+| Code magnetic field units | code_magnetic    | magnetic_field       | no          | ?                     |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 | Code temperature units    | code_temperatre  | temperature          | no          | ?                     |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
@@ -714,7 +713,7 @@ and the adopted CGS conversion factor.
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 | Electrostatic unit        | esu              | (energy*length)**0.5 | yes         | 1.0                   |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
-| Gauss                     | gauss            |    magnetic_field    | yes         | 1.0                   |
+| Gauss                     | gauss            | magnetic_field       | yes         | 1.0                   |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 |                                                                                                           |
 +-----------------------------------------------------------------------------------------------------------+
@@ -738,7 +737,7 @@ and the adopted CGS conversion factor.
 +-----------------------------------------------------------------------------------------------------------+
 | **Cosmological "units"**                                                                                  |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
-| Little h                  | h                |    dimensionless     | no          | ?                     |
+| Little h                  | h                | dimensionless        | no          | ?                     |
 +---------------------------+------------------+----------------------+-------------+-----------------------+
 |                                                                                                           |
 +-----------------------------------------------------------------------------------------------------------+
