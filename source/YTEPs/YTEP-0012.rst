@@ -227,7 +227,7 @@ quantities dict), and then write the profiles to disk.
                    weight_field=None, accumulation=True,
                    output_dir="profiles", storage="profiles")
    hc.add_callback("virial_quantities", ["radius", ("gas", "matter_mass")])
-   hc.add_callback("write_profiles", storage="profiles")
+   hc.add_callback("save_profiles", storage="profiles")
 
 Currently existing stock callbacks:
 
@@ -242,6 +242,8 @@ Currently existing stock callbacks:
 * virial quantity calculation based on 1D profiles
 
 * writing profile data
+
+* reloading saved profile data
 
 * removing ``Halo`` attributes.
 
@@ -264,23 +266,47 @@ Running and Order of Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After all callbacks, quantities, and filters have been added, the analysis begins with a call to 
-``HaloCatalog.run``.
+``HaloCatalog.create``.
 
 .. code-block:: python
 
-   hc.run(save_halos=False, njobs=-1, dynamic=True)
+   hc.create(save_halos=False, njobs=-1, dynamic=True)
 
 The ``save_halos`` keyword determines whether the actual ``Halo`` objects are saved after analysis on 
 them has completed or whether just the contents of their quantities dicts will be retained for creating 
 the final catalog.  The looping over halos uses a call to ``parallel_objects`` allowing the user to 
 control how many processors work on each halo.  The final catalog is written to disk int the output 
-directory given when the ``HaloCatalog`` object was created.  COMING SOON: the final halo catalog can then 
+directory given when the ``HaloCatalog`` object was created.  The final halo catalog can then 
 be loaded in as a yt dataset just in the manner of a halo finder dataset.
 
 All callbacks, quantities, and filters are stored in an "actions" list, meaning that they are 
 executed in the same order in which they were added.  This enables the use of simple, reusable, 
 single action callbacks that depend on each other.  This also prevents unecessary computation by 
 allowing the user to add filters at multiple stages to skip remaining analysis if it is not warranted.
+
+Reloading a Halo Catalog
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A ``HaloCatalog`` saved to disk can be reloaded as yt dataset with the standard call to ``load``.  Any 
+side data, such as profiles, can be reloaded with a ``load_profiles`` callback and a call to 
+``HaloCatalog.load``.  
+
+.. code-block:: python
+
+   from yt.mods import *
+   from yt.analysis_modules.halo_analysis.api import *
+
+   hpf = load("halo_catalogs/catalog_0046/catalog_0046.0.h5")
+   hc = HaloCatalog(halos_pf=hpf,
+                    output_dir="halo_catalogs/catalog_0046")
+   hc.add_callback("load_profiles", output_dir="profiles",
+                   filename="virial_profiles")
+   hc.load()
+
+The ``load`` and ``create`` functions are wrappers around a ``_run`` function responsible for looping over 
+all the halos and applying callbacks.  The only difference between the two is that their default keyword 
+arguments are specifically tailored for creating (do not retain ``Halo`` objects, do write catalog) or 
+rereading catalogs (do retain ``Halo`` objects, do not write catalog).
 
 ``Halo``
 ++++++++
