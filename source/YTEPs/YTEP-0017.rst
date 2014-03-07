@@ -186,13 +186,13 @@ for each frontend by enabling plugins to call methods on the dataset.  These
 methods will be named ``_adapt_*`` where the suffix is the contexts's shortname.
 These will return dictionaries of parameters which will be rigorously checked
 for contents (i.e., preventing incorrect or incomplete information from being
-passed back.)  Plugins must define these methods.
+passed back.)  Contexts must define these methods.
 
 As an example, here is pseudocode for a cosmological simulation context:
 
 .. code-block:: python
 
-   class CosmologyPlugin(DomainPlugin):
+   class CosmologyContext(DomainContext):
        domain = 'cosmology'
 
        def __init__(self):
