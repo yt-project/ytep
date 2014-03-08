@@ -43,22 +43,16 @@ Release Blockers
 
 These are components that need implementing before yt 3.0 can be released.
 This is not the same as reaching a "complete" implementation; the important
-work is to ensure that subsequent API breakages are minimal.
+work is to ensure that subsequent API breakages are minimal.  We are tracking
+these on the `yt-3.0 Trello Board<https://trello.com/b/Y5XV4Hod/yt-3-0>`_.
 
- * Field renaming (:ref:`YTEP-0003 <ytep-0003>`), which has been completed in
-   the units refactor.
- * De-astroification of yt and renaming of generic objects
-   (YTEP-00017, not yet accepted), which has been mostly
-   accomplished in the rebranding bookmark.
- * Units unification (:ref:`YTEP-0011 <ytep-0011>`) of which a big part is
-   turning all fields into field "plugins."  This work is currently making
-   great progress.
- * Smoothing kernel implementation for particles.  This has largely been
-   finished, but needs documentation and flexibility.
- * Forest-of-octrees implementation for particles.  50% complete.
+ * Merging unitrefactor; waiting only on documentation and rebranding merge at
+   this time. (:ref:`YTEP-0011 <ytep-0011>` and :ref:`YTEP-0017 <YTEP-0017>`.)
+ * De-astroification of yt and renaming of generic objects which has been
+   mostly accomplished in the rebranding bookmark.
  * Removing dict-like access to static output (:ref:`YTEP-0018 <ytep-0018>`),
-   done in the "rebranding" bookmark.
- * Considerable amount of documentation.
+   not yet compelted in the rebranding bookmark.
+ * Considerable amount of documentation, which is being worked on.
 
 I do not believe there are any other blockers to yt 3.0.
 
@@ -71,7 +65,8 @@ developing yt 2.6 to yt 3.0.
 This is intentionally left mostly empty, as items from "feature parity" will be
 migrated up.
 
- * ``field_cuts`` (which is a related to ``cut_region``, which I've left below)
+ * ``field_cuts`` (which is a related to ``cut_region``, which has been mostly
+   implemented.)
 
 Feature Parity
 ++++++++++++++
@@ -79,9 +74,9 @@ Feature Parity
 These are items that existed in yt 2.6 that do not exist in yt 3.0 yet.
 
  * A handful of hierarchy attributes have not yet been implemented.
- * A few frontends still need polishing during the port, including Athena, GDF
-   and the like.  These are small items but will need assistance from
-   individual frontend maintainers.
+ * A few frontends still need polishing during the port, including Chombo,
+   Pluto, NMSU-ART, and GDF.  These are small items but will need assistance
+   from individual frontend maintainers.
  * The sidecar storage has not been ported.
  * Boolean regions have not been implemented.  They can likely be implemented
    in the same manner as ``cut_region`` has been.
