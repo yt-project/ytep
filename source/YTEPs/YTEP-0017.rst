@@ -1,0 +1,259 @@
+YTEP-0017: Domain-Specific Output Types
+=======================================
+
+Abstract
+--------
+
+Created: September 18, 2013
+Author: Matthew Turk and Anthony Scopatz
+
+This YTEP is designed to begin the process of generalizing
+astrophysics-specific components of yt toward applications in other domains.
+
+Status
+------
+
+Proposed and in completed.
+
+This would only be implemented in yt 3.0.
+
+Project Management Links
+------------------------
+
+The first phase pull request, which is contingent on this being accepted, is
+here:
+
+  * https://bitbucket.org/yt_analysis/yt-3.0/pull-request/96/rename-generic-objects/diff
+
+Detailed Description
+--------------------
+
+Currently, yt is extremely strongly focused on astrophysical data.  This leads
+to the inclusion of attributes such as ``cosmological_simulation``,
+``current_redshift`` and so on, as well as some other fundam.  Even within
+astrophysical simulations, these can be irrelevant or unnecessary.
+Furthermore, there may be attributes relevant to other domains (that transcend
+a single subclass of ``StaticOutput``) that may be relevant or necessary.
+
+This concept of branding things extends even to the level of the commonly-used
+variable name ``pf``, which originated within the original Enzo usage as
+shorthand for "parameter file," and the name ``StaticOutput`` as in contrast to
+the "streaming" movie format within Enzo.  In order to effectively move beyond
+both astro- and Enzo-centrism, the terminology, attributes, and extensibility
+of datasets should be emphasized and defined.
+
+Problematic Areas
++++++++++++++++++
+
+Attributes on StaticOutput
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following attributes are defined on every ``StaticOutput`` regardless of
+whether the dataset is astrophysics, cosmology, or even rectilinear cartesian
+mesh.
+
+  * ``current_time`` (note: this also is not correctly implemented for Enzo)
+  * ``domain_dimensions``
+  * ``domain_left_edge``
+  * ``domain_right_edge``
+  * ``cosmological_simulation``
+  * ``current_redshift``
+  * ``omega_lambda``
+  * ``omega_matter``
+  * ``hubble_constant``
+
+Even if ``cosmological_simulation`` is set to off, the cosmology-related
+parameters will be defined.  Additionally, the default "field type" is ``gas``,
+which is globally set and not necessarily trivial to modify.  Changing the
+units to be less astro-specific (which may not be necessary for length units)
+is part of a larger units-related discussion, rather than part of this YTEP.
+
+Additionally, ``StaticOutput`` is tied extremely strongly to a file on disk.
+Because that is largely internally-facing, changing that may not be subject to
+a YTEP, but rather a simple refactoring.
+
+Finally, not all simulation types have a concept of ``domain_dimensions``, even
+if the indexing system does.  This is currently outside the scope of this YTEP.
+The domain left and right edges also do not always matter for particle
+simulations (except in non-outflow boundary conditions) but are still always
+relevant to the indexing system.
+
+Below are a few suggested mechanisms for retaining this information as "first
+class" attributes of a given data set when appropriate, but to remove it from
+those datasets where it is not appropriate.
+
+Naming and Branding
+~~~~~~~~~~~~~~~~~~~
+
+Objects will be renamed:
+
+   * ``StaticOutput`` will be renamed to ``Dataset``
+   * ``TimeSeriesData`` will be renamed to ``DatasetSeries`` and will no longer
+     exclusively refer to a time-related set of data, but instead include
+     arbitrary collections of datasets.
+   * Instead of ``pf`` as shorthand, we will use ``ds``.
+   * Renaming ``GeometryHandler`` to ``Index``
+
+Currently, all datasets expose a ``.hierarchy`` attribute, shortened to ``.h``.
+This naming is a holdover from the time when Enzo ando ther patch-based AMR
+datasets were the primary data examined with yt.  However, this makes
+considerably less sense when seen in light of support of particle datasets,
+semi-structured datasets, unigrid datasets, and eventually unstructured mesh
+datasets.  What we really mean when we say ``.hierarchy`` or ``.h`` is *index*
+or *geometry*.  Currently, the ``StaticOutput`` object also possesses a
+``.geometry`` attribute, although this is a string scalar.
+
+I do not think we should replace the ``.h`` attribute wholesale, and I do not
+necessarily think that data objects should necessarily directly hang off of the
+``StaticOutput`` (or whatever it is renamed) object.  However, I do think that
+we should eliminate ``hierarchy`` in favor of something more generic that is
+more descriptive, and we should consider alternates for creating data objects.
+Regardless of what we decide on, the ``.h`` attribute should remain for the
+time being, and we should also not instantiate our indexing method until
+requested.
+
+The resolution decided upon during discussion has been:
+
+ * Eliminate the ``hierarchy`` object as a name.  ``geometry`` seems to be the
+   most popular for what the ``GeometryHandler`` object does.
+ * Retain the ``h`` attribute as an alias (for now, possibly forever)
+ * Each dataset will have an ``index`` property which will be a ``GridIndex``,
+   ``OctIndex`` etc etc.  This is essentially the same as the ``Hierarchy``
+   attribute.
+ * Move data objects up to the top level of ``Dataset``.
+
+Domain-Specific Datasets
+++++++++++++++++++++++++
+
+Because some domains will have fundamental parameters that put into context the
+data they represent, this YTEP proposes a plugin system wherein domain-specific
+"contexts" register themselves and specific frontends identify which plugins are
+applicable to that specific frontend.  This dual-ended handshaking helps ensure
+that plugins ensure they are applicable to a frontend, and that frontends
+identify potential plugins that work for them.
+
+A domain plugin (called ``DomainContext``) will operate *on* a dataset
+object, adding new attributes, but *not* new methods.  This violates common
+object-oriented philosophy and practice, but from an implementation perspective
+it seems to be the cleanest and avoiding the most meta-programming.
+
+On instantiation, a static output normally goes through these steps:
+
+   1. ``_parse_parameter_file``
+   2. ``_setup_coordinate_handler``
+   3. ``_set_units``
+   4. ``_set_derived_attrs``
+   5. ``print_key_parameters``
+   6. ``create_field_info``
+
+This YTEP would propose changing this order to:
+
+   1. ``_parse_parameter_file``
+   2. ``_setup_coordinate_handler``
+   3. ``_set_units``
+   4. ``_set_derived_attrs``
+   5. ``_apply_domain_contexts``
+   6. ``create_field_info``
+   7. ``print_key_parameters``
+
+``_apply_domain_contexts`` would iterate through the intersecting set of
+globally and frontend-specific registered domain-specific plugins, and for each
+one would call the class method: ``is_appropriate`` supplying the dataset
+object (``self``) as the only argument.  If so, the plugin would then return
+True and an instance of it would be appended to the dataset property
+``domain_contexts`` (or some other name, as this collides with ``domain_*``
+referring to simulation spatial information.)  Alternately, we could mandate an
+``_adapt_*`` method (seen below) and in the absence of such a method assume the
+plugin is blacklisted.
+
+These plugins would then, in sequence, have their ``apply`` method called with
+the dataset as the only argument.  They can then add additional attributes to
+the dataset, as well as additional key parameters to print out.  The runtime
+overhead should be negligible.
+
+This extends further to the compartmentalization of field definitions.  We
+leave that somewhat unspecified here, but domain contexts should enable the
+application of specific field objects based on runtime parameters.  This could
+mean, for instance, conversion of face-centered to cell-centered quantities,
+magnetic field analysis, nuclear decay times, and so on.  One mechanism for
+doing this would be to add field objects to the already-created ``field_info``
+object.  (This is why that step must be raised in the list.)
+
+One concern with this is that frontend-specific parameters (i.e.,
+``cosmological_simulation``) are not universal, so an adapter between the
+frontend and the plugin needs to be created.  We propose that this be required
+for each frontend by enabling plugins to call methods on the dataset.  These
+methods will be named ``_adapt_*`` where the suffix is the contexts's shortname.
+These will return dictionaries of parameters which will be rigorously checked
+for contents (i.e., preventing incorrect or incomplete information from being
+passed back.)  Contexts must define these methods.
+
+As an example, here is pseudocode for a cosmological simulation context:
+
+.. code-block:: python
+
+   class CosmologyContext(DomainContext):
+       domain = 'cosmology'
+
+       def __init__(self):
+           pass
+
+       @classmethod
+       def is_appropriate(cls, pf):
+           if not hasattr(pf, '_adapt_cosmology'): return None
+           rv = pf._adapt_cosmology()
+           if rv['cosmological_simulation'] == 1:
+               c = cls()
+               return c
+           return None
+
+       def apply(self, pf):
+           params = pf._adapt_cosmology()
+           pf.cosmological_simulation = rv['cosmological_simulation']
+           pf.cosmology = Cosmology()
+
+This design mechanism is somewhat open for discussion; the problems of adapting
+varying parameters and matching both the generality of the domain context and
+the frontend dataset provide challenges.  An alternative is to provide a
+default class method for each context that is used by the base dataset object to
+obtain a false value.
+
+As noted during discussion, context can and should subclass each other.  How
+this interfaces with which plugin in the order of resolution is not yet clear,
+as (for instance) the base class should not necessarily modify an attribute
+when the subclass would then override.
+
+Runtime Extensibility
++++++++++++++++++++++
+
+These domain context will be extensible at runtime by specifying an additional
+list of plugins to check, by adding additional plugins to the global (and
+frontend-specific) registry, and by adding to the plugin list for each dataset
+type.
+
+Implementation
+++++++++++++++
+
+Much of the implementation has been described above.  However, these domain
+plugins should reside in a subdirectory of ``data_objects``, specifically named 
+``yt/data_objects/domain_contexts/`` and should be limited to one class per
+file.
+
+Backwards Compatibility
+-----------------------
+
+   * The backwards compatibility of renaming is likely quite small, except for
+     those cases where names would be changed.
+   * The backwards compatibility of checking for ``cosmological_simulation``
+     would probably require additional field validation (or instead, fields
+     that are added specifically by the cosmology context).
+   * Changing ``TimeSeriesData`` to a new name may need to be gradually
+     introduced, retaining backwards compatibility for a while.
+   * Fixing Enzo's ``current_time`` will cause challenges for anyone who is not
+     using internal time conversion factors.  I think this number is likely
+     small.
+
+Alternatives
+------------
+
+We could continue with the status quo.

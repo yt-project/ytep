@@ -141,5 +141,185 @@ Other than working with existing halo finders and potentially reading in the
 output they produce now, there will be no compatibility with pre-existing 
 machinery.  For these reasons, this development will be confined to yt 3.0.
 
-Alternatives
-------------
+Current Progress
+----------------
+
+Development of the new halo analysis is taking place in 
+`this repository <https://bitbucket.org/brittonsmith/yt/>`_ under the **ytep0012** bookmark.  
+This work is being done alongside the unit refactor and thus includes all changes in the 
+**unitrefactor** bookmark `here <https://bitbucket.org/MatthewTurk/yt/>`_.  The majority of the 
+work is taking place within ``yt/analysis_modules/halo_analysis``.  Everything detailed below, except 
+where explicitly noted, has been implemented.
+
+``HaloCatalogTimeSeries``
++++++++++++++++++++++++++
+
+Not Implemented.  This is currently awaiting development of a new merger tree framework.
+
+``HaloCatalog``
++++++++++++++++
+
+This relies on the recently added ability to load a Rockstar halo catalog as a yt dataset, 
+referred to hereon as a halo finder dataset for clarity.  A ``HaloCatalog`` object is created 
+by providing it with a simulation dataset, a halo finder dataset, or both.
+
+.. code-block:: python
+
+   dpf = load("DD0064/DD0064")
+   hpf = load("rockstar_halos/halos_64.0.bin")
+
+   hc = HaloCatalog(halos_pf=hpf, data_pf=dpf,
+                 output_dir="halo_catalogs/catalog_0064")
+
+If the halo_pf is not given, halo finding will be done using the method provided with the 
+``finder_method`` keyword (**not implemented**).  A data container can also be given, associated 
+with either dataset, to control the spatial region in which halo analysis will be performed.
+
+Analysis is done by adding actions to the ``HaloCatalog``.  Each action is represented by a callback 
+function that will be run on each halo.  There are three types of actions.
+
+1. **Quantities** - a call back that returns a value or values.  The return values are stored within 
+the halo object in a dictionary called "quantities."  At the end of the analysis, all of these 
+quantities will be written to disk as the final form of the generated "halo catalog."
+
+.. code-block:: python
+
+   # definition of the center of mass quantity
+   def center_of_mass(halo):
+       if halo.particles is None:
+           raise RuntimeError("Center of mass requires halo to have particle data.")
+       return (halo.particles['particle_mass'] * 
+               np.array([halo.particles['particle_position_x'],
+                         halo.particles['particle_position_y'],
+                         halo.particles['particle_position_z']])).sum(axis=1) / \
+                                  halo.particles['particle_mass'].sum()
+   # add to a registry of available quantities
+   add_quantity('center_of_mass', center_of_mass)
+
+   # in the actual halo analysis script
+   hc.add_quantity("center_of_mass")
+
+The above example is better suited as a parallel-safe derived quantity, but the use is the same.
+
+Instead of being generated from a callback, quantities can also be values pulled directory from the 
+halo finder dataset.
+
+.. code-block:: python
+
+   # get the field value ("halos", "particle_mass") for this halo from the halo dataset
+   hc.add_quantity("particle_mass", field_type="halos")
+
+2. **Callbacks** - the callback is actually the super class for quantities and filters and is a 
+general purpose function that does something, anything, to a ``Halo`` object.  This can include 
+hanging new attributes off the ``Halo`` object, performing analysis and writing to disk, etc.  
+A callback does not return anything.  
+In the example below, we create a sphere for a halo with a radius that is twice the saved 
+"virial_radius" (in the quantities dict), recenter it on the location of maximum density, 
+then do some profiling, compute virial quantities based on those profiles (storing them in the 
+quantities dict), and then write the profiles to disk.
+
+.. code-block:: python
+
+   hc.add_callback("sphere", radius_field="virial_radius", factor=2.0)
+   hc.add_callback("sphere_field_max_recenter", ("gas", "density"))
+   hc.add_callback("profile", "radius", [("gas", "matter_mass"),
+                                         ("index", "cell_volume")],
+                   weight_field=None, accumulation=True,
+                   output_dir="profiles", storage="profiles")
+   hc.add_callback("virial_quantities", ["radius", ("gas", "matter_mass")])
+   hc.add_callback("save_profiles", storage="profiles")
+
+Currently existing stock callbacks:
+
+* sphere creation
+
+* sphere recenter
+
+* sphere bulk velocity
+
+* 1D profiling
+
+* virial quantity calculation based on 1D profiles
+
+* writing profile data
+
+* reloading saved profile data
+
+* removing ``Halo`` attributes.
+
+* PhasePlot
+
+3. **Filters** - a filter is a callback function that returns True or False.  If the return 
+value is True, any further queued analysis will proceed and the halo in question will be 
+added to the final catalog.  If the return value False, further analysis will not be performed 
+and the halo will not be included in the final catalog.
+
+.. code-block:: python
+
+   hc.add_filter("quantity_value", "matter_mass_200", ">", 1e13, "Msun")
+
+Currently existing stock filters:
+
+* quantity filter (shown above): uses an eval statement with a value stored in the quantities dict
+
+Running and Order of Operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After all callbacks, quantities, and filters have been added, the analysis begins with a call to 
+``HaloCatalog.create``.
+
+.. code-block:: python
+
+   hc.create(save_halos=False, njobs=-1, dynamic=True)
+
+The ``save_halos`` keyword determines whether the actual ``Halo`` objects are saved after analysis on 
+them has completed or whether just the contents of their quantities dicts will be retained for creating 
+the final catalog.  The looping over halos uses a call to ``parallel_objects`` allowing the user to 
+control how many processors work on each halo.  The final catalog is written to disk int the output 
+directory given when the ``HaloCatalog`` object was created.  The final halo catalog can then 
+be loaded in as a yt dataset just in the manner of a halo finder dataset.
+
+All callbacks, quantities, and filters are stored in an "actions" list, meaning that they are 
+executed in the same order in which they were added.  This enables the use of simple, reusable, 
+single action callbacks that depend on each other.  This also prevents unecessary computation by 
+allowing the user to add filters at multiple stages to skip remaining analysis if it is not warranted.
+
+Reloading a Halo Catalog
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A ``HaloCatalog`` saved to disk can be reloaded as yt dataset with the standard call to ``load``.  Any 
+side data, such as profiles, can be reloaded with a ``load_profiles`` callback and a call to 
+``HaloCatalog.load``.  
+
+.. code-block:: python
+
+   from yt.mods import *
+   from yt.analysis_modules.halo_analysis.api import *
+
+   hpf = load("halo_catalogs/catalog_0046/catalog_0046.0.h5")
+   hc = HaloCatalog(halos_pf=hpf,
+                    output_dir="halo_catalogs/catalog_0046")
+   hc.add_callback("load_profiles", output_dir="profiles",
+                   filename="virial_profiles")
+   hc.load()
+
+The ``load`` and ``create`` functions are wrappers around a ``_run`` function responsible for looping over 
+all the halos and applying callbacks.  The only difference between the two is that their default keyword 
+arguments are specifically tailored for creating (do not retain ``Halo`` objects, do write catalog) or 
+rereading catalogs (do retain ``Halo`` objects, do not write catalog).
+
+``Halo``
+++++++++
+
+``Halo`` objects are created by the ``HaloCatalog`` during the call to ``HaloCatalog.run``.  They are 
+mainly meant to be temporary objects for retaining information so that it can be passed between callbacks.  
+They can be kept by specifying *save_halos=True*.  This might be useful when working with a time series of 
+halo catalogs where *future_self* and *past_self* attributes may act as pointers to ``Halo`` objects within 
+``HaloCatalogs`` that are time-adjacent.
+
+Remaining Work
+--------------
+
+See the `Trello board <https://trello.com/b/Aokog41p/halo-analysis>`_.
+
+All are welcome to get involved with development, testing, etc!

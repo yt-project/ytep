@@ -1,4 +1,4 @@
-.. _ytep-0003:
+.. _YTEP-0003:
 
 YTEP-0003: Standardizing field names
 ====================================
@@ -8,7 +8,7 @@ Abstract
 
 Created: December 11, 2012
 
-Author: Casey Stark
+Author: Casey Stark, Nathan Goldbaum, Matt Turk
 
 Let's clean up field names in yt, ex "SoundSpeed" -> "sound_speed". The
 proposed work will serve to remove Enzo-isms and encourage more consistent
@@ -17,9 +17,7 @@ field names across frontends.
 Status
 ------
 
-Proposed.
-
-I started working on the edits in my yt-3.0 fork.
+Implemented in an open pull request. https://bitbucket.org/yt_analysis/yt/pull-request/662/unit-refactor
 
 Project Management Links
 ------------------------
@@ -40,19 +38,69 @@ are more standard in Python.
 Solution
 ^^^^^^^^
 
-Editing field names inside the ``universal_fields`` module. I am not sure what
-changes we will need beyond this.
+The field names must be updated to lowercase_underscored format.  This means all
+of the common field names, frontend-specific field names, and all references to
+field names elsewhere in the code base need to be updated.
+
+Additionally, we will take the opportunity to reorganize the field definitions.
+Currently all of the field definitions live in the monolithic
+``universal_fields.py`` file, which in yt 2.6 is just shy of 1700 lines long.
+In the reference implimentation, we have created a new top-level namespace,
+``yt.fields``.  The ``fields`` module is container for a number of submodules
+that contain field definitions or macros to create classes of field
+definitions.  Currently, the following submodules are attributes of ``yt.fields``:
+
+* ``angular_momentum``
+   Gas and particle angular momentum fields and field creation macros.
+* ``fluid_fields``
+   Useful fields that are simple functions of the primitive variables in a
+   hydrodynamic simulation.  `cell_mass`, `sound_speed`, `pressure`, `entropy`,
+   and `kinetic_energy` all live here.
+* ``geometric_fields`` 
+   Fields that are functions only of the geometry of the data.  This includes
+   `radius`, `x`, `y`, `z`, curvilinear coordinat fields, `zeros`, `ones`, and
+   `grid_level`.
+* ``magnetic_fields``
+   Derived fields useful for analyzing simulation that include magnetic fields.
+* ``particle_fields``
+   Particle derived fields, including all non-local particle deposition fields
+   and local fields that are functions of primitive particle properties.
+* ``species_fields``
+   Fields for chemical species.  This is currently a stub.
+* ``vector_operations``
+   Fields that are the gradient, divergence or curl of another field as well as
+   macros for setting up these fields.
+* ``universal_fields``
+   Fields that have so far not been assigned to one of the other field
+   submodules.  Eventually this module will be removed once the remaining fields
+   have been reorganized.
+
+Additionally, the ``fields`` module now contains the logic for field detection
+as well as the `DerivedField` class.
+
 
 Testing
 ^^^^^^^
 
-I am relying on the existing tests in yt-3.0, but I am afraid it's not enough.
+The existing unit testing framework as well as an updated set of field detection
+tests.  If there are additional fixes required in untested parts of the code
+base, we will update them as we find them.
 
 Backwards Compatibility
 -----------------------
 
-This will certainly break some old scripts. This was the motivation for
-starting this in yt-3.0.
+We will provide a compatibility layer, allowing yt to map from the old field
+names to the new ones.  This compatibility layer will not be enabled by default.
+
+Right now, one can turn it on via the `_setup_deprecated_fields` function:
+
+.. code-block:: python
+
+   from yt.mods import *
+   pf = load('IsolatedGalaxy/galaxy0030/galaxy0030')
+   pf._setup_deprecated_fields()
+
+In the future we might also enable this via a config parameter.
 
 Field Names
 -----------
@@ -212,4 +260,7 @@ VorticityRPGrowthY                      vorticity_radiation_pressure_growth_y
 VorticityRPGrowthZ                      vorticity_radiation_pressure_growth_z
 VorticityRPGrowthMagnitude              vorticity_radiation_pressure_growth_magnitude
 VorticityRPGrowthTimescale              vorticity_radiation_pressure_growth_timescale
+x-velocity                              velocity_x
+y-velocity                              velocity_y
+z-velocity                              velocity_z
 ======================================  =======================================
