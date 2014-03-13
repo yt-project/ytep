@@ -17,7 +17,7 @@ field names across frontends.
 Status
 ------
 
-Implemented in an open pull request. https://bitbucket.org/yt_analysis/yt/pull-request/662/unit-refactor
+This has been implemented.
 
 Project Management Links
 ------------------------
@@ -264,3 +264,46 @@ x-velocity                              velocity_x
 y-velocity                              velocity_y
 z-velocity                              velocity_z
 ======================================  =======================================
+
+Molecular and Atomic Species Names
+----------------------------------
+
+Particular care must be taken to name molecular and atomic species in a way
+that is unambiguous as well as terse.  We need to be able to resolve the
+following types of species:
+
+ * CO (Carbon monoxied)
+ * Co (Coblt)
+ * OVI (Oxygen ionized five times)
+ * H2+ (Molecular Hydrogen ionized once)
+ * H- (Hydrogen atom with an additional electron)
+
+The naming scheme we have decided upon is of the form ``MM[_[mp][NN]]``.
+``MM`` is the molecule, defined as a concatenation of atomic symbols and
+numbers, with no spaces or underscores.  The second sequence is only required
+if the ionization state is not neutral, and is of the form ``p`` and ``m`` to
+indicate "plus" or "minus" respectively, followed by the number.  Our examples
+above would be ``CO``, ``Co``, ``O_p5``, ``H2_p1``, and ``H_m1``.  Note that we
+are *not* using an exclusively-lowercase convention here, as we did for the
+other field names.  The name ``electron`` will be reserved for electron fields,
+as it is unambiguous and will not be utilized elsewhere.
+
+Finally, in those frontends which are single-fluid, we will define these fields
+for each species:
+
+  * ``_fraction``
+  * ``_number_density``
+  * ``_density``
+  * ``_mass``
+
+This will require some parsing, and initially we will only support those fields
+we expect to find.  Additionally, because different frontends define these
+fields in different ways, we will detect which one is the output and define the
+rest from that.  For example, if the frontend finds a ``_density`` field, the
+rest will be computed as derived fields from that.
+
+As a point of clarification, the ``electron_density`` currently defined for
+Enzo is scaled with respect to the ratio of the electron to proton mass ratio.
+This means that dividing it by ``m_h`` will result in the number density.
+Moving forward, this *will not be the case*.  We will instead give correct
+results for mass density.
