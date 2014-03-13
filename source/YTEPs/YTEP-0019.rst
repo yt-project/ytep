@@ -345,6 +345,7 @@ Object                                   Include
 ``yt_counters``                          No
 ``ytcfg``                                Yes
 ``ytcfgDefaults``                        No
+======================================   =======================================
 
 Changing ``yt/__init__.py`` to Import
 +++++++++++++++++++++++++++++++++++++
