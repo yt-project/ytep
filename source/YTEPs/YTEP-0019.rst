@@ -68,7 +68,6 @@ A few comments on specific items:
 ======================================   =======================================
 Object                                   Include
 ======================================   =======================================
-
 ``ARTFieldInfo``                         No
 ``ARTIOFieldInfo``                       No
 ``ARTIOStaticOutput``                    No
