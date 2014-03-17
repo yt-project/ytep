@@ -285,7 +285,7 @@ if the ionization state is not neutral, and is of the form ``p`` and ``m`` to
 indicate "plus" or "minus" respectively, followed by the number.  Our examples
 above would be ``CO``, ``Co``, ``O_p5``, ``H2_p1``, and ``H_m1``.  Note that we
 are *not* using an exclusively-lowercase convention here, as we did for the
-other field names.  The name ``De`` will be reserved for electron fields, as it
+other field names.  The name ``El`` will be reserved for electron fields, as it
 is unambiguous and will not be utilized elsewhere.  Additionally, the isotope
 of ``2H`` will be included as ``D``.
 
@@ -308,7 +308,7 @@ fields in different ways, we will detect which one is the output and define the
 rest from that.  For example, if the frontend finds a ``_density`` field, the
 rest will be computed as derived fields from that.
 
-As a point of clarification, the ``De_density`` currently defined for
+As a point of clarification, the ``El_density`` currently defined for
 Enzo is scaled with respect to the ratio of the electron to proton mass ratio.
 This means that dividing it by ``m_h`` will result in the number density.
 Moving forward, this *will not be the case*.  We will instead give correct
