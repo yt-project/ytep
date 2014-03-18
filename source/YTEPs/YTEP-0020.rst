@@ -1,0 +1,50 @@
+YTEP-0020: Removing PlotCollection
+==================================
+
+Abstract
+--------
+
+Created: March 18, 2014
+Author: Matthew Turk
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+Detailed Description
+--------------------
+
+The ``PlotCollection`` object was designed to work with the package HippoDraw,
+as a means of controlling multiple plots from a single command.  This was also
+focused very strongly on the idea of viewing a single object from multiple
+angles, and was mostly useful for my research.  All other uses largely used it
+as the only mechanism of creating plots -- not because of any particular
+functionality it has.
+
+With yt 3.0, I propose that we remove the ``PlotCollection`` entirely, as its
+functionality is 100% replaced by the various other objects such as
+``SlicePlot``, ``ProjectionPlot``, ``ProfilePlot`` and ``PhasePlot``, all of
+which are more modern and provide greater access to the underlying matplotlib
+objects.
+
+This change will occur in yt 3.0.  Nearly all users have migrated to using
+``SlicePlot`` and so on, and we are seeing much greater uptake of
+``ProfilePlot`` and ``PhasePlot``.  Because we also anticipate growing our
+community with this release, and because it will be the time when we can break
+backwards compatibility, this is the most natural time to remove it.
+
+Backwards Compatibility
+-----------------------
+
+Existing scripts that utilize ``PlotCollection`` will break, but there will be
+other yt-3.0 changes that they may suffer from anyway.
+
+Alternatives
+------------
+
+I do not think we have the resources to pursue alternate options such as
+supporting ``PlotCollection`` in perpetuity.
