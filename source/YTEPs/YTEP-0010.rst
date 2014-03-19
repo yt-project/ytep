@@ -175,6 +175,21 @@ New classes:
         orientation one wants the camera to be at certain times.  A smoothing
         function (like a spline) can connect up these keyframes into a smooth
         camera path for application on the timeline. 
+  
+In each of these following derived classes, the returned object from the
+__init__ function is an instance of the Scene class, capable of adding
+additional sources. These are meant to provide shortcuts
+
+Derived Classes:
+  * VolumeScene
+        Inherits from Scene, sets up a scene with a volume rendering data
+        source
+  * StreamlineScene
+        Inherits from Scene, sets up a scene with streamlines data source
+  * ParticleScene
+        Inherits from Scene, sets up a scene with particles data source
+ 
+
 
 Sample Scripts for Proposed Infrastructure
 ++++++++++++++++++++++++++++++++++++++++++
@@ -184,28 +199,29 @@ running this short script:
 
 >>> from yt.mods import *
 >>> pf = load("Enzo_64/DD0043/data0043")
->>> sc = Scene(pf)
->>> sc.add_volume_rendering()
->>> sc.render()
+>>> sc = VolumeRender(pf, 'Density')
+>>> im = sc.render()
 
 where the scene constructor uses helper functions to set up all of the 
 default objects (volume, camera, timeline, transfer function) in order to use 
-the entire volume, place a camera at (x,y,z)=(1,1,1) pointing at 
-(px,py,pz)=(0,0,0) and north vector (nx,ny,nz)=(0,0,1), make the timeline 
+the entire volume, place a camera at `1.5*domain_right_edge` pointing at 
+`domain_center` and north vector (nx,ny,nz)=(0,0,1), make the timeline 
 object number_of_frames=1, setting the transfer function to use the min/max 
 of the volume and adding 4 isodensity contours.
+
+The previous image can be grabbed using:
+
+>>> im = sc.current_image
 
 If one wanted to modify this scene prior to rendering, a series would allow
 the end user to change things through a series of callbacks:
 
 >>> from yt.mods import *
 >>> pf = load("Enzo_64/DD0043/data0043")
->>> sc = Scene(pf)
-### Change the rendered volume to be a sphere of radius 100 kpc
 >>> sp = pf.h.sphere([0.5,0.5,0.5],100/pf['kpccm'])
->>> sc.add_volume_rendering(sp)
+>>> sc = VolumeRender(sp, 'Density')
 ### Change the camera position and orientation
->>> sc.camera.move(pos=[0,(100,'kpccm'),0], point=[0,0,0], north=[0,0,1])
+>>> sc.camera.move(pos=[0,(100,'kpccm'),0], focus=[0,0,0], north=[0,0,1])
 >>> sc.render()
 
 In order to create a short movie making a rotation around the center from 
@@ -225,7 +241,14 @@ set the timeline to match the timeseries data with a framerate of 12 frames/sec.
 >>> sc.timeline.set_num_frames(50)
 >>> sc.render()
 
-A primary end goal is to allow for the following functionality:
+
+While all the prior examples are focused on handling a single data source at a
+time, a major goal of the refactor is to allow for the combination of data 
+sources and data types, such as streamlines, particles, opaque
+planes, and annotations.  We want to allow for the composure of a full scene
+containing many different sources.
+
+For example,
 
 >>> from yt.mods import *
 >>> pf = load("Enzo_64/DD0043/data0043")
@@ -245,6 +268,35 @@ A primary end goal is to allow for the following functionality:
 >>> particle_handler.transfer_function.set_color_field('density')
 >>> particle_handler.transfer_function.set_alpha(0.1)
 >>> sc.render()
+### Remove piece of the scene
+>>> sc.toggle(vr_handle)
+... # Type                       Tag    Status
+... VolumeRenderSource(density): vr_1   off
+... Streamlines(velocity):       sl_1   on
+... Particles(density):          pt_1   on 
+>>> sc.render()
+>>> sc
+... # Type                       Tag    Status
+... VolumeRenderSource(density): vr_1   off
+... Streamlines(velocity):       sl_1   on
+... Particles(density):          pt_1   on 
+>>> sc.toggle('vr_1')
+... # Type                       Tag    Status
+... VolumeRenderSource(density): vr_1   on 
+... Streamlines(velocity):       sl_1   on
+... Particles(density):          pt_1   on 
+
+
+What Needs to be Decided
+------------------------
+
+  * What should the syntax be for annotations (lines, boxes, orientation
+    vectors)?
+
+  * How do we manipulate the Scene positions (positions of all non-spatial
+    annotations)? For example, put the transfer function display over here.
+
+  * Probably many more things.
 
 Backwards Compatibility
 -----------------------
