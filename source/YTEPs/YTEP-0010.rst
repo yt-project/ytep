@@ -199,7 +199,7 @@ running this short script:
 
 >>> from yt.mods import *
 >>> pf = load("Enzo_64/DD0043/data0043")
->>> sc = VolumeRender(pf, 'Density')
+>>> sc = VolumeScene(pf, 'Density')
 >>> im = sc.render()
 
 where the scene constructor uses helper functions to set up all of the 
