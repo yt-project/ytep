@@ -298,6 +298,9 @@ What Needs to be Decided
 
   * Probably many more things.
 
+  * How to handle the API of running in different parallel regimes (Image plane 
+    vs domain vs time-series vs ...)
+
 Backwards Compatibility
 -----------------------
 
