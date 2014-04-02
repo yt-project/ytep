@@ -1,3 +1,5 @@
+.. _ytep-0018:
+
 YTEP-0018: Changing dict-like access to Static Output
 =====================================================
 
