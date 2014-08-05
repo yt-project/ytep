@@ -119,7 +119,7 @@ dataset will be added and applied.
        filter = data["all", "creation_time"] > 0
        return filter
    add_particle_filter("star", 
-        function = finest_particles,
+        function = star_creation_time,
         filtered_type = "all",
         requires = ["creation_time"])
 
