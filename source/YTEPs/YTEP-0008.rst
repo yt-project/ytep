@@ -58,6 +58,7 @@ Version Release Date Days Since Last
 2.6.1   2013-12-03   10
 2.6.2   2014-02-28   87
 2.6.3   2014-07-23   145
+3.0     2014-08-04   N/A
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
@@ -134,51 +135,21 @@ Long Term Support Branch
 As development on underlying infrastructure of yt continues apace, we must
 provide long-term support for the existing infrastructure.  As such, we will
 continue to provide (time, effort and need permitting) the existing 2.X
-branches with criticla bugfixes.
+branches with critical bugfixes.
 
-Here is an outline of the release dates for the remainder of 2013.  This YTEP
+Here is an outline of the release dates for the remainder of 2014.  This YTEP
 will be updated as time goes on with additional release dates for long-term
 stability, but currently it is anticipated that this release schedule will
 relax over time once the next-generation branch (described below) becomes
 viable.
+
+This branch will be known as ``yt-2.x``.
 
 ======= ============
 Version Release Date
 ======= ============
 2.6.4   2014-11-01
 ======= ============ 
-
-Next-Generation Branch
-++++++++++++++++++++++
-
-yt 3.0 (described elsewhere) is a major rethinking of the mechanisms by which
-yt manipulates data in memory.  As such, it by necessity breaks some
-functionality, changes some functionality, and enables some functionality.  A
-full description of the changes in yt 3.0 is outside the scope of this
-document.
-
-However, because it is under active development without a clear
-production-level date in mind, a different release structure is envisioned for
-it.  A series of preview releases will be tagged and announced, but not
-uploaded to PyPI or merged into stable.
-
-These releases will be announced with the caveat that they are *preview*
-releases, and bug fixes will be solicited.  They will be conducted every two
-months, rather than every month, as the relative value of releasing alpha
-releases to a developer community is much smaller.
-
-======= ============
-Version Release Date
-======= ============
-3.0a1   2013-03-15
-3.0a2   2013-06-01
-3.0a3   2013-07-15
-3.0a4   2013-10-15
-3.0     2014-01-01
-======= ============ 
-
-This YTEP will be updated as milestones are met and the development trajectory
-of yt 3.0 is more clearly evaluated.
 
 Release Managers
 ++++++++++++++++
