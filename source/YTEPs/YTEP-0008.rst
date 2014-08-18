@@ -61,8 +61,8 @@ Version Release Date Days Since Last
 2.6.3   2014-07-23   145
 3.0     2014-08-04   N/A
 3.0.1   2014-09-01   28
-3.0.2   2014-10-01   30
-3.0.3   2014-11-03   31
+3.0.2   2014-10-01   58
+3.0.3   2014-11-03   89
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
