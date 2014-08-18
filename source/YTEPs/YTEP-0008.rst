@@ -32,7 +32,8 @@ Detailed Description
 
 The yt release schedule is irregular.  Here's a table of the releases over
 time, along with the number of days since the most recent major (i.e.,
-non-point) release.
+non-point) release. Depending on when this document was last updated, this
+may include both planned and historical releases.
 
 ======= ============ ===============
 Version Release Date Days Since Last
@@ -59,6 +60,9 @@ Version Release Date Days Since Last
 2.6.2   2014-02-28   87
 2.6.3   2014-07-23   145
 3.0     2014-08-04   N/A
+3.0.1   2014-09-01   28
+3.0.2   2014-10-01   30
+3.0.3   2014-11-03   31
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
