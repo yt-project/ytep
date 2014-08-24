@@ -1,0 +1,89 @@
+.. _ytep-1776:
+
+YTEP-1776: Team Infrastructure
+==============================
+
+Abstract
+--------
+
+Created: August 24, 2014
+Author: Britton Smith
+
+This document describes the structure, policies, procedures, and processes 
+of the yt development team.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+  * Apache Science Foundation stuff
+  * yt-users discussion on governance
+
+Detailed Description
+--------------------
+
+Team Structure
+^^^^^^^^^^^^^^
+
+The yt development team consists of developers and members.  Anyone 
+contributing at least one changeset to the codebase is a developer and shall 
+be listed on the page of all developers (link here).  A member is someone who 
+has made continued and significant contribution to the project (changes to the 
+codebase, discussion on mailing lists, feedback on pull requests, etc.) for 
+some period of time.  After such a period, potential new members are nominated 
+for membership by an existing member and confirmed by positive votes from three 
+additional members.  Once a developer becomes a member, they remain a member 
+for life.  Upon the initial creation of yt membership status, all developers 
+having contributed at least 50 changesets shall be granted membership.  The 
+<yt member page> gives a description of the requirements for membership and 
+provides a list of all members (and since what year?).
+
+Members are eligible to serve as representatives of the various subcomponents 
+of the yt codebase.  Representatives shall meet once a month to discuss the 
+status of the codebase as well as current or planned development.  One 
+representative shall act as the coordinator, in charge of making sure the 
+meeting happens (how long does one do this before switching?).  One other 
+representative shall act as secretary and record the minutes of the meeting, 
+which shall be posted to the yt-dev list and online.  The subcomponents to be 
+represented are:
+
+  * infrastructure
+  * testing
+  * plotting
+  * analysis modules
+
+One subcomponent may have more than one representative, but at least one must 
+be present the meetings.  
+Similar to subcomponent representatives, each frontend shall have a designated 
+liason to act as a knowledge-base for issues relating to implementation and 
+testing of that frontend in the yt codebase.
+
+Now list members and representatives.
+
+Releases
+^^^^^^^^
+
+Minor releases will follow the schedule given in :ref:`ytep-0008`.  Major or 
+unscheduled releases will occur after criteria proposed and accepted in a prior 
+meeting are met.  Before the release, members will be identified as playing an 
+integral role in the content of the release, and the release will happen only 
+after all of those members give their approval.
+
+Feature Development and Pull Requests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+Backwards Compatibility
+-----------------------
+
+Sic semper inordinatio.
+
+Alternatives
+------------
+
+The alternative is to continue with no official guidelines and somehow manage.
