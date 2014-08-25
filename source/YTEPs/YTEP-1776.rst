@@ -84,7 +84,7 @@ The *yt-2.x* branch will maintain the latest state of the 2.x version of yt.
 Development shall occur in forks off of the main repository with changes being 
 pulled in via pull requests into the *yt* branch.  No specific standard shall exist 
 for accepting pull requests of minor bug fixes.  More substantial pull requests 
-(five or more changesets) require approval of three yt members or people designated 
+require approval of three yt members or people designated 
 as qualified reviewers by the issuer.  New features or altered APIs are not 
 considered acceptable into the *yt* branch until comprehensive documentation 
 (docstring and narrative docs) also exist.  For the development of large features 
