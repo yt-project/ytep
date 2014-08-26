@@ -61,10 +61,10 @@ represented are:
   * analysis modules
 
 One subcomponent may have more than one representative, but at least one must 
-be present the meetings.  
-Similar to subcomponent representatives, each frontend shall have a designated 
-liason to act as a knowledge-base for issues relating to implementation and 
-testing of that frontend in the yt codebase.
+be present for the team meeting.  
+Similar to subcomponent representatives, each frontend shall have at least one 
+designated liason to act as a knowledge-base for issues relating to implementation 
+and testing of that frontend in the yt codebase.
 
 List of yt members:
 
@@ -76,7 +76,9 @@ Development Practices and Releases
 The main yt repository is located at https://bitbucket.org/yt_analysis/yt.
 
 Until the advent of yt-4.0, the yt repository will maintain three active branches: 
-*yt*, *stable*, and *yt-2.x*.  As of this document, the *yt-3.0* branch is closed.  
+*yt*, *stable*, and *yt-2.x*.  As of this document, the *yt-3.0* branch is closed 
+for new development, but pull requests will continue to be accepted while 
+development transitions back to the *yt* branch.  
 The *yt* branch contains all accepted changes and new features that have yet to be 
 included in a release.  The tip of the *stable* branch will be the latest release.  
 The *yt-2.x* branch will maintain the latest state of the 2.x version of yt.
@@ -94,7 +96,7 @@ the *experimental* bookmark will be accepted according to criteria laid out by
 the issuer.  Documentation will not be considered a requisite for pull requests to 
 be accepted into the *experimental* bookmark (although still encouraged), but a 
 merge of the *experimental* bookmark into the primary *yt* branch head shall not 
-occure until all features therein are fully documented.
+occur until all features therein are fully documented.
 
 Minor releases will follow the schedule given in :ref:`ytep-0008`.  Major or 
 unscheduled releases will occur after criteria proposed and accepted in a prior 
