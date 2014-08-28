@@ -38,7 +38,11 @@ codebase, discussion on mailing lists, feedback on pull requests, etc.) for
 some period of time.  After such a period, potential new members are nominated 
 for membership by an existing member and confirmed by positive votes from three 
 additional members.  Once a developer becomes a member, they remain a member 
-for life.  Upon the initial creation of yt membership status, all developers 
+for life.  A member maintains the option to give up their membership and have 
+their name removed from the list.  Membership may be revoked for anyone who is 
+deemed to be directly harmful to the project or the community upon a nomination 
+by another member and five supporting member votes.
+Upon the initial creation of yt membership status, all developers 
 having contributed at least 50 changesets shall be granted membership.  The 
 <yt member page> (sample coming soon) gives a description of the requirements for 
 membership and provides a list of all members and the year in which membership was 
