@@ -44,7 +44,7 @@ deemed to be directly harmful to the project or the community upon a nomination
 by another member and five supporting member votes.
 Upon the initial creation of yt membership status, all developers 
 having contributed at least 50 changesets shall be granted membership.  The 
-<yt member page> (sample coming soon) gives a description of the requirements for 
+<yt member page> gives a description of the requirements for 
 membership and provides a list of all members and the year in which membership was 
 granted.
 
@@ -75,6 +75,7 @@ of subcomponents and their representatives is given below.
     testing           TBD                     TBD
     plotting          TBD                     TBD
     analysis modules  TBD                     TBD
+    documentation     TBD                     TBD
     ================= ======================= ======================
 
 Similar to subcomponent representatives, each frontend shall have at least one 
@@ -104,6 +105,9 @@ is given below.
 Development Practices and Releases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Branches
+++++++++
+
 The main yt repository is located at https://bitbucket.org/yt_analysis/yt.
 
 Until the advent of yt-4.0, the yt repository will maintain three active branches: 
@@ -114,26 +118,59 @@ The *yt* branch contains all accepted changes and new features that have yet to 
 included in a release.  The tip of the *stable* branch will be the latest release.  
 The *yt-2.x* branch will maintain the latest state of the 2.x version of yt.
 
+Standards for Changes to the Code
++++++++++++++++++++++++++++++++++
+
 Development shall occur in forks off of the main repository with changes being 
-pulled in via pull requests into the *yt* branch.  No specific standard shall exist 
-for accepting pull requests of minor bug fixes.  More substantial pull requests 
-require approval of three yt members or people designated 
-as qualified reviewers by the issuer.  New features or altered APIs are not 
-considered acceptable into the *yt* branch until comprehensive documentation 
-(docstring and narrative docs) also exist.  For the development of large features 
-or infrastructure changes involving the work of more than one developer, an 
-*experimental* bookmark shall be created to enable collaboration.  Pull requests to 
-the *experimental* bookmark will be accepted according to criteria laid out by 
-the issuer.  Documentation will not be considered a requisite for pull requests to 
-be accepted into the *experimental* bookmark (although still encouraged), but a 
-merge of the *experimental* bookmark into the primary *yt* branch head shall not 
-occur until all features therein are fully documented.
+pulled in via pull requests into the *yt* branch.   Modifications to the code 
+typically fall into one of three categories, each of which have different 
+requirements for acceptance into the code base.
+
+  * New Features
+
+    * New unit tests (possibly new answer tests)
+    * Docstrings for public API
+    * Addition of new feature to the narrative documentation
+    * Addition of cookbook recipe
+    * Issue created on issue tracker, to ensure this is added to the changelog
+
+  * Extension or Breakage of API in Existing Features
+
+    * Update existing narrative docs and docstrings
+    * Update existing cookbook recipes
+    * Modify of create new unit tests
+    * Issue created on issue tracker, to ensure this is added to the changelog
+
+  * Bug fixes
+
+    * Unit test is encouraged, to ensure breakage does not happen again in the
+      future.
+    * Issue created on issue tracker, to ensure this is added to the changelog
+
+No specific standard shall exist for accepting pull requests of minor bug fixes.  
+New features, API breakages, and more substantial bug fixes require approval of 
+three yt members or people designated as qualified reviewers by the issuer.
+
+For the development of large features or infrastructure changes involving the work 
+of more than one developer, a bookmark on a head of the *yt* branch shall be 
+created to enable collaboration.  Pull requests to the development bookmark will be 
+accepted according to criteria laid out by the issuer.  Documentation will not be 
+considered a requisite for pull requests to be accepted into the bookmark (although 
+still encouraged), but a merge of the bookmark into the primary *yt* branch head 
+shall not occur until all criteria laid out above have been met.
+
+.. _releases:
+
+Releases
+++++++++
 
 Minor releases will follow the schedule given in :ref:`ytep-0008`.  Major or 
 unscheduled releases will occur after criteria proposed and accepted in a prior 
 team meeting are met.  Before the release, members will be identified as playing an 
 integral role in the content of the release, and the release will happen only 
-after all of those members give their approval.
+after all of those members give their approval.  Each release will have a 
+designated release manager as described in :ref:`ytep-0008`.  The release manager 
+should also be present at the team meeting.
 
 Backwards Compatibility
 -----------------------

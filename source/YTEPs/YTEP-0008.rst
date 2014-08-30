@@ -93,48 +93,6 @@ For the purposes of this document, a "release" constitutes five things:
   * An announcement email (to ``yt-users`` for minor releases and more broadly
     for major releases)
 
-Standards for Changes to the Code
-+++++++++++++++++++++++++++++++++
-
-This YTEP proposes a change in structure to the release system, but for this to
-succeed it *requires* new standards for acceptances of pull requests.  These
-standards are currently being added to the development documentation, and this
-YTEP cannot be accepted until they are.  Modifications to the code typically
-fall into one of three categories, each of which have different requirements
-for acceptance into the code base.
-
-  * New Features
-
-    * New unit tests (possibly new answer tests)
-    * Docstrings for public API
-    * Addition of new feature to the narrative documentation
-    * Addition of cookbook recipe
-    * Issue created on issue tracker, to ensure this is added to the changelog
-
-  * Extension or Breakage of API in Existing Features
-
-    * Update existing narrative docs and docstrings
-    * Update existing cookbook recipes
-    * Modify of create new unit tests
-    * Issue created on issue tracker, to ensure this is added to the changelog
-
-  * Bug fixes
-
-    * Unit test is encouraged, to ensure breakage does not happen again in the
-      future.
-    * Issue created on issue tracker, to ensure this is added to the changelog
-
-Without ensuring that all of these standards are met, the likely outcome is
-that during the process of release, components of these will be put off and
-procrastinated, leading to a bunching up of work at the end of the release
-cycle.  By front-loading the work, the process of release is much easier, and
-the reliability of the resultant code is much higher.
-
-This proposed change in the release cycle is not just about releasing more
-frequently, but about more evenly distributing work that contributes to a
-release.  If docs and tests are added as features are created, the barrier to
-merging to stable is reduced.
-
 Long Term Support Branch
 ++++++++++++++++++++++++
 
