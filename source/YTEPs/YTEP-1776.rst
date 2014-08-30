@@ -50,7 +50,22 @@ granted.
 
 Current yt members:
 
-  * TBD
+  * Hilary Egan (2014)
+  * Nathan Goldbaum (2014)
+  * Cameron Hummels (2014)
+  * Kacper Kowalik (2014)
+  * Sam Leitner (2014)
+  * Andrew Myers (2014)
+  * Douglas Rudd (2014)
+  * Anthony Scopatz (2014)
+  * Sam Skillman (2014)
+  * Stephen Skory (2014)
+  * Britton Smith (2014)
+  * Casey Stark (2014)
+  * Matthew Turk (2014)
+  * John Wise (2014)
+  * Michael Zingale (2014)
+  * John Zuhone (2014)
 
 Members have write access to all official yt repositories and can, therefore, 
 accept pull requests.  
