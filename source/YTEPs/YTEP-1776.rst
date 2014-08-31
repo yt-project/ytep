@@ -153,7 +153,7 @@ requirements for acceptance into the code base.
 
     * Update existing narrative docs and docstrings
     * Update existing cookbook recipes
-    * Modify of create new unit tests
+    * Modify or create new unit tests
     * Issue created on issue tracker, to ensure this is added to the changelog
 
   * Bug fixes
