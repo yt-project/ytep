@@ -44,9 +44,9 @@ deemed to be directly harmful to the project or the community upon a nomination
 by another member and five supporting member votes.
 Upon the initial creation of yt membership status, all developers 
 having contributed at least 50 changesets shall be granted membership.  The 
-<yt member page> gives a description of the requirements for 
-membership and provides a list of all members and the year in which membership was 
-granted.
+`Project Members <http://yt-project.org/members.html>`_ page gives a description of 
+the requirements for membership and provides a list of all members and the year in 
+which membership was granted.
 
 Current yt members:
 
