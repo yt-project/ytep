@@ -89,8 +89,8 @@ of subcomponents and their representatives is given below.
     ================= ======================= ======================
     infrastructure                           
     testing                                  
-    plotting                                 
-    analysis modules  Britton Smith(c)
+    plotting          Nathan Goldbaum (s)
+    analysis modules  Britton Smith (c)
     documentation                            
     ================= ======================= ======================
 
