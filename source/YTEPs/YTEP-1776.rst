@@ -15,7 +15,7 @@ of the yt development team.
 Status
 ------
 
-Proposed
+In Progress
 
 Project Management Links
 ------------------------
@@ -87,12 +87,14 @@ of subcomponents and their representatives is given below.
     ================= ======================= ======================
     Subcomponent      Current Representatives Former Representatives
     ================= ======================= ======================
-    infrastructure    TBD                     TBD
-    testing           TBD                     TBD
-    plotting          TBD                     TBD
-    analysis modules  TBD                     TBD
-    documentation     TBD                     TBD
+    infrastructure                           
+    testing                                  
+    plotting                                 
+    analysis modules  Britton Smith(c)
+    documentation                            
     ================= ======================= ======================
+
+c - meeting coordinator, s - meeting secretary
 
 Similar to subcomponent representatives, each frontend shall have at least one 
 designated liason to act as a knowledge-base for issues relating to implementation 
@@ -103,19 +105,19 @@ is given below.
     ============== =======
     Frontend       Liasons
     ============== =======
-    ART            TBD
-    ARTIO          TBD
-    Athena         TBD
-    Boxlib         TBD
-    Enzo           TBD
-    FLASH          TBD
-    GDF            TBD
-    Halo Catalogs  TBD
-    RAMSES         TBD
-    Gadget         TBD
-    OWLS           TBD
-    SDF            TBD
-    Tipsy          TBD
+    ART            
+    ARTIO          
+    Athena         
+    Boxlib         
+    Enzo           Britton Smith
+    FLASH          
+    GDF            
+    Halo Catalogs  Britton Smith
+    RAMSES         
+    Gadget         
+    OWLS           
+    SDF            
+    Tipsy          
     ============== =======
 
 Development Practices and Releases
