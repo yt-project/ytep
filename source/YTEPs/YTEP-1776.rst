@@ -91,7 +91,7 @@ of subcomponents and their representatives is given below.
     testing                                  
     plotting          Nathan Goldbaum (s)
     analysis modules  Britton Smith (c),
-                      Hilary Egan (s)
+                      Hilary Egan
     documentation                            
     ================= ======================= ======================
 
