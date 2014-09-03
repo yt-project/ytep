@@ -50,11 +50,13 @@ which membership was granted.
 
 Current yt members:
 
+  * Kenza Arraki (2014)
   * Hilary Egan (2014)
   * Nathan Goldbaum (2014)
   * Cameron Hummels (2014)
   * Kacper Kowalik (2014)
   * Sam Leitner (2014)
+  * Chris Malone (2014)
   * Andrew Myers (2014)
   * Jeff Oishi (2014)
   * Douglas Rudd (2014)
@@ -108,7 +110,7 @@ is given below.
     ART            
     ARTIO          
     Athena         
-    Boxlib         
+    Boxlib         Michael Zingale
     Enzo           Britton Smith
     FLASH          
     GDF            
