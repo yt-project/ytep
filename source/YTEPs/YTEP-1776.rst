@@ -92,7 +92,7 @@ of subcomponents and their representatives is given below.
     Subcomponent      Current Representatives Former Representatives
     ================= ======================= ======================
     infrastructure    Matthew Turk
-    testing                                  
+    testing           Kacper Kowalik         
     plotting          Nathan Goldbaum (s)
     analysis modules  Britton Smith (c),
                       Hilary Egan
@@ -107,23 +107,23 @@ and testing of that frontend in the yt codebase.  Frontend liasons are entitled 
 attend team meetings but not required.  The current list of frontends and liasons 
 is given below.
 
-    ============== =======
+    ============== =================
     Frontend       Liasons
-    ============== =======
+    ============== =================
     ART            
     ARTIO          
     Athena         
     Boxlib         
     Enzo           Britton Smith
     FLASH          
-    GDF            
+    GDF            Kacper Kowalik
     Halo Catalogs  Britton Smith
     RAMSES         
     Gadget         
     OWLS           
     SDF            Sam Skillman
     Tipsy          
-    ============== =======
+    ============== =================
 
 Development Practices and Releases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
