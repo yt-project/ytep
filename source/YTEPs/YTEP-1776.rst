@@ -110,7 +110,7 @@ is given below.
     ============== =================
     Frontend       Liasons
     ============== =================
-    ART            
+    ART            Kenza Arraki
     ARTIO          Douglas Rudd
     Athena         
     Boxlib         
