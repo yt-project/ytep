@@ -111,7 +111,7 @@ is given below.
     Frontend       Liasons
     ============== =================
     ART            
-    ARTIO          
+    ARTIO          Douglas Rudd
     Athena         
     Boxlib         
     Enzo           Britton Smith
