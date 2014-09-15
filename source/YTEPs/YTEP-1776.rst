@@ -116,11 +116,13 @@ is given below.
     Boxlib         Chris Malone
     Enzo           Britton Smith
     FLASH          
-    GDF            Kacper Kowalik
-    Halo Catalogs  Britton Smith
-    RAMSES         
     Gadget         
+    GDF            Kacper Kowalik
+    HaloCatalog    Britton Smith
     OWLS           
+    OWLSSubfind    Britton Smith
+    RAMSES         
+    Rockstar       
     SDF            Sam Skillman
     Tipsy          
     ============== =================
