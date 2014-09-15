@@ -94,8 +94,8 @@ of subcomponents and their representatives is given below.
     infrastructure    Matthew Turk
     testing           Kacper Kowalik         
     plotting          Nathan Goldbaum (s)
-    analysis modules  Britton Smith (c),
-                      Hilary Egan
+    analysis modules  Britton Smith,
+                      Hilary Egan (c)
     documentation     Cameron Hummels
     ================= ======================= ======================
 
