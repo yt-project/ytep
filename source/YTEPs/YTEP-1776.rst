@@ -150,10 +150,12 @@ Standards for Changes to the Code
 Development shall occur in forks off of the main repository with changes being 
 pulled in via pull requests into the *yt* branch.   Modifications to the code 
 typically fall into one of three categories, each of which have different 
-requirements for acceptance into the code base.
+requirements for acceptance into the code base.  Pull requests should be tagged 
+in the title with [NEW], [BREAKSAPI], [BUGFIX], or [WIP] (for "work in progress").
 
   * New Features
 
+    * Pull request should be issued with "[NEW]" in the title.
     * New unit tests (possibly new answer tests)
     * Docstrings for public API
     * Addition of new feature to the narrative documentation
@@ -162,6 +164,7 @@ requirements for acceptance into the code base.
 
   * Extension or Breakage of API in Existing Features
 
+    * Pull request should be issued with "[BREAKSAPI]" in the title.
     * Update existing narrative docs and docstrings
     * Update existing cookbook recipes
     * Modify or create new unit tests
@@ -169,13 +172,16 @@ requirements for acceptance into the code base.
 
   * Bug fixes
 
+    * Pull request should be issued with "[BUGFIX]" in the title.
     * Unit test is encouraged, to ensure breakage does not happen again in the
       future.
     * Issue created on issue tracker, to ensure this is added to the changelog
 
 No specific standard shall exist for accepting pull requests of minor bug fixes.  
 New features, API breakages, and more substantial bug fixes require approval of 
-three yt members or people designated as qualified reviewers by the issuer.
+three yt members or people designated as qualified reviewers by the issuer.  When 
+a [WIP] pull request is ready to be reviewed for acceptance, the tag should be 
+changed to one of the other options above.
 
 For the development of large features or infrastructure changes involving the work 
 of more than one developer, a bookmark on a head of the *yt* branch shall be 
