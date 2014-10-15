@@ -96,8 +96,8 @@ of subcomponents and their representatives is given below.
     visualization     Nathan Goldbaum (s),
                       Sam Skillman
     analysis modules  Britton Smith,
-                      Hilary Egan (c)
-    documentation     Cameron Hummels
+                      Hilary Egan
+    documentation     Cameron Hummels (c)
     ================= ======================= ======================
 
 c - meeting coordinator, s - meeting secretary
