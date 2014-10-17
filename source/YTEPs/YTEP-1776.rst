@@ -113,17 +113,17 @@ is given below.
     ============== =================
     ART            Kenza Arraki
     ARTIO          Douglas Rudd
-    Athena         
+    Athena         John ZuHone
     Boxlib         Chris Malone
     Enzo           Britton Smith, Nathan Goldbaum
-    FLASH
+    FLASH          John ZuHone
     Gadget         Nathan Goldbaum
     GDF            Kacper Kowalik
     HaloCatalog    Britton Smith
     OWLS           
     OWLSSubfind    Britton Smith
     RAMSES         
-    Rockstar       
+    Rockstar       Britton Smith
     SDF            Sam Skillman
     Tipsy          
     ============== =================
