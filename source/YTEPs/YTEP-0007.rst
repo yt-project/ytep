@@ -1,3 +1,5 @@
+.. _ytep-0007:
+
 YTEP-0007: Automatic Pull Requests' validation
 ==============================================
 

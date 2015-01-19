@@ -1,0 +1,118 @@
+YTEP-0022: Benchmarks
+=====================
+
+Abstract
+--------
+
+Created: January 19, 2015
+Author: Matthew Turk
+
+This document proposes a mechanism for tracking performance improvements and
+regressions, based on the `airspeed velocity
+<http://spacetelescope.github.io/asv/>`_ project for automated benchmarking.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+  * Pull request: https://bitbucket.org/yt_analysis/yt/pull-request/1415/add-airspeed-velocity-config-file/
+  * ASV homepage: http://spacetelescope.github.io/asv/
+
+Detailed Description
+--------------------
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Background
+++++++++++
+
+Particularly during the transition from yt 2 to yt 3, there has been a large
+degradation in overall performance.  The underlying implementation of data
+selection has become considerably more general and the array operations have
+all been overloaded, both of which have performance impacts, both of which are
+large improvements in functionality and usability.  However, in order to
+address the sad and unacceptable performance degradations, this YTEP has been
+proposed as the first step toward tracking performance and attempting to
+mitigate regressions now and in the future.
+
+Proposed Actions
+++++++++++++++++
+
+Currently, as described in :ref:`ytep-0007`, we conduct automatic validation of
+pull requests.  A mechanism for examining and validating change in performance
+should also be implemented.
+
+The "airspeed velocity" project has been designed to track the changes in
+performance as denoted by specific benchmarks over time in a given project.
+What we will do is implement a number of characteristic benchmarks, potentially
+relying on larger datasets than we do for simple testing, and track how changes
+to the code make these benchmarks run faster or slower.  As part of the CI
+process, these results will be posted to a website (ASV has the ability to
+generate such websites, along with detailed drilldowns into specific routines,
+automatically.)
+
+A sample website can be seen here: http://mdboom.github.io/astropy-benchmark/
+
+There are three axes of benchmarks, along with the specific benchmark being
+run.
+
+ * Changeset hash being benchmarked
+ * Version of external dependencies
+ * Machine on which benchmarks are run
+
+This YTEP proposes:
+
+ * Adding running the benchmarks to the CI suite
+ * Adding publishing of the benchmarking results to the CI suite (perhaps at
+   speed.yt-project.org)
+ * Encouraging writing new benchmarks by project contributors
+
+Once a benchmark has been written, it can be used forevermore, and even
+evaluated against past changeset hashes in the yt repository.  Writing
+benchmarks is easy, too -- easier even than tests.
+
+Proposed Repository Layout
+++++++++++++++++++++++++++
+
+Keeping benchmarks next to the code is important to avoid fragmentation.
+However, the repository containing the benchmark results will balloon in size,
+as results and outputs will be committed with mildly reckless abandon.  So this
+YTEP proposes two repositories:
+
+ * Existing yt repository, which will contain the asv configuration file and
+   the benchmarks directory
+ * A ``yt-benchmarks`` repository, which will contain the results (committed,
+   included in the repo, and probably gigantic) along with a bootstrap script
+   that makes symlinks to the asv configuration file and the benchmarks
+   directory.
+   
+This way, we can very easily run in this directory, commit, and auto-publish.
+It will mean that all the benchmarks are in the main repository, for ease of
+contribution and modification, but all the results are stored elsewhere.  It
+also will make it easier for folks who want to run and store results on other
+machines to do so.
+
+Backwards Compatibility
+-----------------------
+
+No backwards compatibility problems exist.
+
+Alternatives
+------------
+
+We could implement our own framework, but this one exists and is pretty nice.
