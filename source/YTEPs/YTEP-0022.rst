@@ -25,19 +25,6 @@ Project Management Links
 Detailed Description
 --------------------
 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
-
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
-
 Background
 ++++++++++
 
