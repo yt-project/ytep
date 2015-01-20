@@ -51,7 +51,8 @@ relying on larger datasets than we do for simple testing, and track how changes
 to the code make these benchmarks run faster or slower.  As part of the CI
 process, these results will be posted to a website (ASV has the ability to
 generate such websites, along with detailed drilldowns into specific routines,
-automatically.)
+automatically.)  Because of how asv works, these updates will likely need to be
+a part of the post-acceptance process, rather than pre-acceptance.
 
 A sample website can be seen here: http://mdboom.github.io/astropy-benchmark/
 
