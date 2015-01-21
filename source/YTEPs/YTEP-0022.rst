@@ -21,6 +21,7 @@ Project Management Links
 
   * Pull request: https://bitbucket.org/yt_analysis/yt/pull-request/1415/add-airspeed-velocity-config-file/
   * ASV homepage: http://spacetelescope.github.io/asv/
+  * Intro talk: http://youtube.com/watch?v=OsxJ5O6h8s0
 
 Detailed Description
 --------------------
