@@ -97,9 +97,9 @@ of subcomponents and their representatives is given below.
     testing           Kacper Kowalik         
     visualization     Nathan Goldbaum (s),
                       Sam Skillman
-    analysis modules  Britton Smith,
+    analysis modules  Britton Smith (c),
                       Hilary Egan
-    documentation     Cameron Hummels (c)
+    documentation     Cameron Hummels
     ================= ======================= ======================
 
 c - meeting coordinator, s - meeting secretary
