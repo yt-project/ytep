@@ -1,0 +1,75 @@
+YTEP-0021: Particle-Only Plots
+========================
+
+Abstract
+--------
+
+Created: August 29, 2014
+Author: Andrew Myers
+
+This YTEP describes a mechanism for creating scatter plots of particle fields in yt. It was prompted by a question posted to the yt-users list by Jeremy Ritter, linked below. 
+Essentially, it proposes creating a user-facing function called ``ParticlePlot`` (analagous to ``SlicePlot`` or ``ProfilePlot``) that facilitates plotting arbitrary 
+particle fields against one another.
+
+Status
+------
+
+  In progress - a basic implementation exists, but needs to be modified and refactored as described below.
+
+Project Management Links
+------------------------
+
+  * `Discussion on yt-users <http://http://lists.spacepope.org/pipermail/yt-users-spacepope.org/2014-May/020407.html>`_
+  * `Discussion on yt-dev <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2014-August/013604.html>`_
+  * `Example notebook #1 <http://nbviewer.ipython.org/gist/atmyers/f8616c9ed5a9d2b027e8>`_
+  * `Example notebook #2 <http://nbviewer.ipython.org/gist/atmyers/8d979d990268f48c9688>`_
+  * `Sam's color splatting PR <https://bitbucket.org/yt_analysis/yt/pull-request/887/color-splatting/diff>`_
+
+Detailed Description
+--------------------
+
+Currently, to make plots like those in the linked notebooks, you would have to grab the particle data from the data source and feed them to something like pyplot.plot().
+Instead of units, labels, and log_scales getting grabbed from the ``FieldInfoContainer``, they would need to be set up manually. Furthermore, the standardized interface for modifying 
+yt plots that exists in ``PlotWindow`` would not be available. 
+
+Instead, we could create a ``ParticlePlot`` class that would act like the currently existing yt plotting classes. The constructor would take:
+
+  * ``data_source``: an ``AMR3DData`` object
+  * ``x_fields``: str or list, the field(s) to put on the x-axis
+  * ``y_fields``: str or list, same but for the y-axis
+  * ``color``: either a color string, or another particle field to be mapped to a color scale
+
+If x_fields and y_fields are strings, this would add a single scatter plot to the ``ParticlePlot``. If they are lists of field_names, then a series of plots will be added, in the 
+style of (for example) ``PhasePlot``. The standard methods for modifying these plots (e.g. ``set_log``, ``set_units``, ``set_cmap``, etc. ) should all work as expected, and they
+should be able to be saved / sent to the notebook as normal. 
+
+Implementation Details
+----------------------
+
+My current implementation wraps pyplot.plot(), but because pyplot.plot can be slow when the number of points is large, ``ParticlePlot`` should instead use Sam Skillman's particle
+splatting code to create something like a ``FixedResolutionBuffer``. This could then be displayed with pyplot.imshow(). This would also make it easy for users to access the raw image 
+and pass it to another plotting routine, if they prefer. 
+
+Inheritance Structure
+---------------------
+
+``ParticlePlot`` shares a lot of its functionality with ``PhasePlot``, so the implementation should be similar. In particular, ``ParticlePlot`` should inherit from ``ImagePlotContainer`` 
+and the individual plots in it should be ``ParticlePlotMPL`` objects that inherit from ``ImagePlotMPL``. 
+
+Open issues
+-----------
+
+Plots that have spatial variables on both axes are logically different from those that don't in a few ways. For instance, it could be misleading if the aspect ratios are
+different for two spatial axes, as in the second linked notebook. Also, things like "pan" and "zoom" make sense for spatial data, but not when plotting, say, velocity 
+versus position. Should we handle spatial plots differently, as Nathan suggested in the yt-dev discussion above? Spatial plots could in inherit from ``PlotWindow`` to 
+take advantage of all the methods and callbacks in there. 
+
+Backwards Compatibility
+-----------------------
+
+None; all existing code should work exactly as before. 
+
+Alternatives
+------------
+
+Alternatively, there could be no mechanism for making particle scatter plots inside of yt, and users could call pyplot.plot() or whatever directly.
