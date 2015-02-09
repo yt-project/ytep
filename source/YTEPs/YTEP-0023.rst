@@ -1,4 +1,4 @@
-YTEP-0021: Unstructured Mesh
+YTEP-0023: Unstructured Mesh
 ============================
 
 Abstract
@@ -44,26 +44,22 @@ datasets, such as direct smoothing kernel application onto image buffers) we
 should develop methods for supporting unstructured mesh.  This will require
 uncoupling the pixelization step not only from coordinates (as has been done)
 but also from the underlying data model.  This YTEP proposes a strategy for
-implementing support for unstructed meshes.  We restrict ourselves initially to
-a few types of element:
-
- * Hexahedral cells
- * Tetrahedral cells
- * Wedge elements
- * Voronoi tesselation cells
+implementing support for unstructed meshes.  We will not restrict ourselves to
+specific element types; however, where particular geometries are required, we
+will first focus on hexahedral, tetrahedral, wedge, pyramid and voronoi
+tesselation cells.  The YTEP as a whole is designed to be generic with respect
+to element geometry.
 
 We will not spend much time discussing Voronoi tesselation cells here and will
 instead reserve discussion of them for a future YTEP, as they are similar in
 some ways but quite different in others.  Additionally, we restrict ourselves
 initially to *convex* elements.
 
-In conjunction with these different cell types, we also need to support the
-common methods for storing and calculating data:
-
- * Vertex ("node")
- * Element ("cell-centered")
- * Edge
- * Face
+In conjunction with these different cell types, data may be stored at vertices,
+centers, edges, faces, and so on.  Developing the appropriate intra-cell
+interpolation methods will remove the need to explicitly identify these
+different data "centering" methods, but see below for discussion of how these
+centering methods will be denoted.
 
 Typically within an element, the value at a given position is a function of a
 kernel that uses as input the quantities defined in the output.  So given the
@@ -75,9 +71,9 @@ roadmap.  Initially, we will likely perform nearest-neighbor or `IDW
 The difficulty in handling unstructed mesh data is ensuring high-fidelity
 visualizations as well as high-fidelity data representation.  The latter is
 considerably more straightforward, as if the system is viewed as a sequence of
-discrete points (and the question of intra-element interpolation is ignored)
-the existing selection routines can be used by regarding the data as a sequence
-of discrete points ("particles").
+discrete points (and the question of intra-element interpolation is ignored
+except when *explicitly requested*) the existing selection routines can be used
+by regarding the data as a sequence of discrete points ("particles").
 
 We assume for the purposes of this document that the datasets are defined by
 connectivity and coordinates (i.e., an array of indices that define each
@@ -102,12 +98,9 @@ fields.  The new chunk attributes will be the underlying data from which these
 fields are generated.  The new chunk system will add on these attributes to
 ``YTDataChunk``:
 
- * ``vertex_fcoords`` - vertex positions, of shape (N, Nvertex, 3)
- * ``face_fcoords`` - barycenter of the faces, of shape (N, Nface, 3)
- * ``edge_fcoords`` - middle of edge, of shape (N, Nedge, 3)
- * ``mesh_type`` - this will be a string constant, and at present will be one
-   of ``hex``, ``tetra``, ``wedge``, ``voronoi``, ``octree``, ``grid``, and
-   ``discrete``.  ``discrete`` may be subject to removal.
+ * ``fcoords_vertex`` - vertex positions, of shape (N, Nvertex, 3)
+ * ``fcoords_face`` - barycenter of the faces, of shape (N, Nface, 3)
+ * ``fcoords_edge`` - middle of edge, of shape (N, Nedge, 3)
 
 We anticipate that for the existing data index types, these attributes can be
 created on the fly, but will not often be used.  Note that ``discrete`` is
