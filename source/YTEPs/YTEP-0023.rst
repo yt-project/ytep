@@ -103,9 +103,7 @@ fields are generated.  The new chunk system will add on these attributes to
  * ``fcoords_edge`` - middle of edge, of shape (N, Nedge, 3)
 
 We anticipate that for the existing data index types, these attributes can be
-created on the fly, but will not often be used.  Note that ``discrete`` is
-something of a misnomer, as in the case of discrete objects (particles, SPH,
-etc) we construct an index mesh of octrees.
+created on the fly, but will not often be used.
 
 The new fields will follow the naming convention of ``element_type,
 type_coordinateaxis``.  A few examples:
