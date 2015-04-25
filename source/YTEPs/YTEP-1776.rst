@@ -76,8 +76,8 @@ Current yt members:
 
 Members have write access to all official yt repositories and can, therefore, 
 accept pull requests.  
-Members are eligible to serve as representatives of the various subcomponents 
-of the yt codebase.  Representatives shall meet once a month to discuss the 
+Members are eligible to serve as leaders of the various subcomponents 
+of the yt codebase.  Component leads shall meet once a month to discuss the 
 status of the codebase as well as current or planned development.  One 
 representative shall act as the coordinator, in charge of making sure the team 
 meeting happens and responsible for appointing their own replacement.  One other 
@@ -88,10 +88,10 @@ be present for the team meeting.  New subcomponents may be added as necessary
 via member nomination and five affirmative member votes.  The nominator must 
 also be willing to act as a representative for the new subcomponent until at 
 least one other member agrees to be a representative as well.  The current list 
-of subcomponents and their representatives is given below.
+of subcomponents and their leaders and representatives is given below.
 
     ================= ======================= ======================
-    Subcomponent      Current Representatives Former Representatives
+    Subcomponent      Current Leader          Former Representatives
     ================= ======================= ======================
     infrastructure    Matthew Turk
     testing           Kacper Kowalik         
