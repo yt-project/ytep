@@ -237,7 +237,8 @@ same size as ``"field2"``.  This also means that it will be impossible to bin
 Volume Rendering
 ++++++++++++++++
 
-Initial support for volume rendering will use `Embree <https://embree.github.io/index.html>`_, a fast ray-tracing code from Intel, to do the ray traversal. A set of 
+Initial support for volume rendering will use `Embree <https://embree.github.io/index.html>`_, 
+a fast ray-tracing code from Intel, to do the ray traversal. A set of 
 `python bindings <https://github.com/scopatz/pyembree>`_ for Embree already exists. 
 Later on, this may be replaced our own ray-tracing code to remove the external 
 dependency. 
@@ -246,24 +247,31 @@ To use Embree, we must write code that generates a Triangular polygon mesh
 from the unstructured mesh data yt reads in. This may involve breaking up 
 faces into multiple triangles. Currently, this is implemented for Hexahedral 
 and Tetrahedral mesh elements, and adding support for other mesh types should
-not be difficult.
+not be difficult. One then uses the functions Embree provides to cast rays
+at the resulting mesh.
 
-There will be two basic modes of operation for volume renderings of unstructured
+There will be two basic "plot types" for volume renderings of unstructured
 mesh data. The first will be "surface plots", where the value of the field at the
 intersection point with each ray will be calculated using hit data computed by Embree.
 The second will be more like the traditional yt volume renderings, values along 
 each ray will be accumulated for every element the rays intersect. For example, one
 could compute the maximum intensity along each ray instead of the value on the surface.
 Both of these types of renderings will need implementations of various intra-element
-interpolation functions appropriate to support meshes of various orders.
+interpolation functions to support meshes of various types and orders.
 
 All of this will be integrated in with the Volume Rendering refactor, so that we 
 retain the flexibility provided there for creating movies and camera paths.
 This will involve (at least) defining a new type of RenderSource object for 
-polygon meshes. Once this source has been created, the Camera will be able
-to be changed at will, as defined in the YTEP for the scene refactor.
+polygon meshes. This object will know how to create the Embree polygon mesh from
+the data_source that gets passes in, and how to do the appropriate ray tracing calls.
+Once this source has been created, the Camera will be able
+to be changed at will, as defined in the YTEP for the scene refactor. Because 
+multiple RenderSource objects can exist in the same scene, there is no reason why 
+different meshes with different plot types can't exist in the same scene.
 
-Some examples of what the volume renderings will look like are here.
+Some examples of what the volume renderings will look like are here:
+https://www.dropbox.com/s/xx2it8p0ivk7s69/surface_render_0.png?dl=0
+https://www.dropbox.com/s/m0b9wdp6uh6h4nm/surface_render_1.png?dl=0
 
 Explicitly Not Implemented Functionality
 ++++++++++++++++++++++++++++++++++++++++
