@@ -1,3 +1,5 @@
+.. _ytep-0007:
+
 YTEP-0007: Automatic Pull Requests' validation
 ==============================================
 
@@ -5,6 +7,7 @@ Abstract
 --------
 
 Created: February 21, 2013
+Updated: January 25, 2015
 Author: Kacper Kowalik
 
 This YTEP describes framework used to automatically run both unit and answer
@@ -40,10 +43,10 @@ tests being run less frequently than they are supposed to be. With
 implementation of this YTEP the responsibility of running the testsuite will be
 shifted from PR's author to designated, automatic infrastructure.
 
-Implementation
-++++++++++++++
+Required Features
++++++++++++++++++
 
-The implementation will need to:
+The CI infrastructure will need to:
 
   * Constantly poll for incoming changes to main repository (or react to POST
     message if required API will become available)
@@ -51,22 +54,40 @@ The implementation will need to:
   * Notify the author should the tests fail.
   * Notify the author should the PR could not be cleanly merged.
   * Inform people responsible for accepting PR that all tests have passed
-    by sending mail to yt-svn@lists.spacepope.org and broadcast on #yt irc
-    channel.  
+    by sending mail to yt-svn@lists.spacepope.org or broadcasting on #yt irc
+    channel.
   * Results of tests should be publicly available.
 
-Future Work
-+++++++++++
+Implementation Details
+++++++++++++++++++++++
 
-Current prototype uses new, not yet published nor documented, bitbucket REST
-API. Final implementation may contain solutions that were not known to the
-author of this YTEP during its writing.
+Each PR will pulled and merged with current tip in prepared docker container
+that consists of yt's dependencies: *yt_analysis/devenv*. Resulting container
+will be tagged as *yt_analysis/yt-PR#:commit_hash* and will be available for
+download from public docker registry for developers who wish to test changes
+locally. Subsequently, *yt_analysis/yt-PR#:commit_hash* will be used to run both
+unit and answer tests on CI server. If PR contains commits that modify or add
+files to *doc/* subdirectory in the main yt tree, full documentation build will
+be performed and its result will be stored at ``http://tests.yt-project.org``.
+
+Base container *yt_analysis/devenv* will be created using *install_script.sh*
+and updated every time changes to aforementioned script is merged to yt branch.
+Additional containers with development environment based on bleeding edge Linux
+distributions, such as: Gentoo, Debian Sid, Fedora Rawhide, will available and
+denoted by appropriate tag: *:gentoo*, *:sid*, *:rawhide* respectively.
+Testsuite will be run on those containers periodically in order to detect
+incompatibilities with newer versions of yt's dependencies.
+
+Dockerfiles for all containers will be a part of *yt_analysis/yt* repository.
 
 Stumbling Blocks
 ++++++++++++++++
 
-Current prototype uses infrastructure that makes publishing results difficult.
-Solution to this problem is pending.
+CI described in this YTEP does not cover integration tests that should be
+performed on OSX or Windows, nor alternative installations using e.g. wheels,
+conda. Since CI server is a part of NCSA's infrastructure, access allowing to
+modify existing and creating new tests will be restricted to people present in
+NCSA's LDAP.
 
 Backwards Compatibility
 -----------------------

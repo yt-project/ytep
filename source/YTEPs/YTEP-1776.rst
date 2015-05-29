@@ -54,13 +54,14 @@ Current yt members:
   * Hilary Egan (2014)
   * Nathan Goldbaum (2014)
   * Cameron Hummels (2014)
+  * Suoqing Ji (2014
   * Ben Keller (2014)
   * Kacper Kowalik (2014)
   * Sam Leitner (2014)
   * Chris Malone (2014)
   * Andrew Myers (2014)
-  * Jeff Oishi (2014)
   * Jill Naiman (2014)
+  * Jeff Oishi (2014)
   * Brian O'Shea (2014)
   * Douglas Rudd (2014)
   * Anthony Scopatz (2014)
@@ -96,9 +97,9 @@ of subcomponents and their representatives is given below.
     testing           Kacper Kowalik         
     visualization     Nathan Goldbaum (s),
                       Sam Skillman
-    analysis modules  Britton Smith,
+    analysis modules  Britton Smith (c),
                       Hilary Egan
-    documentation     Cameron Hummels (c)
+    documentation     Cameron Hummels
     ================= ======================= ======================
 
 c - meeting coordinator, s - meeting secretary
@@ -115,7 +116,7 @@ is given below.
     ART            Kenza Arraki
     ARTIO          Douglas Rudd
     Athena         John ZuHone
-    Boxlib         Chris Malone
+    Boxlib         Chris Malone, Michael Zingale
     Enzo           Britton Smith, Nathan Goldbaum
     FLASH          John ZuHone
     Gadget         Nathan Goldbaum

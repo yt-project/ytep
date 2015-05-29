@@ -65,6 +65,7 @@ Version Release Date Days Since Last
 3.0.1   2014-09-01   28
 3.0.2   2014-10-03   60
 3.0.3   2014-11-03   89
+3.1     2015-01-14   N/A
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
@@ -138,6 +139,8 @@ Version Release Manager
 2.6.2   Matthew Turk
 2.6.3   Matthew Turk
 3.0     Matthew Turk
+3.1     John Zuhone
+3.2     Sam Skillman
 ======= ===============
 
 Backwards Compatibility
