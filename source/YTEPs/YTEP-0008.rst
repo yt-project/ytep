@@ -140,7 +140,7 @@ Version Release Manager
 2.6.3   Matthew Turk
 3.0     Matthew Turk
 3.1     John Zuhone
-3.2     Sam Skillman
+3.2     Britton Smith
 ======= ===============
 
 Backwards Compatibility
