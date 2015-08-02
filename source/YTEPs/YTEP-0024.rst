@@ -1,0 +1,211 @@
+YTEP-0024: Alternative Smoothing Kernels
+========================================
+
+Abstract
+--------
+
+Created: August 1, 2015
+Author: Bili Dong
+
+This YTEP proposes to add more smoothing kernels besides the current standard
+cubic spline, make them available to the smoothing operations, and create a
+convenient interface for the users to provide their own kernels.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+  * `Discussion on yt-dev
+    <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019477.html>`_
+  * `Pull request #1670
+    <https://bitbucket.org/yt_analysis/yt/pull-requests/1670/alternative-smoothing-kernels/diff>`_
+
+Detailed Description
+--------------------
+
+..
+   Here is where you should write detailed description of what the YTEP proposes.
+   This needs to include:
+
+   * Background
+   * Nature of the problem
+   * Nature of the solution
+   * How will the solution be implemented
+     * Brief outline of the code needed to implement this
+     * Code examples of using the solution, in appropriate
+     * How will the solution be tested?
+   * What are any stumbling points
+   * What is the proposed method for reaching out to the community about this?
+
+Background
+++++++++++
+
+Currently the standard cubic spline kernel is provided and used for the
+smoothing operations by yt. But occasions occur that other smoothing kernels
+are used. It is a desired feature to have access to more smoothing kernels,
+and the ability to provide yt the user-defined kernels conveniently.
+
+Code Structure
+++++++++++++++
+
+On the lowest level, there is an ``sph_kernel`` function defined in
+``geometry/particle_deposit.pxd``.
+
+It is directly queried by the following smoothing operations:
+
+* in ``geometry/particle_deposit.pyx``:
+  ``SimpleSmooth`` (aliased as ``deposit_simple_smooth``),
+* in ``geometry/particle_smooth.pyx``:
+  ``VolumnWeightedSmooth`` (aliased as ``volume_weighted_smooth``),
+* in ``geometry/particle_smooth.pyx``:
+  ``SmoothedDensityEstimate`` (aliased as ``density_smooth``).
+
+These smoothing operations are accessed by several data objects through one of
+the following two statements:
+
+* ``cls = getattr(particle_deposit, "deposit_%s" % method, None)``,
+* ``cls = getattr(particle_smooth, "%s_smooth" % method, None)``,
+
+depending on whether it is a 'deposit' (``deposit_simple_smooth``)
+or a 'smooth' (``volume_weighted_smooth`` and ``density_smooth``)
+operation.
+
+The involved data objects are listed below:
+
+* in ``data_objects/octree_subset.py``:
+  ``OctreeSubset`` with ``deposit``, ``smooth`` and ``particle_operation``
+  methods;
+* in ``data_objects/construction_data_containers.py``:
+  ``YTCoveringGridBase`` with ``deposit`` method;
+* in ``data_objects/grid_patch.py``:
+  ``AMRGridPatch`` with ``deposit`` method;
+* in ``data_objects/unstructured_mesh.py``:
+  ``UnstructuredMesh`` with ``deposit`` method;
+* in ``frontends/artio/data_structure.py``:
+  ``ARTIORootMeshSubset`` with ``deposit`` method.
+
+The three kinds of methods have the following interfaces:
+
+* ``deposit(self, positions, fields = None, method = None)``,
+* ``smooth(self, positions, fields = None, index_fields = None, method = None,
+  create_octree = False, nneighbors = 64)``,
+* ``particle_operation(self, positions, fields = None, method = None,
+  nneighbors = 64)``.
+
+Among them, 'smooth' operations are only queried in ``OctreeSubset.smooth``
+and ``OctreeSubset.particle_operation``.
+
+The methods listed above are queried in the following places:
+
+* in ``fields/particle_fields.py``:
+  ``add_volume_weighted_smoothed_field`` queries ``smooth``
+  with ``method="volume_weighted"``;
+* in ``fields/particle_fields.py``:
+  ``add_density_kernel`` queries ``particle_operation``
+  with ``method="density"``;
+* in ``fields/particle_fields.py``:
+  ``_get_density_weighted_deposit_field`` queries ``deposit``
+  with ``method=method``;
+* in ``data_objects/static_output.py``:
+  ``Dataset.add_deposited_particle_field`` queries ``deposit``
+  with ``method=method``;
+* in ``frontends/artio/data_structure.py``:
+  ``ARTIORootMeshSubset.deposit`` queries ``self.oct_handler.deposit``.
+  **(This one is weird. The ``deposit`` method queried does not conform the
+  interface given above. I still don't know how it works.)**
+
+Here I omitted any query of ``deposit`` where
+``method="obviously not simple_smooth"`` is given.
+
+After further investigation, we find that
+
+* ``_get_density_weighted_deposit_field`` is queried only once, right after its
+  definition. And in that place the values for ``method`` are given, which do
+  not include ``"simple_smooth"``. So smoothing operations are not involved.
+* ``Dataset.add_deposited_particle_field``'s docstring says that ``method``
+  should be one of 'count', 'sum', or 'cic'. So smoothing operations are not
+  involved.
+* I don't know how to deal with the last one listed above. I decide to leave it
+  untouched for now.
+
+Excluding these three routines, two routines are left to access the smoothing
+kernel functionalities:
+
+* ``add_volume_weighted_smoothed_field``,
+* ``add_density_kernel``.
+
+Proposed Changes
+++++++++++++++++
+
+* On the lowest level:
+
+  * Rename ``sph_kernel`` to ``sph_kernel_cubic``.
+  * Define ``sph_kernel_quartic`` and ``sph_kernel_quintic`` as alternative
+    kernel functions.
+  * Define the ``get_kernel_func`` function which return the kernel function
+    when kernel name is provided. The current implementation is shown below,
+    which is not so elegant. There might be better ways.
+
+.. code-block:: python
+
+   cdef inline kernel_func get_kernel_func(str kernel_name):
+       if kernel_name == 'cubic':
+           return sph_kernel_cubic
+       elif kernel_name == 'quartic':
+           return sph_kernel_quartic
+       elif kernel_name == 'quintic':
+           return sph_kernel_quintic
+       else:
+           raise NotImplementedError
+
+* For the smoothing operations:
+
+  * Add the argument ``kernel_name`` to ``ParticleDepositOperation.__init__``
+    and ``ParticleSmoothOperation.__init__``.
+  * Add a member ``sph_kernel`` to ``ParticleDepositOperation``
+    and ``ParticleSmoothOperation``, which is initialized according to
+    ``kernel_name``.
+  * Substitute the plain ``sph_kernel`` by ``self.sph_kernel``.
+
+* For the involved data objects:
+
+  * Change ``deposit(self, positions, fields = None, method = None)``
+    to ``deposit(self, positions, fields = None, method = None, kernel_name = 'cubic')``.
+  * Change ``smooth(self, positions, fields = None, index_fields = None, method = None, create_octree = False, nneighbors = 64)``
+    to ``smooth(self, positions, fields = None, index_fields = None, method = None, create_octree = False, nneighbors = 64, kernel_name = 'cubic')``.
+  * Change ``particle_operation(self, positions, fields = None, method = None, nneighbors = 64)``
+    to ``particle_operation(self, positions, fields = None, method = None, nneighbors = 64, kernel_name = 'cubic')``
+  * Add an additional argument ``kernel_name`` to the corresponding ``cls``
+    when it is called.
+
+* For the two main routines:
+
+  * Add an additional argument ``kernel_name`` to the routine.
+  * Change the ``field_name`` according to Nathan's suggetion as discussed on `yt-dev <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019478.html>`_.
+  * Add the keyword argument ``kernel_name=kernel_name`` to the corresponding
+    smoothing operation method.
+
+Issues
+++++++
+
+* I'm still wondering if the kernels should be normalized.
+* It seems to me that ``deposit_simple_smooth`` is never used.
+* There's an issue with ARTIO frontend mentioned above. Also related to this is
+  that I changed part of ARTIO frontend's code. But maybe I shouldn't do that.
+* Should come up with a way to test the code.
+* The functionality for user-defined kernels is to be added.
+
+
+Backwards Compatibility
+-----------------------
+
+(TBD)
+
+Alternatives
+------------
+
+(TBD)
