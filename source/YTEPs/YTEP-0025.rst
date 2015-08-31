@@ -1,0 +1,97 @@
+YTEP-0025: The ytdata Frontend
+==============================
+
+Abstract
+--------
+
+Created: August 31, 2015
+Author: Britton Smith
+
+This YTEP proposes to make data products created by yt into loadable
+datasets.  Primarily, this will provide the following features:
+
+  * exporting geometric data containers to datasets that can be reloaded 
+    for further geometric selection and analysis.
+
+  * exporting plot-type data (projections, slices, profiles) so that they 
+    can be moved, reloaded, and manipulated to make new images.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+  * `yt PR #1718 <https://bitbucket.org/yt_analysis/yt/pull-requests/1718/wip-adding-ytdata-frontend>`_: an open pull request containing a partial 
+    implementation
+
+Detailed Description
+--------------------
+
+Currently, yt's main data products (data containers, projections, slices,
+profiles) can only be used with their full functionality with the original 
+dataset loaded.  This is cumbersome when the datasets are so large that they 
+can only be hosted at remote facilities.  Creating publication-quality images 
+from such data either requires a cycle of tweaking, transferring, viewing, 
+and cursing or creating custom intermediate data products and plotting codes.
+
+This YTEP proposes to create functionality that will allow for the above 
+data products to be exported to a format that can be reloaded as a 
+full-fledged dataset.
+
+The proposed functionality consists of two main components: functionality to 
+save objects to disk and a frontend responsible for reloading the saved 
+objects.
+
+Exporting
+^^^^^^^^^
+
+A general function for saving array data associated with an open dataset 
+will be responsible for writing data to disk.  Data will be written to a 
+single hdf5 file.  Metadata associated with the dataset (i.e., current_time, 
+current_redshift, cosmological parameters, domain dimensions) will be saved as 
+attributes of the root file group.  By default, data will be saved to a "grid" 
+group with "units" attributes saved for each dataset.  This function is 
+implemented as ``to_yt_dataset`` in ``yt/frontends/ytdata/utilities.py``.
+
+The above function will be called by the user-facing function,
+``YTDataContainer.to_dataset``, which will take a filename and, optionally, 
+a list of fields.  If no field list is given, then the fields that have been 
+queried and cached will be saved.  This function will also make sure that 
+fields necessary for geometric selection (grid position/cell size, particle 
+position) are also saved.
+
+ytdata Frontend
+^^^^^^^^^^^^^^^
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Backwards Compatibility
+-----------------------
+
+Currently, the only API breakage is in the ``AbsorptionSpectrum``.   
+Previously, it accepted a generic hdf5 file created by the ``LightRay``.  
+As per the `open PR <https://bitbucket.org/yt_analysis/yt/pull-requests/1718/wip-adding-ytdata-frontend>`_,
+the ``LightRay`` now writes out a yt.loadable dataset that is loaded by the 
+``AbsorptionSpectrum``.
+
+Other than the above, this is all new functionality and so has no backward 
+incompatibility.
+
+Alternatives
+------------
+
+Open to suggestions.
