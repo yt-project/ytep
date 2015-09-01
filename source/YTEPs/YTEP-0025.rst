@@ -61,23 +61,94 @@ The above function will be called by the user-facing function,
 a list of fields.  If no field list is given, then the fields that have been 
 queried and cached will be saved.  This function will also make sure that 
 fields necessary for geometric selection (grid position/cell size, particle 
-position) are also saved.
+position) are also saved.  Mesh data will be saved to the "grid" group and 
+particle data will be saved to groups named after the specific particle type.
 
 ytdata Frontend
 ^^^^^^^^^^^^^^^
 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
+This frontend will be responsible for reloading all data saved with the above 
+method.  As this data is of multiple types, this will actually be multiple 
+frontends living under the general "ytdata" heading.
 
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
+Geometrical Data Containers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Fields queried from data containers are returned as unordered, one-dimension 
+arrays and, thus, most closely resemble particle datasets.  All geometric data 
+containers are reloaded as type ``YTDataContainerDataset``, which is a particle 
+dataset type.  This has been implemented in the open PR, enabling the following 
+example:
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   sphere = ds.sphere([0.5]*3, (10, "Mpc"))
+   sphere.to_dataset(fields=["density", "particle_mass"])
+
+   sds = yt.load("DD0046_sphere.h5")
+   ad = sds.all_data()
+   print ad["grid", "density"]
+   print ad["all_particles", "particle_mass"]
+   print ad["all", "particle_position_x"]
+
+Grid Data Containers
+%%%%%%%%%%%%%%%%%%%%
+
+Covering grids, smoothed covering grids, and arbitrary grids return 3D arrays 
+and so can be treated as uniform grid datasets.  After being saved with 
+``to_dataset``, these are reloaded as type ``YTGridDataset``, which is a uniform 
+grid that also supports particles.  With this, the following is possible:
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   cg = ds.covering_grid(level=0, left_edge=[0.25]*3, dims=[16]*3)
+   cg.to_dataset("cg.h5", ["density", "particle_mass"])
+   cg_ds = yt.load("cg.h5")
+
+   print cg_ds.index.grids[0]["grid", "density"]
+   ad = cg_ds.all_data()
+   print ad[("grid", "density")]
+   print ad["all_particles", "particle_mass"]
+
+   ray = cg_ds.ray(cg_ds.domain_left_edge, cg_ds.domain_right_edge)
+   print ray[("grid", "density")]
+
+Projections and Slices
+%%%%%%%%%%%%%%%%%%%%%%
+
+Projections and slices are like two-dimensional particle datasets where the x and 
+y fields are "px" and "py".  They are reloaded as type ``YTProjectionDataset``, 
+which is a subclass of ``YTDataContainerDataset``.  Reloaded projection data can 
+be selected geometrically or fed into a ``ProjectionPlot`` in the following manner:
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   proj = ds.proj("density", "x", weight_field="density")
+   proj.to_dataset("proj.h5")
+
+   gds = yt.load("proj.h5")
+   ad = gds.all_data()
+   print ad["density"]
+   p = yt.ProjectionPlot(gds, "x", "density", weight_field="density")
+   p.save()
+
+The above would enable someone to make projections of large datasets remotely, 
+then download the exported projection dataset, and perfect the final image on a 
+local machine.  Slices have not yet been implemented.
+
+Profiles
+%%%%%%%%
+
+1, 2, and 3D profiles are like 1, 2, and 3D uniform grid datasets where dx, dy, 
+and dz are different and have different dimensions.  This may make geometric 
+selection difficult, at least for now.  The minimum goal for profile datasets 
+is to be able to feed them into ``ProfilePlot`` and ``PhasePlot``.
 
 Backwards Compatibility
 -----------------------
@@ -94,4 +165,6 @@ incompatibility.
 Alternatives
 ------------
 
-Open to suggestions.
+Plot objects could be made to export specialized files allowing them to be 
+recreated.  I don't know of any alternatives for exporting geometric 
+data containers.
