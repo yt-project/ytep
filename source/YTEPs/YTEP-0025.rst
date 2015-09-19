@@ -146,9 +146,24 @@ Profiles
 %%%%%%%%
 
 1, 2, and 3D profiles are like 1, 2, and 3D uniform grid datasets where dx, dy, 
-and dz are different and have different dimensions.  This may make geometric 
-selection difficult, at least for now.  The minimum goal for profile datasets 
-is to be able to feed them into ``ProfilePlot`` and ``PhasePlot``.
+and dz are different and have different dimensions.  At this time, geometric 
+selection of non-spatial data is not possible in yt.  However, accessing the 
+data arrays will be accomplished by hanging a special ``Grid`` object off the 
+dataset as ``ds.data``.  This object will only grab data from the hdf5 file 
+and do further selection on it.  This would look like the following:
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+   profile = yt.create_profile(ds.all_data(), ["density", "temperature"],
+                               "cell_mass", weight_field=None)
+   profile.to_dataset()
+
+   pds = yt.load("DD0046_profile.h5")
+   # print the profile data
+   print pds.data["cell_mass"]
+   # print the x and y bins
+   print pds.data["x"], pds.data["y"]
 
 Backwards Compatibility
 -----------------------
