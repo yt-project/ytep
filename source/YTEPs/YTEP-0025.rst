@@ -140,7 +140,7 @@ be selected geometrically or fed into a ``ProjectionPlot`` in the following mann
 
 The above would enable someone to make projections of large datasets remotely, 
 then download the exported projection dataset, and perfect the final image on a 
-local machine.  Slices have not yet been implemented.
+local machine.  Slices, both on and off axis, have also been implemented.
 
 Profiles
 %%%%%%%%
