@@ -180,6 +180,6 @@ incompatibility.
 Alternatives
 ------------
 
-Plot objects could be made to export specialized files allowing them to be 
-recreated.  I don't know of any alternatives for exporting geometric 
-data containers.
+We could create custom binary files for every type of plot and data 
+container.  We could also revive the concept of saving pickled objects 
+that was used somewhat in yt-2.
