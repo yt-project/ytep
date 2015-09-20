@@ -7,205 +7,188 @@ Abstract
 Created: August 1, 2015
 Author: Bili Dong
 
-This YTEP proposes to add more smoothing kernels besides the current standard
-cubic spline, make them available to the smoothing operations, and create a
-convenient interface for the users to provide their own kernels.
+This YTEP proposes to add alternative smoothing kernels besides the current standard cubic spline one, make them available to the smoothing operations, and define a convenient interface for users to choose among them.
 
 Status
 ------
 
-Proposed
+In Progress
 
 Project Management Links
 ------------------------
 
-  * `Discussion on yt-dev
+  * `yt-dev thread
     <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019477.html>`_
-  * `Pull request #1670
+  * `yt PR #1670
     <https://bitbucket.org/yt_analysis/yt/pull-requests/1670/alternative-smoothing-kernels/diff>`_
+  * `yt PR #1712
+    <https://bitbucket.org/yt_analysis/yt/pull-requests/1712/wip-alternative-smoothing-kernels/diff>`_
+  * `ytep PR #53
+    <https://bitbucket.org/yt_analysis/ytep/pull-requests/53/adding-ytep-0024-for-alternative-smoothing/diff>`_
 
 Detailed Description
 --------------------
 
-..
-   Here is where you should write detailed description of what the YTEP proposes.
-   This needs to include:
+Currently in yt, the standard cubic spline kernel is exclusively used for smoothing operations. It is a desired feature for yt to have support for varied smoothing kernels.
 
-   * Background
-   * Nature of the problem
-   * Nature of the solution
-   * How will the solution be implemented
-     * Brief outline of the code needed to implement this
-     * Code examples of using the solution, in appropriate
-     * How will the solution be tested?
-   * What are any stumbling points
-   * What is the proposed method for reaching out to the community about this?
+The implementations of the kernel functions themselves are straightforward. [DA2012]_ is referenced for the function forms and the kernel names.
 
-Background
-++++++++++
+The bigger challenge is the design of a convenient user interface for future users and a convenient application programming interface for future developers. Details of those designs are explained in the following sections.
 
-Currently the standard cubic spline kernel is provided and used for the
-smoothing operations by yt. But occasions occur that other smoothing kernels
-are used. It is a desired feature to have access to more smoothing kernels,
-and the ability to provide yt the user-defined kernels conveniently.
-
-Code Structure
+User Interface
 ++++++++++++++
 
-On the lowest level, there is an ``sph_kernel`` function defined in
-``geometry/particle_deposit.pxd``.
+Future users can specify the kernel to use in the smoothing operations by passing a keyword argument ``kernel_name`` to the relevant functions. Currently, functions with potential access to kernels include ``Dataset.add_deposited_particle_field``, ``add_volume_weighted_smoothed_field`` and ``add_density_kernel``. The naming scheme for fields added through these functions is an extension of the scheme described in `SPH Fields <http://yt-project.org/docs/dev/analyzing/fields.html#sph-fields)>`_. It is proposed by Nathan Goldbaum in `this yt-dev thread <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019478.html>`_. So a field smoothed by a certain kernel can be accessed by ``('deposit', 'particletype_kernelname_smoothed_fieldname')``, except for the cubic spline kernel, whose smoothed field remains to be ``('deposit', 'particletype_smoothed_fieldname')`` (the same as before).
 
-It is directly queried by the following smoothing operations:
-
-* in ``geometry/particle_deposit.pyx``:
-  ``SimpleSmooth`` (aliased as ``deposit_simple_smooth``),
-* in ``geometry/particle_smooth.pyx``:
-  ``VolumnWeightedSmooth`` (aliased as ``volume_weighted_smooth``),
-* in ``geometry/particle_smooth.pyx``:
-  ``SmoothedDensityEstimate`` (aliased as ``density_smooth``).
-
-These smoothing operations are accessed by several data objects through one of
-the following two statements:
-
-* ``cls = getattr(particle_deposit, "deposit_%s" % method, None)``,
-* ``cls = getattr(particle_smooth, "%s_smooth" % method, None)``,
-
-depending on whether it is a 'deposit' (``deposit_simple_smooth``)
-or a 'smooth' (``volume_weighted_smooth`` and ``density_smooth``)
-operation.
-
-The involved data objects are listed below:
-
-* in ``data_objects/octree_subset.py``:
-  ``OctreeSubset`` with ``deposit``, ``smooth`` and ``particle_operation``
-  methods;
-* in ``data_objects/construction_data_containers.py``:
-  ``YTCoveringGridBase`` with ``deposit`` method;
-* in ``data_objects/grid_patch.py``:
-  ``AMRGridPatch`` with ``deposit`` method;
-* in ``data_objects/unstructured_mesh.py``:
-  ``UnstructuredMesh`` with ``deposit`` method;
-* in ``frontends/artio/data_structure.py``:
-  ``ARTIORootMeshSubset`` with ``deposit`` method.
-
-The three kinds of methods have the following interfaces:
-
-* ``deposit(self, positions, fields = None, method = None)``,
-* ``smooth(self, positions, fields = None, index_fields = None, method = None,
-  create_octree = False, nneighbors = 64)``,
-* ``particle_operation(self, positions, fields = None, method = None,
-  nneighbors = 64)``.
-
-Among them, 'smooth' operations are only queried in ``OctreeSubset.smooth``
-and ``OctreeSubset.particle_operation``.
-
-The methods listed above are queried in the following places:
-
-* in ``fields/particle_fields.py``:
-  ``add_volume_weighted_smoothed_field`` queries ``smooth``
-  with ``method="volume_weighted"``;
-* in ``fields/particle_fields.py``:
-  ``add_density_kernel`` queries ``particle_operation``
-  with ``method="density"``;
-* in ``fields/particle_fields.py``:
-  ``_get_density_weighted_deposit_field`` queries ``deposit``
-  with ``method=method``;
-* in ``data_objects/static_output.py``:
-  ``Dataset.add_deposited_particle_field`` queries ``deposit``
-  with ``method=method``;
-* in ``frontends/artio/data_structure.py``:
-  ``ARTIORootMeshSubset.deposit`` queries ``self.oct_handler.deposit``.
-  **(This one is weird. The ``deposit`` method queried does not conform the
-  interface given above. I still don't know how it works.)**
-
-Here I omitted any query of ``deposit`` where
-``method="obviously not simple_smooth"`` is given.
-
-After further investigation, we find that
-
-* ``_get_density_weighted_deposit_field`` is queried only once, right after its
-  definition. And in that place the values for ``method`` are given, which do
-  not include ``"simple_smooth"``. So smoothing operations are not involved.
-* ``Dataset.add_deposited_particle_field``'s docstring says that ``method``
-  should be one of 'count', 'sum', or 'cic'. So smoothing operations are not
-  involved.
-* I don't know how to deal with the last one listed above. I decide to leave it
-  untouched for now.
-
-Excluding these three routines, two routines are left to access the smoothing
-kernel functionalities:
-
-* ``add_volume_weighted_smoothed_field``,
-* ``add_density_kernel``.
-
-Proposed Changes
-++++++++++++++++
-
-* On the lowest level:
-
-  * Rename ``sph_kernel`` to ``sph_kernel_cubic``.
-  * Define ``sph_kernel_quartic`` and ``sph_kernel_quintic`` as alternative
-    kernel functions.
-  * Define the ``get_kernel_func`` function which return the kernel function
-    when kernel name is provided. The current implementation is shown below,
-    which is not so elegant. There might be better ways.
+For example, as demonstrated by the following code, the particle field ``('PartType0', 'Density')`` is smoothed using a quintic kernel, and the resultant smoothed field could be accessed by ``('deposit', 'PartType0_quintic_smoothed_Density')``.
 
 .. code-block:: python
 
-   cdef inline kernel_func get_kernel_func(str kernel_name):
-       if kernel_name == 'cubic':
-           return sph_kernel_cubic
-       elif kernel_name == 'quartic':
-           return sph_kernel_quartic
-       elif kernel_name == 'quintic':
-           return sph_kernel_quintic
-       else:
-           raise NotImplementedError
+   import yt
+   
+   ds = yt.load('GadgetDiskGalaxy/snapshot_200.hdf5')
+   ds.index
+   
+   from yt.fields.particle_fields import add_volume_weighted_smoothed_field
 
-* For the smoothing operations:
+   add_volume_weighted_smoothed_field('PartType0', 'Coordinates', 'Masses',
+                                      'SmoothingLength', 'Density',
+                                      'Density', ds.field_info,
+                                      kernel_name='quintic')
 
-  * Add the argument ``kernel_name`` to ``ParticleDepositOperation.__init__``
-    and ``ParticleSmoothOperation.__init__``.
-  * Add a member ``sph_kernel`` to ``ParticleDepositOperation``
-    and ``ParticleSmoothOperation``, which is initialized according to
-    ``kernel_name``.
-  * Substitute the plain ``sph_kernel`` by ``self.sph_kernel``.
+   yt.ProjectionPlot(ds, 'z', ('deposit', 'PartType0_quintic_smoothed_Density'))
+   
+Below is a table of available ``kernel_name`` and the corresponding name in [DA2012]_. All kernels are in 3D (a.k.a. :math:`\nu = 3`).
 
-* For the involved data objects:
+.. list-table:: Kernel Names
+   
+   * - ``kernel_name``
+     - Name in [DA2012]_
+   * - cubic
+     - Cubic spline
+   * - quartic
+     - Quartic spline
+   * - quintic
+     - Quintic spline
+   * - wendland2
+     - Wendland C\ :sup:`2`
+   * - wendland4
+     - Wendland C\ :sup:`4`
+   * - wendland6
+     - Wendland C\ :sup:`6`
 
-  * Change ``deposit(self, positions, fields = None, method = None)``
-    to ``deposit(self, positions, fields = None, method = None, kernel_name = 'cubic')``.
-  * Change ``smooth(self, positions, fields = None, index_fields = None, method = None, create_octree = False, nneighbors = 64)``
-    to ``smooth(self, positions, fields = None, index_fields = None, method = None, create_octree = False, nneighbors = 64, kernel_name = 'cubic')``.
-  * Change ``particle_operation(self, positions, fields = None, method = None, nneighbors = 64)``
-    to ``particle_operation(self, positions, fields = None, method = None, nneighbors = 64, kernel_name = 'cubic')``
-  * Add an additional argument ``kernel_name`` to the corresponding ``cls``
-    when it is called.
+Application Programming Interface
++++++++++++++++++++++++++++++++++
 
-* For the two main routines:
+When a kernel function is needed, ``get_kernel_func`` is used to retrieve it. Given the string of the kernel name, a kernel function of the type ``kernel_func`` is returned. Both ``get_kernel_func`` and ``kernel_func`` are defined in ``geometry/particle_deposit.pxd``. The following snippet demonstrate their usage, assuming the source file is in the same directory as ``particle_deposit.pxd``.
 
-  * Add an additional argument ``kernel_name`` to the routine.
-  * Change the ``field_name`` according to Nathan's suggetion as discussed on `yt-dev <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019478.html>`_.
-  * Add the keyword argument ``kernel_name=kernel_name`` to the corresponding
-    smoothing operation method.
+.. code-block:: cython
 
-Issues
-++++++
+   from .particle_deposit cimport kernel_func, get_kernel_func
 
-* I'm still wondering if the kernels should be normalized.
-* It seems to me that ``deposit_simple_smooth`` is never used.
-* There's an issue with ARTIO frontend mentioned above. Also related to this is
-  that I changed part of ARTIO frontend's code. But maybe I shouldn't do that.
-* Should come up with a way to test the code.
-* The functionality for user-defined kernels is to be added.
+   cdef class DemoParticleSmoothOperation:
+       cdef kernel_func sph_kernel
+       def __init__(self, kernel_name):
+           self.sph_kernel = get_kernel_func(kernel_name)
 
+Once the kernel function is retrieved, ``self.sph_kernel`` could be utilized to do the smoothing.
+
+The rest of the changes to the API is merely the passing of the keyword argument ``kernel_name``. Below is a table demonstrating the passing routes:
+
+.. list-table:: Passing of ``kernel_name`` through Methods (or Functions)
+   :widths: 1 13 3 10
+
+   * - #
+     - Method
+     - Pass to [#pass]_
+     - File Path
+   * - 1
+     - ``SimpleSmooth`` (aliased as ``deposit_simple_smooth``) [#cls]_
+     -
+     - ``yt/geometry/particle_deposit.pyx``
+   * - 2
+     - ``VolumeWeightedSmooth`` (aliased as ``volume_weighted_smooth``) [#cls]_
+     - 
+     - ``yt/geometry/particle_smooth.pyx``
+   * - 3
+     - ``SmoothedDensityEstimate`` (aliased as ``density_smooth``) [#cls]_
+     - 
+     - ``yt/geometry/particle_smooth.pyx``
+   * -
+     -
+     -
+     -
+   * - 4
+     - ``ARTIORootMeshSubset.deposit``
+     - 1
+     - ``yt/frontends/artio/data_structures.py``
+   * - 5
+     - ``YTCoveringGridBase.deposit``
+     - 1
+     - ``yt/data_objects/construction_data_containers.py``
+   * - 6
+     - ``AMRGridPatch.deposit``
+     - 1
+     - ``yt/data_objects/grid_patch.py``
+   * - 7
+     - ``UnstructuredMesh.deposit``
+     - 1
+     - ``yt/data_objects/unstructured_mesh.py``
+   * - 8
+     - ``OctreeSubset.deposit``
+     - 1
+     - ``yt/data_objects/octree_subset.py``
+   * - 9
+     - ``OctreeSubset.smooth``
+     - 2, 3
+     - ``yt/data_objects/octree_subset.py``
+   * - 10
+     - ``OctreeSubset.particle_operation``
+     - 2, 3
+     - ``yt/data_objects/octree_subset.py``
+   * -
+     -
+     -
+     -
+   * - 11
+     - ``Dataset.add_deposited_particle_field``
+     - 4 - 8
+     - ``yt/data_objects/static_output.py``
+   * - 12
+     - ``add_volume_weighted_smoothed_field``
+     - 9
+     - ``yt/fields/particle_fields.py``
+   * - 13
+     - ``add_density_kernel``
+     - 10
+     - ``yt/fields/particle_fields.py``
+
+.. [#pass] This column means that ``kernel_name`` could **potentially** be passed to 'Pass to', depending on another parameter ``method``. 
+.. [#cls] When a class is given, its ``__init__`` method is meant.
+
+To demonstrate how 4 - 10 utilize 1 - 3, the main structure of the ``smooth`` method is shown below (irrelevant parts and function parameters are ignored; ``deposit`` and ``particle_operation`` are similar).
+
+.. code-block:: python
+
+   def smooth(self, method = None, kernel_name = 'cubic', ...):
+       cls = getattr(particle_smooth, "%s_smooth" % method, None)
+       op = cls(..., kernel_name)
+
+``op`` is used for the actual smoothing operations thereafter.
+
+For 11 - 13, they simply call the dataset's ``deposit``, ``smooth`` or ``particle_operation`` method to get the smoothing operations done.
+
+References
+++++++++++
+
+.. [DA2012] Dehnen, Walter, and Hossam Aly. "Improving convergence in smoothed particle hydrodynamics simulations without pairing instability." Monthly Notices of the Royal Astronomical Society 425.2 (2012): 1068-1082. http://adsabs.harvard.edu/abs/2012MNRAS.425.1068D
 
 Backwards Compatibility
 -----------------------
 
-(TBD)
+New functionalities are accessed by the optional keyword argument ``kernel_name``, so current codes' behavior won't change.
 
 Alternatives
 ------------
 
-(TBD)
+None.
