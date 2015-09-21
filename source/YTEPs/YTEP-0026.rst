@@ -125,6 +125,9 @@ supported.
 The mandatory argument is the field of which the standard deviation is to be
 computed.  This can be a list of fields.
 
+The optional argument ``weight`` will describe the weight for computing
+standard deviation.
+
 .. rubric:: ptp
 
 The mandatory argument is the field of which the peak-to-peak is computed.
@@ -215,6 +218,21 @@ The slicing would look like:
    ds = yt.load("galaxy0030")
    my_obj = ds.d[(100,'kpc'):(200,'kpc'), :, (100,'kpc'):(200,'kpc')]
 
+The way to construct this at present would be, which is a bit cumbersome (there
+are other ways to do this, too, but this is the one that is the clearest):
+
+.. code-block::
+
+   ds = yt.load("galaxy0030")
+   left_edge = ds.domain_left_edge.in_units("kpc").copy()
+   left_edge[0] = 100
+   left_edge[2] = 100
+   right_edge = ds.domain_right_edge.in_units("kpc").copy()
+   right_edge[0] = 200
+   right_edge[2] = 200
+   center = (left_edge + right_edge)/2.0
+   my_obj = ds.region(center, left_edge, right_edge)
+
 Or for a slice:
 
 .. code-block::
@@ -222,6 +240,22 @@ Or for a slice:
    ds = yt.load("galaxy0030")
    my_obj = ds[(100,'kpc'):(200,'kpc'), (250,'kpc'), (100,'kpc'):(200,'kpc')]
    my_obj.plot()
+
+At present, we would have to:
+
+.. code-block::
+
+   ds = yt.load("galaxy0030")
+   left_edge = ds.domain_left_edge.in_units("kpc").copy()
+   left_edge[0] = 100
+   left_edge[2] = 100
+   right_edge = ds.domain_right_edge.in_units("kpc").copy()
+   right_edge[0] = 200
+   right_edge[2] = 200
+   center = (left_edge + right_edge)/2.0
+   reg = ds.region(center, left_edge, right_edge)
+   my_obj = ds.slice(1, (250,'kpc'))
+   my_obj.to_pw("density")
 
 We may at some point want to add pandas-like selection and indexing functions
 (http://pandas.pydata.org/pandas-docs/stable/indexing.html ) but right now the
