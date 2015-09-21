@@ -164,6 +164,13 @@ float values or unitful objects or tuples of ``(val, unit_name)``.
 Optionally, we should consider using the ``step`` part of the slice to be used
 to specify a covering grid.
 
+.. rubric:: plot
+
+The ``plot`` operation will only be implemented on things that have obvious
+plotting candidates -- slices, projections, profiles.  This will default to
+creating the necessary ``PlotWindow`` or related class, and will try to choose
+sane defaults for it.  For instance, this could wrap ``to_pw``.
+
 Examples
 ++++++++
 
