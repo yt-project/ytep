@@ -181,7 +181,7 @@ For 11 - 13, they simply call the dataset's ``deposit``, ``smooth`` or ``particl
 References
 ++++++++++
 
-.. [DA2012] Dehnen, Walter, and Hossam Aly. "Improving convergence in smoothed particle hydrodynamics simulations without pairing instability." Monthly Notices of the Royal Astronomical Society 425.2 (2012): 1068-1082. http://adsabs.harvard.edu/abs/2012MNRAS.425.1068D
+.. [DA2012] `Dehnen W., Aly H., 2012, MNRAS, 425, 1068 <http://adsabs.harvard.edu/abs/2012MNRAS.425.1068D>`_
 
 Backwards Compatibility
 -----------------------
