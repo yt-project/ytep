@@ -67,6 +67,8 @@ to map to within these operations:
 
   * ``all``
   * ``any``
+  * ``argmax``
+  * ``argmin``
   * ``max``
   * ``mean``
   * ``min``
@@ -74,11 +76,13 @@ to map to within these operations:
   * ``ptp``
   * ``std``
   * ``sum``
+  * ``var``
 
-For the purposes of this YTEP, we will concern ourselves with ``max``,
-``mean``, ``min``, ``std``, ``ptp``, ``sum``, and also ``hist``, which normally
-does not return a single scalar but a set that does not correspond to the
-number of elements in the array.
+For the purposes of this YTEP, we will concern ourselves with ``argmax``,
+``argmin``, ``max``, ``mean``, ``min``, ``std``, ``ptp``, ``sum``, and also the
+non-NumPy operations ``hist`` and ``integrate``, which normally do not return a
+single scalar but a set that does not correspond to the number of elements in
+the array.
 
 We break these up based on the axis argument, and other optional arguments.
 Below is the enumerated behavior.  Note that for those items that can be
@@ -86,6 +90,20 @@ computed in a single pass (i.e., statistical information about the fields as a
 whole) we will likely implement a system that computes them in a single pass
 and caches them, so that ``min`` and ``max`` and ``std`` will cache in-between
 calls and only require a single pass over the array.
+
+.. rubric:: argmax
+
+The mandatory argument is the field over which the maximum is to be computed;
+the default return argument is the index, but the ``axis`` optional parameter
+can specify one or more fields that will be returned.  (For instance, one could
+supply ``('x', 'y', 'z')`` and be handed back the spatial locations.
+
+.. rubric:: argmin
+
+The mandatory argument is the field over which the minimum is to be computed;
+the default return argument is the index, but the ``axis`` optional parameter
+can specify one or more fields that will be returned.  (For instance, one could
+supply ``('x', 'y', 'z')`` and be handed back the spatial locations.
 
 .. rubric:: max
 
@@ -138,8 +156,17 @@ The mandatory argument is the field to sum.
 
 The ``axis`` argument, if spatial, will be the axis along which the projection
 will be taken.  This must either be ``None`` or a spatial axis.  The weighting
-will be ``None``, and thus it will be the line integral.  (Note that this still
-includes a ``dl`` term.)
+will be ``None``, and thus it will be the line integral.  (Note that this will
+*not* includes a ``dl`` term, as it will be using the ``sum`` method.)
+
+.. rubric:: integrate
+
+The mandatory ``field`` argument is the field to integrate; if ``axis`` is
+one of the coordinate axes, the return value will be a projection.  This will
+be using the standard projection method, which includes ``dl``.
+
+If the ``axis`` argument is not a spatial dimension, maybe it could return a
+profile of some type?  I'm not sure.
 
 .. rubric:: hist
 
@@ -172,7 +199,10 @@ to specify a covering grid.
 The ``plot`` operation will only be implemented on things that have obvious
 plotting candidates -- slices, projections, profiles.  This will default to
 creating the necessary ``PlotWindow`` or related class, and will try to choose
-sane defaults for it.  For instance, this could wrap ``to_pw``.
+sane defaults for it.  For instance, this could wrap ``to_pw``.  In contrast to
+``to_pw``, this will also default to *native* plot coordinates, as we want this
+to match more closely the behavior that would be done by simply plotting the
+field.
 
 Examples
 ++++++++
