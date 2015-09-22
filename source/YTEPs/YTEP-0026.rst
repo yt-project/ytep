@@ -287,6 +287,25 @@ At present, we would have to:
    my_obj = ds.slice(1, (250,'kpc'))
    my_obj.to_pw("density")
 
+Another example is how to make very terse computations, which still demonstrate
+reasonably clearly what they do:
+
+.. code-block::
+
+   ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
+   dd = ds.d[:,:,:]
+   print dd.mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
+
+This returns:::
+
+   [37021.0582639 cm/s, 35794.630883 cm/s, 82204.2708063 cm/s]
+
+Note that we can also do:
+
+.. code-block::
+
+   print ds.d[:,:,:].mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
+
 We may at some point want to add pandas-like selection and indexing functions
 (http://pandas.pydata.org/pandas-docs/stable/indexing.html ) but right now the
 use case is less clear.  Maybe having select() be an alias for cut_region, or
