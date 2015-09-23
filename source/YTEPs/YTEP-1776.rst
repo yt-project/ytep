@@ -77,7 +77,8 @@ Current yt members:
 Members have write access to all official yt repositories and can, therefore, 
 accept pull requests.  
 Members are eligible to serve as leaders of the various subcomponents 
-of the yt codebase.  Component leads shall meet once a month to discuss the 
+of the yt codebase.  Component leads shall meet quarterly or more often as
+needed to discuss the
 status of the codebase as well as current or planned development.  One 
 representative shall act as the coordinator, in charge of making sure the team 
 meeting happens and responsible for appointing their own replacement.  One other 
