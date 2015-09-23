@@ -143,6 +143,25 @@ included in a release.  The tip of the ``stable`` branch will be the latest
 release.  The ``yt-2.x`` branch will maintain the latest state of the 2.x
 version of yt.
 
+Bookmarks
++++++++++
+
+In addition to the named branches listed above, we further split development on
+the ``yt`` branch into two topological branches.  These two lines of development
+should at all times have bookmarks named ``development`` and ``experimental``
+pointed at the branch heads. The ``development`` bookmark is the "main" line of
+yt development, used for branching minor releases and as a place to land bug
+fixes. The ``experimental`` bookmark is for long-term work. An example of such a
+long-term development effort is the (at the time of writing) ongoig work to
+refactor and update the volume rendering interface and add unstructured mesh
+support. For now there should only be two topological branches on the ``yt``
+named branch. If a compelling reason arises to add a new bookmark, the project
+members must agree to create it.
+
+If no ongoing work is happening on a long-term feature, the ``experimental``
+bookmark might be temporarily deleted until a compelling need to create another
+branch head comes up. In these cases the ``yt`` branch will only have one head.
+
 Standards for Changes to the Code
 +++++++++++++++++++++++++++++++++
 
@@ -184,13 +203,13 @@ When a [WIP] pull request is ready to be reviewed for acceptance, the tag should
 be changed to one of the other options above.
 
 For the development of large features or infrastructure changes involving the
-work of more than one developer, a bookmark on a head of the ``yt`` branch shall
-be created to enable collaboration.  Pull requests to the development bookmark
-will be accepted according to criteria laid out by the issuer.  Documentation
-will not be considered a requisite for pull requests to be accepted into the
-bookmark (although still encouraged), but a merge of the bookmark into the
-primary ``yt`` branch head shall not occur until all criteria laid out above have
-been met.
+work of more than one developer, a bookmark named ``experimental`` will be
+created on a head of the ``yt`` branch to enable collaboration in the main yt
+repository.  Pull requests to the ``experimental`` bookmark will be accepted
+according to criteria laid out by the issuer.  Documentation will not be
+considered a requisite for pull requests to be accepted into the bookmark
+(although still encouraged), but a merge of the bookmark into the primary ``yt``
+branch head shall not occur until all criteria laid out above have been met.
 
 .. _releases:
 
