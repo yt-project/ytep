@@ -67,6 +67,7 @@ Version Release Date Days Since Last
 3.0.3   2014-11-03   89
 3.1     2015-01-14   N/A
 3.2     2015-07-24   N/A
+3.2.1   2015-09-09   47
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
@@ -94,6 +95,8 @@ For the purposes of this document, a "release" constitutes five things:
   * An upload of the source code to PyPI ( http://pypi.python.org/ )
   * An announcement email (to ``yt-users`` for minor releases and more broadly
     for major releases)
+  * For "bugfix"-level releases, changes should be backported to the ``stable``
+    branch using the ``pr_backport.py`` script.
 
 Long Term Support Branch
 ++++++++++++++++++++++++
@@ -142,6 +145,7 @@ Version Release Manager
 3.0     Matthew Turk
 3.1     John Zuhone
 3.2     Britton Smith
+3.2.1   Nathan Goldbaum
 ======= ===============
 
 Backwards Compatibility
