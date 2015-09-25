@@ -90,7 +90,7 @@ example:
    sds = yt.load("DD0046_sphere.h5")
    ad = sds.all_data()
    print ad["grid", "density"]
-   print ad["all_particles", "particle_mass"]
+   print ad["all", "particle_mass"]
    print ad["all", "particle_position_x"]
 
 Grid Data Containers
@@ -112,7 +112,7 @@ grid that also supports particles.  With this, the following is possible:
    print cg_ds.index.grids[0]["grid", "density"]
    ad = cg_ds.all_data()
    print ad[("grid", "density")]
-   print ad["all_particles", "particle_mass"]
+   print ad["all", "particle_mass"]
 
    ray = cg_ds.ray(cg_ds.domain_left_edge, cg_ds.domain_right_edge)
    print ray[("grid", "density")]
