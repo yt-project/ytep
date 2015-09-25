@@ -56,13 +56,15 @@ attributes of the root file group.  By default, data will be saved to a "grid"
 group with "units" attributes saved for each dataset.  This function is 
 implemented as ``save_as_ytdata`` in ``yt/frontends/ytdata/utilities.py``.
 
-The above function will be called by the user-facing function,
-``YTDataContainer.save_as_dataset``, which will take a filename and, optionally, 
-a list of fields.  If no field list is given, then the fields that have been 
-queried and cached will be saved.  This function will also make sure that 
-fields necessary for geometric selection (grid position/cell size, particle 
-position) are also saved.  Mesh data will be saved to the "grid" group and 
-particle data will be saved to groups named after the specific particle type.
+The above function will be called by the user-facing functions,
+``YTDataContainer.save_as_dataset``, ``ProfileND.save_as_dataset``, and
+``FixedResolutionBuffer.save_as_dataset``, which will optionally take a
+filename and a list of fields.  If no field list is given, then the fields
+that have been queried and cached will be saved.  This function will also
+make sure that fields necessary for geometric selection (grid position/cell
+size, particle position) are also saved.  Mesh data will be saved to the
+"grid" group and particle data will be saved to groups named after the
+specific particle type.
 
 ytdata Frontend
 ^^^^^^^^^^^^^^^
@@ -142,15 +144,44 @@ The above would enable someone to make projections of large datasets remotely,
 then download the exported projection dataset, and perfect the final image on a 
 local machine.  Slices, both on and off axis, have also been implemented.
 
+General Array Data
+%%%%%%%%%%%%%%%%%%
+
+Array data written with the base ``save_as_ytdata`` function can be reloaded 
+as a non-spatial dataset.  Geometric selection is not possible, but the data 
+can be accessed through the ``YTNonspatialGrid`` object, ``ds.data``.  This object
+will only grab data from the hdf5 file and do further selection on it.
+
+.. code-block:: python
+
+   from yt.frontends.ytdata.api import save_as_ytdata
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   region = ds.box([0.25]*3, [0.75]*3)
+   sphere = ds.sphere(ds.domain_center, (10, "Mpc"))
+
+   my_data = {}
+   my_data["region_density"] = region["density"]
+   my_data["sphere_density"] = sphere["density"]
+   save_as_ytdata(ds, "test_data.h5", my_data)
+
+   ads = yt.load("test_data.h5")
+   print ads.data["region_density"]
+   print ads.data["sphere_density"]
+
+
 Profiles
 %%%%%%%%
 
+
 1, 2, and 3D profiles are like 1, 2, and 3D uniform grid datasets where dx, dy, 
-and dz are different and have different dimensions.  At this time, geometric 
-selection of non-spatial data is not possible in yt.  However, accessing the 
-data arrays will be accomplished by hanging a special ``Grid`` object off the 
-dataset as ``ds.data``.  This object will only grab data from the hdf5 file 
-and do further selection on it.  This would look like the following:
+and dz are different and have different dimensions.  ``YTProfileDataset``
+objects inherit from the ``YTNonspatialDataset`` class.  Similarly, the data
+can be accessed from ``ds.data``.  The x and y bins will be saved as 1D fields
+and fields named after the x and y bin field names will be saved with the same
+shape as the actual profile data.  This will allow for easy array slicing of the
+profile based on the bin fields.
 
 .. code-block:: python
 
@@ -164,6 +195,9 @@ and do further selection on it.  This would look like the following:
    print pds.data["cell_mass"]
    # print the x and y bins
    print pds.data["x"], pds.data["y"]
+   # bin data shaped like the profile
+   print pds.data["density"]
+   print pds.data["temperature"]
 
 ytdata Dataset Types
 ^^^^^^^^^^^^^^^^^^^^
@@ -179,7 +213,8 @@ Name                        Inheritance               Purpose                   
 ``YTGridDataset``          ``Dataset``                covering grids,           grid         yes
                                                       arbitrary grids,          w/particles
                                                       fixed resolution buffers
-``YTProfileDataset``       ``YTGridDataset``          1, 2, and 3D profiles     grid         no
+``YTNonspatialDataset``    ``YTGridDataset``          general array data        grid         no
+``YTProfileDataset``       ``YTNonspatialDataset``    1, 2, and 3D profiles     grid         no
 ========================== ========================== ========================= ============ ===================
 
 Backwards Compatibility
