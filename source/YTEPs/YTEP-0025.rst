@@ -54,10 +54,10 @@ single hdf5 file.  Metadata associated with the dataset (i.e., current_time,
 current_redshift, cosmological parameters, domain dimensions) will be saved as 
 attributes of the root file group.  By default, data will be saved to a "grid" 
 group with "units" attributes saved for each dataset.  This function is 
-implemented as ``to_yt_dataset`` in ``yt/frontends/ytdata/utilities.py``.
+implemented as ``save_as_ytdata`` in ``yt/frontends/ytdata/utilities.py``.
 
 The above function will be called by the user-facing function,
-``YTDataContainer.to_dataset``, which will take a filename and, optionally, 
+``YTDataContainer.save_as_dataset``, which will take a filename and, optionally, 
 a list of fields.  If no field list is given, then the fields that have been 
 queried and cached will be saved.  This function will also make sure that 
 fields necessary for geometric selection (grid position/cell size, particle 
@@ -85,7 +85,7 @@ example:
    ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
 
    sphere = ds.sphere([0.5]*3, (10, "Mpc"))
-   sphere.to_dataset(fields=["density", "particle_mass"])
+   sphere.save_as_dataset(fields=["density", "particle_mass"])
 
    sds = yt.load("DD0046_sphere.h5")
    ad = sds.all_data()
@@ -98,7 +98,7 @@ Grid Data Containers
 
 Covering grids, smoothed covering grids, and arbitrary grids return 3D arrays 
 and so can be treated as uniform grid datasets.  After being saved with 
-``to_dataset``, these are reloaded as type ``YTGridDataset``, which is a uniform 
+``save_as_dataset``, these are reloaded as type ``YTGridDataset``, which is a uniform 
 grid that also supports particles.  With this, the following is possible:
 
 .. code-block:: python
@@ -106,7 +106,7 @@ grid that also supports particles.  With this, the following is possible:
    ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
 
    cg = ds.covering_grid(level=0, left_edge=[0.25]*3, dims=[16]*3)
-   cg.to_dataset("cg.h5", ["density", "particle_mass"])
+   cg.save_as_dataset("cg.h5", ["density", "particle_mass"])
    cg_ds = yt.load("cg.h5")
 
    print cg_ds.index.grids[0]["grid", "density"]
@@ -130,7 +130,7 @@ be selected geometrically or fed into a ``ProjectionPlot`` in the following mann
    ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
 
    proj = ds.proj("density", "x", weight_field="density")
-   proj.to_dataset("proj.h5")
+   proj.save_as_dataset("proj.h5")
 
    gds = yt.load("proj.h5")
    ad = gds.all_data()
@@ -157,13 +157,30 @@ and do further selection on it.  This would look like the following:
    ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
    profile = yt.create_profile(ds.all_data(), ["density", "temperature"],
                                "cell_mass", weight_field=None)
-   profile.to_dataset()
+   profile.save_as_dataset()
 
    pds = yt.load("DD0046_profile.h5")
    # print the profile data
    print pds.data["cell_mass"]
    # print the x and y bins
    print pds.data["x"], pds.data["y"]
+
+ytdata Dataset Types
+^^^^^^^^^^^^^^^^^^^^
+
+========================== ========================== ========================= ============ ===================
+Name                        Inheritance               Purpose                   Dataset Type Geometric Selection
+========================== ========================== ========================= ============ ===================
+``YTDataContainerDataset`` ``Dataset``                geometric data containers particle     yes
+                                                      (sphere, region, ray, 
+                                                      disk)
+``YTSpatialPlotDataset``   ``YTDataContainerDataset`` projections, slices,      particle     yes-ish
+                                                      cutting planes
+``YTGridDataset``          ``Dataset``                covering grids,           grid         yes
+                                                      arbitrary grids,          w/particles
+                                                      fixed resolution buffers
+``YTProfileDataset``       ``YTGridDataset``          1, 2, and 3D profiles     grid         no
+========================== ========================== ========================= ============ ===================
 
 Backwards Compatibility
 -----------------------
