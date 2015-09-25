@@ -101,7 +101,9 @@ Grid Data Containers
 Covering grids, smoothed covering grids, and arbitrary grids return 3D arrays 
 and so can be treated as uniform grid datasets.  After being saved with 
 ``save_as_dataset``, these are reloaded as type ``YTGridDataset``, which is a uniform 
-grid that also supports particles.  With this, the following is possible:
+grid that also supports particles.  ``FixedResolutionBuffer`` objects saved
+with ``save_as_dataset`` will be reloaded as this type as well, only 2D.  
+Besides geometric selection, the data can be accessed through ``ds.data``.
 
 .. code-block:: python
 
@@ -118,6 +120,13 @@ grid that also supports particles.  With this, the following is possible:
 
    ray = cg_ds.ray(cg_ds.domain_left_edge, cg_ds.domain_right_edge)
    print ray[("grid", "density")]
+
+   proj = ds.proj("density", "x", weight_field="density")
+   frb = proj.to_frb(1.0, (800, 800))
+   frb.save_as_dataset(fields=["density"])
+   fds = yt.load("DD0046_proj_frb.h5")
+   print fds.data["density"]
+
 
 Projections and Slices
 %%%%%%%%%%%%%%%%%%%%%%
