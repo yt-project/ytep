@@ -54,7 +54,8 @@ single hdf5 file.  Metadata associated with the dataset (i.e., current_time,
 current_redshift, cosmological parameters, domain dimensions) will be saved as 
 attributes of the root file group.  By default, data will be saved to a "grid" 
 group with "units" attributes saved for each dataset.  This function is 
-implemented as ``save_as_ytdata`` in ``yt/frontends/ytdata/utilities.py``.
+implemented as ``save_as_dataset`` in ``yt/frontends/ytdata/utilities.py``
+and imported in the main yt import.
 
 The above function will be called by the user-facing functions,
 ``YTDataContainer.save_as_dataset``, ``ProfileND.save_as_dataset``, and
@@ -156,14 +157,14 @@ local machine.  Slices, both on and off axis, have also been implemented.
 General Array Data
 %%%%%%%%%%%%%%%%%%
 
-Array data written with the base ``save_as_ytdata`` function can be reloaded 
+Array data written with the base ``save_as_dataset`` function can be reloaded 
 as a non-spatial dataset.  Geometric selection is not possible, but the data 
 can be accessed through the ``YTNonspatialGrid`` object, ``ds.data``.  This object
 will only grab data from the hdf5 file and do further selection on it.
 
 .. code-block:: python
 
-   from yt.frontends.ytdata.api import save_as_ytdata
+   from yt.frontends.ytdata.api import save_as_dataset
 
    ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
 
@@ -173,7 +174,7 @@ will only grab data from the hdf5 file and do further selection on it.
    my_data = {}
    my_data["region_density"] = region["density"]
    my_data["sphere_density"] = sphere["density"]
-   save_as_ytdata(ds, "test_data.h5", my_data)
+   save_as_dataset(ds, "test_data.h5", my_data)
 
    ads = yt.load("test_data.h5")
    print ads.data["region_density"]
