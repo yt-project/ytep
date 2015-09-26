@@ -214,12 +214,14 @@ ytdata Dataset Types
 ========================== ========================== ========================= ============ ===================
 Name                        Inheritance               Purpose                   Dataset Type Geometric Selection
 ========================== ========================== ========================= ============ ===================
-``YTDataContainerDataset`` ``Dataset``                geometric data containers particle     yes
+``YTDataset``              ``Dataset``                common functionality for  n/a          n/a
+                                                      other dataset types
+``YTDataContainerDataset`` ``YTDataset``              geometric data containers particle     yes
                                                       (sphere, region, ray, 
                                                       disk)
 ``YTSpatialPlotDataset``   ``YTDataContainerDataset`` projections, slices,      particle     yes-ish
                                                       cutting planes
-``YTGridDataset``          ``Dataset``                covering grids,           grid         yes
+``YTGridDataset``          ``YTDataset``              covering grids,           grid         yes
                                                       arbitrary grids,          w/particles
                                                       fixed resolution buffers
 ``YTNonspatialDataset``    ``YTGridDataset``          general array data        grid         no
