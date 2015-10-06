@@ -17,6 +17,9 @@ Status
 This YTEP is proposed, but proof-of-concept code has been developed and
 issued in a PR: https://bitbucket.org/yt_analysis/yt/pull-requests/1763
 
+Once the YTEP PR has been accepted, documentation will be added to the PR to
+the codebase.
+
 Project Management Links
 ------------------------
 
@@ -53,8 +56,9 @@ And while we're at it, let's add on very simple "plot" operations.
 Furthermore, to make the connection more explicit, slices will be implemented
 as well to generate data objects and selections.  The dataset object will have
 a `.d` attribute which enables directly slicing it, which will either return a
-region or a slice, depending on how many dimensions are used.  This will accept
-a unitful slice.
+region, a slice, or an ``arbitrary_grid``, depending on how many dimensions are
+used and if an imaginary step is supplied (like ``np.mgrid``).  This will
+accept a unitful slice.
 
 Implementation
 ++++++++++++++
@@ -188,11 +192,14 @@ The slice operation on a shadow ``.d`` quantity should return regions or
 slices.
 
 If one axis is fully-specific, it will be the slice along that axis.  If all
-three are left as start/stop tuples, it will be a region.  These can be either
-float values or unitful objects or tuples of ``(val, unit_name)``.
+three are left as start/stop tuples *with no step*, it will be a region.  These
+can be either float values or unitful objects or tuples of ``(val,
+unit_name)``.
 
-Optionally, we should consider using the ``step`` part of the slice to be used
-to specify a covering grid.
+If a step is supplied, it will need to be supplied for all three dimensions,
+will need to be imaginary (i.e., ``64j``) and it will be interpreted as input
+to an ``arbitrary_grid`` object.  The start/stop will provide the left and
+right edges and the step will provide the number of dimensions.
 
 .. rubric:: plot
 
@@ -305,6 +312,16 @@ Note that we can also do:
 .. code-block::
 
    print ds.d[:,:,:].mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
+
+With the step functionality, this is also possible:
+
+
+.. code-block::
+
+   g = ds.d[::128j,::128j,::128j]
+   g["density"]
+
+which will be an ``arbitrary_grid`` object with 128 cells in each dimension.
 
 We may at some point want to add pandas-like selection and indexing functions
 (http://pandas.pydata.org/pandas-docs/stable/indexing.html ) but right now the
