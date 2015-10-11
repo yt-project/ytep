@@ -104,12 +104,11 @@ c - meeting coordinator, s - meeting secretary
 
 Similar to subcomponent representatives, each frontend shall have at least one
 designated liason to act as a knowledge-base for issues relating to
-implementation and testing of that frontend in the yt codebase.  Frontend
-liasons are entitled to attend team meetings but not required.  The current list
+implementation and testing of that frontend in the yt codebase. The current list
 of frontends and liasons is given below.
 
     ============== =================
-    Frontend       Liasons
+    Frontend       Liaisons
     ============== =================
     ART            Kenza Arraki
     ARTIO          Douglas Rudd
@@ -127,6 +126,27 @@ of frontends and liasons is given below.
     SDF            Sam Skillman
     Tipsy          
     ============== =================
+
+Team Meetings
+^^^^^^^^^^^^^
+
+Public meetings, optimally including all of the subcomponent leaders and
+frontend maintainers, should happen at least once a quarter. These meetings are
+to encourage frank and open discussion about the future of the project. Meetings
+will happen over video chat to encourage remote participation, and times should be
+chosen to accomodate international atendees. The meetings invite will be public,
+and any interested developer or user is welcome to attend.
+
+PR Review Meetings
+^^^^^^^^^^^^^^^^^^
+
+Once weekly, or as required, video chats should be help to ensure timely review
+of pending pull requests. All PRs that are not marked incomplete or work in progress
+will be reviewed, and any outstanding tasks will be discussed and mentioned publicly as
+a comment on the pull request. Any developer or user is welcome to attend the meeting.
+Developers who have open pull requests they would like to see reviewed are particularly
+encouraged to attend to aid discussion about the pull request.
+
 
 Development Practices and Releases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,15 +172,17 @@ should at all times have bookmarks named ``development`` and ``experimental``
 pointed at the branch heads. The ``development`` bookmark is the "main" line of
 yt development, used for branching minor releases and as a place to land bug
 fixes. The ``experimental`` bookmark is for long-term work. An example of such a
-long-term development effort is the (at the time of writing) ongoig work to
+long-term development effort is the (at the time of writing) ongoing work to
 refactor and update the volume rendering interface and add unstructured mesh
 support. For now there should only be two topological branches on the ``yt``
-named branch. If a compelling reason arises to add a new bookmark, the project
-members must agree to create it.
+named branch. If a compelling reason arises to add a new topological branch, the
+project members must agree to create it and add a new bookmark to track the
+work.
 
-If no ongoing work is happening on a long-term feature, the ``experimental``
-bookmark might be temporarily deleted until a compelling need to create another
-branch head comes up. In these cases the ``yt`` branch will only have one head.
+If no ongoing work is happening on a long-term feature, the ``experimental`` and
+``development`` bookmark might be temporarily deleted until a compelling need to
+create another branch head comes up. In these cases the ``yt`` branch will only
+have one head.
 
 Standards for Changes to the Code
 +++++++++++++++++++++++++++++++++
