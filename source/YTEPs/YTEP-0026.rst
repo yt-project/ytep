@@ -55,10 +55,11 @@ I think we should map numpy array operations to quantities and other things!
 And while we're at it, let's add on very simple "plot" operations.
 Furthermore, to make the connection more explicit, slices will be implemented
 as well to generate data objects and selections.  The dataset object will have
-a `.d` attribute which enables directly slicing it, which will either return a
-region, a slice, or an ``arbitrary_grid``, depending on how many dimensions are
-used and if an imaginary step is supplied (like ``np.mgrid``).  This will
-accept a unitful slice.
+a `.r` attribute, aliased to the much more descriptive ``.region_expression``,
+which enables directly slicing it, which will either return a region, a slice,
+or an ``arbitrary_grid``, depending on how many dimensions are used and if an
+imaginary step is supplied (like ``np.mgrid``).  This will accept a unitful
+slice.
 
 Implementation
 ++++++++++++++
@@ -188,7 +189,7 @@ question.  But, it seems to me that we want to do something like:
 
 .. rubric:: __getitem__
 
-The slice operation on a shadow ``.d`` quantity should return regions or
+The slice operation on a shadow ``.r`` quantity should return regions or
 slices.
 
 If one axis is fully-specific, it will be the slice along that axis.  If all
@@ -253,7 +254,7 @@ The slicing would look like:
 .. code-block::
 
    ds = yt.load("galaxy0030")
-   my_obj = ds.d[(100,'kpc'):(200,'kpc'), :, (100,'kpc'):(200,'kpc')]
+   my_obj = ds.r[(100,'kpc'):(200,'kpc'), :, (100,'kpc'):(200,'kpc')]
 
 The way to construct this at present would be, which is a bit cumbersome (there
 are other ways to do this, too, but this is the one that is the clearest):
@@ -300,7 +301,7 @@ reasonably clearly what they do:
 .. code-block::
 
    ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
-   dd = ds.d[:,:,:]
+   dd = ds.r[:,:,:]
    print dd.mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
 
 This returns:::
@@ -311,14 +312,14 @@ Note that we can also do:
 
 .. code-block::
 
-   print ds.d[:,:,:].mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
+   print ds.r[:,:,:].mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
 
 With the step functionality, this is also possible:
 
 
 .. code-block::
 
-   g = ds.d[::128j,::128j,::128j]
+   g = ds.r[::128j,::128j,::128j]
    g["density"]
 
 which will be an ``arbitrary_grid`` object with 128 cells in each dimension.
