@@ -276,7 +276,7 @@ Or for a slice:
 .. code-block::
 
    ds = yt.load("galaxy0030")
-   my_obj = ds[(100,'kpc'):(200,'kpc'), (250,'kpc'), (100,'kpc'):(200,'kpc')]
+   my_obj = ds.r[(100,'kpc'):(200,'kpc'), (250,'kpc'), (100,'kpc'):(200,'kpc')]
    my_obj.plot()
 
 At present, we would have to:
