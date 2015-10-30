@@ -12,7 +12,7 @@ This YTEP proposes to add alternative smoothing kernels besides the current stan
 Status
 ------
 
-In Progress
+Completed
 
 Project Management Links
 ------------------------
@@ -23,6 +23,8 @@ Project Management Links
     <https://bitbucket.org/yt_analysis/yt/pull-requests/1670/alternative-smoothing-kernels/diff>`_
   * `yt PR #1712
     <https://bitbucket.org/yt_analysis/yt/pull-requests/1712/wip-alternative-smoothing-kernels/diff>`_
+  * `yt PR #1830
+    <https://bitbucket.org/yt_analysis/yt/pull-requests/1830/alternative-smoothing-kernels-reissued/diff>`_
   * `ytep PR #53
     <https://bitbucket.org/yt_analysis/ytep/pull-requests/53/adding-ytep-0024-for-alternative-smoothing/diff>`_
 
@@ -38,30 +40,23 @@ The bigger challenge is the design of a convenient user interface for future use
 User Interface
 ++++++++++++++
 
-Future users can specify the kernel to use in the smoothing operations by passing a keyword argument ``kernel_name`` to the relevant functions. Currently, functions with potential access to kernels include ``Dataset.add_deposited_particle_field`` and ``add_volume_weighted_smoothed_field``. The naming scheme for fields added through these functions is an extension of the scheme described in `SPH Fields <http://yt-project.org/docs/dev/analyzing/fields.html#sph-fields)>`_, which is proposed by Nathan Goldbaum in `this yt-dev thread <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019478.html>`_. So a field smoothed by a certain kernel can be accessed by ``('deposit', 'particletype_kernelname_smoothed_fieldname')``, except for the cubic spline kernel, whose smoothed field remains to be ``('deposit', 'particletype_smoothed_fieldname')`` (the same as before).
+Future users can specify which kernel to use in the smoothing operations by passing a keyword argument ``kernel_name`` to the relevant functions. Currently, functions with potential access to kernels include ``Dataset.add_deposited_particle_field`` and ``Dataset.add_smoothed_particle_field`` [#sfield]_. The naming scheme for fields added through these functions is an extension of the scheme described in `SPH Fields <http://yt-project.org/docs/dev/analyzing/fields.html#sph-fields)>`_, which is proposed by Nathan Goldbaum in `this yt-dev thread <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2015-July/019478.html>`_. So a particle field ``("particletype", "fieldname")`` smoothed by a certain kernel can be accessed by ``("deposit", "particletype_kernelname_smoothed_fieldname")``, except for the cubic spline kernel, whose smoothed field remains to be ``("deposit", "particletype_smoothed_fieldname")`` (the same as before).
 
-For example, as demonstrated by the following code, the particle field ``('PartType0', 'Density')`` is smoothed using a quintic kernel, and the resultant smoothed field could be accessed by ``('deposit', 'PartType0_quintic_smoothed_Density')``.
+For example, as demonstrated by the following code, the particle field ``("PartType0", "Density")`` is smoothed using a quintic kernel and the resultant smoothed field could be accessed by ``("deposit", "PartType0_quintic_smoothed_Density")``. [#data]_
 
 .. code-block:: python
 
    import yt
    
-   ds = yt.load('GadgetDiskGalaxy/snapshot_200.hdf5')
-   ds.index
-   
-   from yt.fields.particle_fields import add_volume_weighted_smoothed_field
+   ds = yt.load("GadgetDiskGalaxy/snapshot_200.hdf5")
+   ds.add_smoothed_particle_field(("PartType0", "Density"), kernel_name="quintic")
 
-   add_volume_weighted_smoothed_field('PartType0', 'Coordinates', 'Masses',
-                                      'SmoothingLength', 'Density',
-                                      'Density', ds.field_info,
-                                      kernel_name='quintic')
-
-   yt.ProjectionPlot(ds, 'z', ('deposit', 'PartType0_quintic_smoothed_Density'))
+   yt.ProjectionPlot(ds, "z", ("deposit", "PartType0_quintic_smoothed_Density"))
    
 Below is a table of available ``kernel_name`` and the corresponding name in [DA2012]_. All kernels are in 3D (a.k.a. :math:`\nu = 3`).
 
 .. list-table:: Kernel Names
-   
+
    * - ``kernel_name``
      - Name in [DA2012]_
    * - cubic
@@ -76,6 +71,10 @@ Below is a table of available ``kernel_name`` and the corresponding name in [DA2
      - Wendland C\ :sup:`4`
    * - wendland6
      - Wendland C\ :sup:`6`
+
+.. [#sfield] ``Dataset.add_smoothed_particle_field`` is a wrapper of ``add_volume_weighted_smoothed_field``. It is more convenient to use. So, for simplicity, ``add_volume_weighted_smoothed_field`` will be omitted in the following discussions.
+
+.. [#data] The dataset can be downloaded from `here <http://yt-project.org/data/GadgetDiskGalaxy.tar.gz>`_.
 
 Application Programming Interface
 +++++++++++++++++++++++++++++++++
@@ -155,18 +154,19 @@ The rest of the changes to the API is merely the passing of the keyword argument
      - 4 - 8
      - ``yt/data_objects/static_output.py``
    * - 12
-     - ``add_volume_weighted_smoothed_field``
+     - ``Dataset.add_smoothed_particle_field``
      - 9
-     - ``yt/fields/particle_fields.py``
+     - ``yt/data_objects/static_output.py``
 
-.. [#pass] This column means that ``kernel_name`` could **potentially** be passed to 'Pass to', depending on another parameter ``method``. 
+.. [#pass] This column indicates the possibility that ``kernel_name`` could be passed to 'Pass to', which also depends on another parameter ``method``.
+
 .. [#cls] When a class is given, its ``__init__`` method is meant.
 
 To demonstrate how 4 - 10 utilize 1 - 3, the main structure of the ``smooth`` method is shown below (irrelevant parts are ignored; ``deposit`` and ``particle_operation`` are similar).
 
 .. code-block:: python
 
-   def smooth(self, method = None, kernel_name = 'cubic', ...):
+   def smooth(self, method = None, kernel_name = "cubic", ...):
        cls = getattr(particle_smooth, "%s_smooth" % method, None)
        op = cls(..., kernel_name)
 
@@ -182,7 +182,7 @@ Reference
 Backwards Compatibility
 -----------------------
 
-New functionalities are accessed by the optional keyword argument ``kernel_name``, so current codes' behavior won't change.
+New functionality is accessed by the keyword argument ``kernel_name`` with default value ``kernel_name = "cubic"``, so existing codes' behavior won't change.
 
 Alternatives
 ------------
