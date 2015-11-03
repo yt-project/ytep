@@ -29,23 +29,22 @@ Detailed Description
 Team Structure
 ^^^^^^^^^^^^^^
 
-The yt development team consists of developers and members.  Anyone 
-contributing at least one changeset to the codebase is a developer and shall 
-be listed in the Contributors section `here <http://yt-project.org/about.html>`_.  
-A member is someone who 
-has made continued and significant contribution to the project (changes to the 
-codebase, discussion on mailing lists, feedback on pull requests, etc.) for 
-some period of time.  After such a period, potential new members are nominated 
-for membership by an existing member and confirmed by positive votes from three 
-additional members.  Once a developer becomes a member, they remain a member 
-for life.  A member maintains the option to give up their membership and have 
-their name removed from the list.  Membership may be revoked for anyone who is 
-deemed to be directly harmful to the project or the community upon a nomination 
-by another member and five supporting member votes.
-Upon the initial creation of yt membership status, all developers 
-having contributed at least 50 changesets shall be granted membership.  The 
-`Project Members <http://yt-project.org/members.html>`_ page gives a description of 
-the requirements for membership and provides a list of all members and the year in 
+The yt development team consists of developers and members.  Anyone contributing
+at least one changeset to the codebase is a developer and shall be listed in the
+Contributors section `here <http://yt-project.org/about.html>`_.  A member is
+someone who has made continued and significant contribution to the project
+(changes to the codebase, discussion on mailing lists, feedback on pull
+requests, etc.) for some period of time.  After such a period, potential new
+members are nominated for membership by an existing member and confirmed by
+positive votes from three additional members.  Once a developer becomes a
+member, they remain a member for life.  A member maintains the option to give up
+their membership and have their name removed from the list.  Membership may be
+revoked for anyone who is deemed to be directly harmful to the project or the
+community upon a nomination by another member and five supporting member votes.
+Upon the initial creation of yt membership status, all developers having
+contributed at least 50 changesets shall be granted membership.  The `Project
+Members <http://yt-project.org/members.html>`_ page gives a description of the
+requirements for membership and provides a list of all members and the year in
 which membership was granted.
 
 Current yt members:
@@ -74,21 +73,20 @@ Current yt members:
   * Michael Zingale (2014)
   * John Zuhone (2014)
 
-Members have write access to all official yt repositories and can, therefore, 
-accept pull requests.  
-Members are eligible to serve as leaders of the various subcomponents 
-of the yt codebase.  Component leads shall meet once a month to discuss the 
-status of the codebase as well as current or planned development.  One 
-representative shall act as the coordinator, in charge of making sure the team 
-meeting happens and responsible for appointing their own replacement.  One other 
-representative shall act as secretary and record the minutes of the meeting, 
-which shall be posted to the yt-dev list and online.  
-One subcomponent may have more than one representative, but at least one must 
-be present for the team meeting.  New subcomponents may be added as necessary 
-via member nomination and five affirmative member votes.  The nominator must 
-also be willing to act as a representative for the new subcomponent until at 
-least one other member agrees to be a representative as well.  The current list 
-of subcomponents and their leaders and representatives is given below.
+Members have write access to all official yt repositories and can, therefore,
+accept pull requests.  Members are eligible to serve as leaders of the various
+subcomponents of the yt codebase.  Component leads shall meet quarterly or more
+often as needed to discuss the status of the codebase as well as current or
+planned development.  One representative shall act as the coordinator, in charge
+of making sure the team meeting happens and responsible for appointing their own
+replacement.  One other representative shall act as secretary and record the
+minutes of the meeting, which shall be posted to the yt-dev list and online.
+One subcomponent may have more than one representative, but at least one must be
+present for the team meeting.  New subcomponents may be added as necessary via
+member nomination and five affirmative member votes.  The nominator must also be
+willing to act as a representative for the new subcomponent until at least one
+other member agrees to be a representative as well.  The current list of
+subcomponents and their leaders and representatives is given below.
 
     ================= ======================= ======================
     Subcomponent      Current Leader          Former Representatives
@@ -104,14 +102,13 @@ of subcomponents and their leaders and representatives is given below.
 
 c - meeting coordinator, s - meeting secretary
 
-Similar to subcomponent representatives, each frontend shall have at least one 
-designated liason to act as a knowledge-base for issues relating to implementation 
-and testing of that frontend in the yt codebase.  Frontend liasons are entitled to 
-attend team meetings but not required.  The current list of frontends and liasons 
-is given below.
+Similar to subcomponent representatives, each frontend shall have at least one
+designated liason to act as a knowledge-base for issues relating to
+implementation and testing of that frontend in the yt codebase. The current list
+of frontends and liasons is given below.
 
     ============== =================
-    Frontend       Liasons
+    Frontend       Liaisons
     ============== =================
     ART            Kenza Arraki
     ARTIO          Douglas Rudd
@@ -130,6 +127,27 @@ is given below.
     Tipsy          
     ============== =================
 
+Team Meetings
+^^^^^^^^^^^^^
+
+Public meetings, optimally including all of the subcomponent leaders and
+frontend maintainers, should happen at least once a quarter. These meetings are
+to encourage frank and open discussion about the future of the project. Meetings
+will happen over video chat to encourage remote participation, and times should be
+chosen to accomodate international atendees. The meetings invite will be public,
+and any interested developer or user is welcome to attend.
+
+PR Review Meetings
+^^^^^^^^^^^^^^^^^^
+
+Once weekly, or as required, video chats should be help to ensure timely review
+of pending pull requests. All PRs that are not marked incomplete or work in progress
+will be reviewed, and any outstanding tasks will be discussed and mentioned publicly as
+a comment on the pull request. Any developer or user is welcome to attend the meeting.
+Developers who have open pull requests they would like to see reviewed are particularly
+encouraged to attend to aid discussion about the pull request.
+
+
 Development Practices and Releases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -138,22 +156,43 @@ Branches
 
 The main yt repository is located at https://bitbucket.org/yt_analysis/yt.
 
-Until the advent of yt-4.0, the yt repository will maintain three active branches: 
-*yt*, *stable*, and *yt-2.x*.  As of this document, the *yt-3.0* branch is closed 
-for new development, but pull requests will continue to be accepted while 
-development transitions back to the *yt* branch.  
-The *yt* branch contains all accepted changes and new features that have yet to be 
-included in a release.  The tip of the *stable* branch will be the latest release.  
-The *yt-2.x* branch will maintain the latest state of the 2.x version of yt.
+Until a compelling need for a new named branch arises, the yt repository will
+maintain three active branches: ``yt``, ``stable``, and ``yt-2.x``.  The ``yt``
+branch contains all accepted changes and new features that have yet to be
+included in a release.  The tip of the ``stable`` branch will be the latest
+release.  The ``yt-2.x`` branch will maintain the latest state of the 2.x
+version of yt.
+
+Bookmarks
++++++++++
+
+In addition to the named branches listed above, we further split development on
+the ``yt`` branch into two topological branches.  These two lines of development
+should at all times have bookmarks named ``development`` and ``experimental``
+pointed at the branch heads. The ``development`` bookmark is the "main" line of
+yt development, used for branching minor releases and as a place to land bug
+fixes. The ``experimental`` bookmark is for long-term work. An example of such a
+long-term development effort is the (at the time of writing) ongoing work to
+refactor and update the volume rendering interface and add unstructured mesh
+support. For now there should only be two topological branches on the ``yt``
+named branch. If a compelling reason arises to add a new topological branch, the
+project members must agree to create it and add a new bookmark to track the
+work.
+
+If no ongoing work is happening on a long-term feature, the ``experimental`` and
+``development`` bookmark might be temporarily deleted until a compelling need to
+create another branch head comes up. In these cases the ``yt`` branch will only
+have one head.
 
 Standards for Changes to the Code
 +++++++++++++++++++++++++++++++++
 
-Development shall occur in forks off of the main repository with changes being 
-pulled in via pull requests into the *yt* branch.   Modifications to the code 
-typically fall into one of three categories, each of which have different 
-requirements for acceptance into the code base.  Pull requests should be tagged 
-in the title with [NEW], [BREAKSAPI], [BUGFIX], or [WIP] (for "work in progress").
+Development shall occur in forks off of the main repository with changes being
+pulled in via pull requests into the ``yt`` branch.  Modifications to the code
+typically fall into one of three categories, each of which have different
+requirements for acceptance into the code base.  Pull requests should be tagged
+in the title with [NEW], [BREAKSAPI], [BUGFIX], or [WIP] (for "work in
+progress").
 
   * New Features
 
@@ -179,32 +218,33 @@ in the title with [NEW], [BREAKSAPI], [BUGFIX], or [WIP] (for "work in progress"
       future.
     * Issue created on issue tracker, to ensure this is added to the changelog
 
-No specific standard shall exist for accepting pull requests of minor bug fixes.  
-New features, API breakages, and more substantial bug fixes require approval of 
-three yt members or people designated as qualified reviewers by the issuer.  When 
-a [WIP] pull request is ready to be reviewed for acceptance, the tag should be 
-changed to one of the other options above.
+No specific standard shall exist for accepting pull requests of minor bug fixes.
+New features, API breakages, and more substantial bug fixes require approval of
+three yt members or people designated as qualified reviewers by the issuer.
+When a [WIP] pull request is ready to be reviewed for acceptance, the tag should
+be changed to one of the other options above.
 
-For the development of large features or infrastructure changes involving the work 
-of more than one developer, a bookmark on a head of the *yt* branch shall be 
-created to enable collaboration.  Pull requests to the development bookmark will be 
-accepted according to criteria laid out by the issuer.  Documentation will not be 
-considered a requisite for pull requests to be accepted into the bookmark (although 
-still encouraged), but a merge of the bookmark into the primary *yt* branch head 
-shall not occur until all criteria laid out above have been met.
+For the development of large features or infrastructure changes involving the
+work of more than one developer, a bookmark named ``experimental`` will be
+created on a head of the ``yt`` branch to enable collaboration in the main yt
+repository.  Pull requests to the ``experimental`` bookmark will be accepted
+according to criteria laid out by the issuer.  Documentation will not be
+considered a requisite for pull requests to be accepted into the bookmark
+(although still encouraged), but a merge of the bookmark into the primary ``yt``
+branch head shall not occur until all criteria laid out above have been met.
 
 .. _releases:
 
 Releases
 ++++++++
 
-Minor releases will follow the schedule given in :ref:`ytep-0008`.  Major or 
-unscheduled releases will occur after criteria proposed and accepted in a prior 
-team meeting are met.  Before the release, members will be identified as playing an 
-integral role in the content of the release, and the release will happen only 
-after all of those members give their approval.  Each release will have a 
-designated release manager as described in :ref:`ytep-0008`.  The release manager 
-should also be present at the team meeting.
+Minor releases will follow the schedule given in :ref:`ytep-0008`.  Major or
+unscheduled releases will occur after criteria proposed and accepted in a prior
+team meeting are met.  Before the release, members will be identified as playing
+an integral role in the content of the release, and the release will happen only
+after all of those members give their approval.  Each release will have a
+designated release manager as described in :ref:`ytep-0008`.  The release
+manager should also be present at the team meeting.
 
 Backwards Compatibility
 -----------------------

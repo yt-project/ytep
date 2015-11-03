@@ -1,0 +1,346 @@
+YTEP-0026: NumPy-like Operations
+================================
+
+Abstract
+--------
+
+Created: September 21, 2015
+
+Author: Matthew Turk
+
+This YTEP describes implementing some NumPy-like and potentially some
+Pandas-like operations on data container objects.
+
+Status
+------
+
+This YTEP is proposed, but proof-of-concept code has been developed and
+issued in a PR: https://bitbucket.org/yt_analysis/yt/pull-requests/1763
+
+Once the YTEP PR has been accepted, documentation will be added to the PR to
+the codebase.
+
+Project Management Links
+------------------------
+
+Any external links to:
+
+  * PR with first work-in-progress: https://bitbucket.org/yt_analysis/yt/pull-requests/1763
+
+Detailed Description
+--------------------
+
+Background
+++++++++++
+
+Data objects in yt are lazy-loaded; only when data is accessed is it read from
+disk.  However, the way they behave is similar to "data frames" or numpy named
+dtypes -- they act as though they are dicts-of-arrays, with some operations
+being defined that operate in parallel-aware ways.
+
+However, this is something of a leaky abstraction; in order to compute
+relatively simple operations, the `.quantities` object has to be accessed, the
+correct "quantity" to use determined, and then called.
+
+But, many of these quantities map relatively simply to NumPy operations.
+
+This YTEP doesn't (yet) address adding other, Pandas-like operations (such as
+select or group) even though they also map to yt operations; that may come in
+the future.
+
+What Can Be Done
+++++++++++++++++
+
+I think we should map numpy array operations to quantities and other things!
+And while we're at it, let's add on very simple "plot" operations.
+Furthermore, to make the connection more explicit, slices will be implemented
+as well to generate data objects and selections.  The dataset object will have
+a `.r` attribute, aliased to the much more descriptive ``.region_expression``,
+which enables directly slicing it, which will either return a region, a slice,
+or an ``arbitrary_grid``, depending on how many dimensions are used and if an
+imaginary step is supplied (like ``np.mgrid``).  This will accept a unitful
+slice.
+
+Implementation
+++++++++++++++
+
+This will be implemented very simply as a set of aliases that look at the input
+arguments and then generate results from them.
+
+NumPy arrays have several operations that return scalars, which is what we want
+to map to within these operations:
+
+  * ``all``
+  * ``any``
+  * ``argmax``
+  * ``argmin``
+  * ``max``
+  * ``mean``
+  * ``min``
+  * ``prod``
+  * ``ptp``
+  * ``std``
+  * ``sum``
+  * ``var``
+
+For the purposes of this YTEP, we will concern ourselves with ``argmax``,
+``argmin``, ``max``, ``mean``, ``min``, ``std``, ``ptp``, ``sum``, and also the
+non-NumPy operations ``hist`` and ``integrate``, which normally do not return a
+single scalar but a set that does not correspond to the number of elements in
+the array.
+
+We break these up based on the axis argument, and other optional arguments.
+Below is the enumerated behavior.  Note that for those items that can be
+computed in a single pass (i.e., statistical information about the fields as a
+whole) we will likely implement a system that computes them in a single pass
+and caches them, so that ``min`` and ``max`` and ``std`` will cache in-between
+calls and only require a single pass over the array.
+
+.. rubric:: argmax
+
+The mandatory argument is the field over which the maximum is to be computed;
+the default return argument is the index, but the ``axis`` optional parameter
+can specify one or more fields that will be returned.  (For instance, one could
+supply ``('x', 'y', 'z')`` and be handed back the spatial locations.
+
+.. rubric:: argmin
+
+The mandatory argument is the field over which the minimum is to be computed;
+the default return argument is the index, but the ``axis`` optional parameter
+can specify one or more fields that will be returned.  (For instance, one could
+supply ``('x', 'y', 'z')`` and be handed back the spatial locations.
+
+.. rubric:: max
+
+The mandatory argument is the field of which the maximum is to be computed.
+This can be a list of fields.
+
+This accepts the optional argument ``axis``.  If ``axis`` is a spatial axis (as
+defined by ``coordinates.axis_names`` and thus including 0, 1, 2, and the axis
+names) it will generate a *maximum intensity projection* along that axis of the
+specified field.
+
+.. rubric:: mean
+
+The mandatory argument is the field to average.  This will return either a
+projection if the axis is spatial, or a quantity result.
+
+The optional ``axis`` argument can either be the spatial axis along which the
+weighted projection can be computed (defaults to weighted by ``ones``, which is
+usually not desired for astro data, but may be for other data) or ``None``.
+Non-spatial axes are not supported.
+
+The optional ``weight`` argument (which defaults to ``ones``) describes how to
+weight this average.  If ``axis`` is ``None`` and ``weight`` is ``None``, it
+will compute the sum; if ``axis`` is None and ``weight`` is not ``None``, it
+will compute the ``weighted_average_quantity``.
+
+.. rubric:: min
+
+The mandatory argument is the field of which the minimum is to be computed.
+This can be a list of fields.
+
+Because we do not have "minimum intensity projections," spatial axes are not
+supported.
+
+.. rubric:: std
+
+The mandatory argument is the field of which the standard deviation is to be
+computed.  This can be a list of fields.
+
+The optional argument ``weight`` will describe the weight for computing
+standard deviation.
+
+.. rubric:: ptp
+
+The mandatory argument is the field of which the peak-to-peak is computed.
+
+.. rubric:: sum
+
+The mandatory argument is the field to sum.
+
+The ``axis`` argument, if spatial, will be the axis along which the projection
+will be taken.  This must either be ``None`` or a spatial axis.  The weighting
+will be ``None``, and thus it will be the line integral.  (Note that this will
+*not* includes a ``dl`` term, as it will be using the ``sum`` method.)
+
+.. rubric:: integrate
+
+The mandatory ``field`` argument is the field to integrate; if ``axis`` is
+one of the coordinate axes, the return value will be a projection.  This will
+be using the standard projection method, which includes ``dl``.
+
+If the ``axis`` argument is not a spatial dimension, maybe it could return a
+profile of some type?  I'm not sure.
+
+.. rubric:: hist
+
+This should return a profile.  Determining the most natural way to map how we
+profile (i.e., the fields along the axes, and the weighting) is an open
+question.  But, it seems to me that we want to do something like:
+
+ * Mandatory argument: field or fields to take the average of, or the sum of.
+   If bins is not specified, the returned profile will compute the sum of this
+   field in bins along the x axis; this is somewhat of a weird conditional, but
+   seems to match the closest.
+ * Optional ``weight`` argument: the field to use as the weight; if not
+   specified, this will just be a sum.
+ * Optional ``bins`` argument: the x and optionally y field to use as bins
+
+.. rubric:: __getitem__
+
+The slice operation on a shadow ``.r`` quantity should return regions or
+slices.
+
+If one axis is fully-specific, it will be the slice along that axis.  If all
+three are left as start/stop tuples *with no step*, it will be a region.  These
+can be either float values or unitful objects or tuples of ``(val,
+unit_name)``.
+
+If a step is supplied, it will need to be supplied for all three dimensions,
+will need to be imaginary (i.e., ``64j``) and it will be interpreted as input
+to an ``arbitrary_grid`` object.  The start/stop will provide the left and
+right edges and the step will provide the number of dimensions.
+
+.. rubric:: plot
+
+The ``plot`` operation will only be implemented on things that have obvious
+plotting candidates -- slices, projections, profiles.  This will default to
+creating the necessary ``PlotWindow`` or related class, and will try to choose
+sane defaults for it.  For instance, this could wrap ``to_pw``.  In contrast to
+``to_pw``, this will also default to *native* plot coordinates, as we want this
+to match more closely the behavior that would be done by simply plotting the
+field.
+
+Examples
+++++++++
+
+At the present to get a projection plot of a data object, one would do:
+
+.. code-block::
+
+   obj = ds.sphere((100, 'cm'), 'c')
+   p = yt.ProjectionPlot(ds, 'x', 'density', data_source = obj)
+   p.show()
+
+or:
+
+.. code-block::
+
+   obj = ds.sphere((100, 'cm'), 'c')
+   proj = ds.proj("x", "density", data_source=obj)
+   p = proj.to_pw()
+   p.show()
+
+The alternate here would be:
+
+.. code-block::
+
+   obj = ds.sphere((100, 'cm'), 'c')
+   p = obj.sum("density", axis="x")
+   p.plot()
+
+The histogram could be computed:
+
+.. code-block::
+
+   obj = ds.sphere((100, 'cm'), 'c')
+   p = obj.hist("density", bins="temperature", weight="cell_mass")
+   p.plot()
+
+The slicing would look like:
+
+
+.. code-block::
+
+   ds = yt.load("galaxy0030")
+   my_obj = ds.r[(100,'kpc'):(200,'kpc'), :, (100,'kpc'):(200,'kpc')]
+
+The way to construct this at present would be, which is a bit cumbersome (there
+are other ways to do this, too, but this is the one that is the clearest):
+
+.. code-block::
+
+   ds = yt.load("galaxy0030")
+   left_edge = ds.domain_left_edge.in_units("kpc").copy()
+   left_edge[0] = 100
+   left_edge[2] = 100
+   right_edge = ds.domain_right_edge.in_units("kpc").copy()
+   right_edge[0] = 200
+   right_edge[2] = 200
+   center = (left_edge + right_edge)/2.0
+   my_obj = ds.region(center, left_edge, right_edge)
+
+Or for a slice:
+
+.. code-block::
+
+   ds = yt.load("galaxy0030")
+   my_obj = ds.r[(100,'kpc'):(200,'kpc'), (250,'kpc'), (100,'kpc'):(200,'kpc')]
+   my_obj.plot()
+
+At present, we would have to:
+
+.. code-block::
+
+   ds = yt.load("galaxy0030")
+   left_edge = ds.domain_left_edge.in_units("kpc").copy()
+   left_edge[0] = 100
+   left_edge[2] = 100
+   right_edge = ds.domain_right_edge.in_units("kpc").copy()
+   right_edge[0] = 200
+   right_edge[2] = 200
+   center = (left_edge + right_edge)/2.0
+   reg = ds.region(center, left_edge, right_edge)
+   my_obj = ds.slice(1, (250,'kpc'))
+   my_obj.to_pw("density")
+
+Another example is how to make very terse computations, which still demonstrate
+reasonably clearly what they do:
+
+.. code-block::
+
+   ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
+   dd = ds.r[:,:,:]
+   print dd.mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
+
+This returns:::
+
+   [37021.0582639 cm/s, 35794.630883 cm/s, 82204.2708063 cm/s]
+
+Note that we can also do:
+
+.. code-block::
+
+   print ds.r[:,:,:].mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
+
+With the step functionality, this is also possible:
+
+
+.. code-block::
+
+   g = ds.r[::128j,::128j,::128j]
+   g["density"]
+
+which will be an ``arbitrary_grid`` object with 128 cells in each dimension.
+
+We may at some point want to add pandas-like selection and indexing functions
+(http://pandas.pydata.org/pandas-docs/stable/indexing.html ) but right now the
+use case is less clear.  Maybe having select() be an alias for cut_region, or
+adding in a groupby method (maybe; not sure that's useful unless it were by
+binning) would be interesting, but not immediately clear to me.
+
+This work, if completed, will include an overhaul of the documentation to
+reflect this, as I think it is considerably terser and more expressive.
+
+Backwards Compatibility
+-----------------------
+
+There are no backwards-compatible issues.
+
+Alternatives
+------------
+
+I do not know if there are alternatives to consider; in many ways, this will
+open us up to more straightforward utilization of tools like ``xray`` and
+``dask``.
