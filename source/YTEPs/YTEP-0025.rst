@@ -19,13 +19,13 @@ datasets.  Primarily, this will provide the following features:
 Status
 ------
 
-Proposed
+Completed
 
 Project Management Links
 ------------------------
 
-  * `yt PR #1718 <https://bitbucket.org/yt_analysis/yt/pull-requests/1718/wip-adding-ytdata-frontend>`_: an open pull request containing a partial 
-    implementation
+  * `yt PR #1718 <https://bitbucket.org/yt_analysis/yt/pull-requests/1718/wip-adding-ytdata-frontend>`_: 
+    the accepted pull request containing the full implementation
 
 Detailed Description
 --------------------
@@ -72,7 +72,10 @@ ytdata Frontend
 
 This frontend will be responsible for reloading all data saved with the above 
 method.  As this data is of multiple types, this will actually be multiple 
-frontends living under the general "ytdata" heading.
+frontends living under the general "ytdata" heading.  All dataset types will
+inherit from the ``YTDataset`` class.  See :ref:`ytdataset-types` for a
+description of each class.  For each loaded dataset, ``ds``, in the ytdata
+frontend, ``ds.data`` will provide direct access to the field data.
 
 Geometrical Data Containers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,8 +83,15 @@ Geometrical Data Containers
 Fields queried from data containers are returned as unordered, one-dimension 
 arrays and, thus, most closely resemble particle datasets.  All geometric data 
 containers are reloaded as type ``YTDataContainerDataset``, which is a particle 
-dataset type.  This has been implemented in the open PR, enabling the following 
-example:
+dataset type.  Mesh data is stored with the corresponding ``dx``, ``dy``, and
+``dz`` fields such that derived fields like ``cell_volume`` can be created.  All
+mesh data is aliased to the "gas" field type.  The ``data`` attribute associated
+with the loaded dataset will be a data container configured identically to the
+original data container.  In the case of ray data containers, this is not
+possible as a ray is defined by cells it intersects and not cells/particles
+enclosed within.  In this case, ``data`` will be an instance of
+``ds.all_data()``.  Field access through conventional data containers is
+also possible.
 
 .. code-block:: python
 
@@ -91,10 +101,18 @@ example:
    sphere.save_as_dataset(fields=["density", "particle_mass"])
 
    sds = yt.load("DD0046_sphere.h5")
+
+   # sphere with the same center and radius
+   print (sds.data)
+   print (sds.data["grid", "density"])
+   print (sds.data["gas", "density"])
+   print (sds.data["all", "particle_mass"])
+   print (sds.data["all", "particle_position_x"])
+
+   # create a data container
    ad = sds.all_data()
-   print ad["grid", "density"]
-   print ad["all", "particle_mass"]
-   print ad["all", "particle_position_x"]
+   print (ad["grid", "density"])
+   print (ad["all", "particle_mass"])
 
 Grid Data Containers
 %%%%%%%%%%%%%%%%%%%%
@@ -104,7 +122,7 @@ and so can be treated as uniform grid datasets.  After being saved with
 ``save_as_dataset``, these are reloaded as type ``YTGridDataset``, which is a uniform 
 grid that also supports particles.  ``FixedResolutionBuffer`` objects saved
 with ``save_as_dataset`` will be reloaded as this type as well, only 2D.  
-Besides geometric selection, the data can be accessed through ``ds.data``.
+In this case, ``ds.data`` will give access to the multi-dimensional field arrays.
 
 .. code-block:: python
 
@@ -114,28 +132,32 @@ Besides geometric selection, the data can be accessed through ``ds.data``.
    cg.save_as_dataset("cg.h5", ["density", "particle_mass"])
    cg_ds = yt.load("cg.h5")
 
-   print cg_ds.index.grids[0]["grid", "density"]
+   # this has the dimensions of the original covering grid
+   print (cg_ds.data["gas", "density"]).shape
+
+   # access via geometric selection
    ad = cg_ds.all_data()
-   print ad[("grid", "density")]
-   print ad["all", "particle_mass"]
+   print (ad["gas", "density"])
+   print (ad["all", "particle_mass"])
 
    ray = cg_ds.ray(cg_ds.domain_left_edge, cg_ds.domain_right_edge)
-   print ray[("grid", "density")]
+   print (ray["gas", "density"])
 
+   # FRBs
    proj = ds.proj("density", "x", weight_field="density")
    frb = proj.to_frb(1.0, (800, 800))
    frb.save_as_dataset(fields=["density"])
    fds = yt.load("DD0046_proj_frb.h5")
-   print fds.data["density"]
-
+   print (fds.data["density"])
 
 Projections and Slices
 %%%%%%%%%%%%%%%%%%%%%%
 
 Projections and slices are like two-dimensional particle datasets where the x and 
 y fields are "px" and "py".  They are reloaded as type ``YTProjectionDataset``, 
-which is a subclass of ``YTDataContainerDataset``.  Reloaded projection data can 
-be selected geometrically or fed into a ``ProjectionPlot`` in the following manner:
+which is a subclass of ``YTDataContainerDataset``.  Reloaded projection or slice
+data can be selected geometrically or fed into a ``ProjectionPlot`` or
+``SlicePlot``.  In these cases, ``ds.data`` is an instance of ``ds.all_data()``.
 
 .. code-block:: python
 
@@ -145,14 +167,16 @@ be selected geometrically or fed into a ``ProjectionPlot`` in the following mann
    proj.save_as_dataset("proj.h5")
 
    gds = yt.load("proj.h5")
-   ad = gds.all_data()
-   print ad["density"]
+   print (gds.data["gas", "density"])
    p = yt.ProjectionPlot(gds, "x", "density", weight_field="density")
    p.save()
 
-The above would enable someone to make projections of large datasets remotely, 
-then download the exported projection dataset, and perfect the final image on a 
-local machine.  Slices, both on and off axis, have also been implemented.
+The above would enable someone to make projections or slices of large datasets
+remotely, then download the exported dataset, and perfect the final image on a 
+local machine.  On and off-axis slices are implemented.  Off-axis projections
+are not implemented at this time as they use totally different machinery.  In
+this case, the best strategy would be to create an FRB and call
+``save_as_dataset`` on that.
 
 General Array Data
 %%%%%%%%%%%%%%%%%%
@@ -177,13 +201,11 @@ will only grab data from the hdf5 file and do further selection on it.
    save_as_dataset(ds, "test_data.h5", my_data)
 
    ads = yt.load("test_data.h5")
-   print ads.data["region_density"]
-   print ads.data["sphere_density"]
-
+   print (ads.data["region_density"])
+   print (ads.data["sphere_density"])
 
 Profiles
 %%%%%%%%
-
 
 1, 2, and 3D profiles are like 1, 2, and 3D uniform grid datasets where dx, dy, 
 and dz are different and have different dimensions.  ``YTProfileDataset``
@@ -209,6 +231,8 @@ profile based on the bin fields.
    print pds.data["density"]
    print pds.data["temperature"]
 
+.. _ytdataset-types:
+
 ytdata Dataset Types
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -220,7 +244,7 @@ Name                        Inheritance               Purpose                   
 ``YTDataContainerDataset`` ``YTDataset``              geometric data containers particle     yes
                                                       (sphere, region, ray, 
                                                       disk)
-``YTSpatialPlotDataset``   ``YTDataContainerDataset`` projections, slices,      particle     yes-ish
+``YTSpatialPlotDataset``   ``YTDataContainerDataset`` projections, slices,      particle     yes
                                                       cutting planes
 ``YTGridDataset``          ``YTDataset``              covering grids,           grid         yes
                                                       arbitrary grids,          w/particles
@@ -239,7 +263,14 @@ the ``LightRay`` now writes out a yt.loadable dataset that is loaded by the
 ``AbsorptionSpectrum``.
 
 Other than the above, this is all new functionality and so has no backward 
-incompatibility.
+incompatibility.  One general change made to the yt codebase is that places
+that refer to ``index`` fields (``x``, ``y``, ``z``, ``dx``, etc.) now refer
+to ``(<fluid_type>, "dx")`` instead of ``("index", "dx")``.  This is to allow
+fields like ``cell_volume`` to be created from the ``("grid", "dx")`` field
+that, for the ytdata frontend, lives on disk instead of the version being
+generated by the geometry handler.  For actual grid datasets, we simply
+create an alias from ``(<fluid_type>, "dx")`` to ``("index", "dx")`` upon
+loading.  This should be completely transparent to the user.
 
 Alternatives
 ------------
