@@ -217,7 +217,7 @@ Examples
 
 At the present to get a projection plot of a data object, one would do:
 
-.. code-block::
+.. code-block:: python
 
    obj = ds.sphere((100, 'cm'), 'c')
    p = yt.ProjectionPlot(ds, 'x', 'density', data_source = obj)
@@ -225,7 +225,7 @@ At the present to get a projection plot of a data object, one would do:
 
 or:
 
-.. code-block::
+.. code-block:: python
 
    obj = ds.sphere((100, 'cm'), 'c')
    proj = ds.proj("x", "density", data_source=obj)
@@ -234,7 +234,7 @@ or:
 
 The alternate here would be:
 
-.. code-block::
+.. code-block:: python
 
    obj = ds.sphere((100, 'cm'), 'c')
    p = obj.sum("density", axis="x")
@@ -242,7 +242,7 @@ The alternate here would be:
 
 The histogram could be computed:
 
-.. code-block::
+.. code-block:: python
 
    obj = ds.sphere((100, 'cm'), 'c')
    p = obj.hist("density", bins="temperature", weight="cell_mass")
@@ -251,7 +251,7 @@ The histogram could be computed:
 The slicing would look like:
 
 
-.. code-block::
+.. code-block:: python
 
    ds = yt.load("galaxy0030")
    my_obj = ds.r[(100,'kpc'):(200,'kpc'), :, (100,'kpc'):(200,'kpc')]
@@ -259,7 +259,7 @@ The slicing would look like:
 The way to construct this at present would be, which is a bit cumbersome (there
 are other ways to do this, too, but this is the one that is the clearest):
 
-.. code-block::
+.. code-block:: python
 
    ds = yt.load("galaxy0030")
    left_edge = ds.domain_left_edge.in_units("kpc").copy()
@@ -273,7 +273,7 @@ are other ways to do this, too, but this is the one that is the clearest):
 
 Or for a slice:
 
-.. code-block::
+.. code-block:: python
 
    ds = yt.load("galaxy0030")
    my_obj = ds.r[(100,'kpc'):(200,'kpc'), (250,'kpc'), (100,'kpc'):(200,'kpc')]
@@ -281,7 +281,7 @@ Or for a slice:
 
 At present, we would have to:
 
-.. code-block::
+.. code-block:: python
 
    ds = yt.load("galaxy0030")
    left_edge = ds.domain_left_edge.in_units("kpc").copy()
@@ -298,7 +298,7 @@ At present, we would have to:
 Another example is how to make very terse computations, which still demonstrate
 reasonably clearly what they do:
 
-.. code-block::
+.. code-block:: python
 
    ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
    dd = ds.r[:,:,:]
@@ -310,14 +310,14 @@ This returns:::
 
 Note that we can also do:
 
-.. code-block::
+.. code-block:: python
 
    print ds.r[:,:,:].mean(["velocity_%s" % ax for ax in 'xyz'], weight="cell_mass")
 
 With the step functionality, this is also possible:
 
 
-.. code-block::
+.. code-block:: python
 
    g = ds.r[::128j,::128j,::128j]
    g["density"]

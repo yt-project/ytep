@@ -1,0 +1,280 @@
+YTEP-0025: The ytdata Frontend
+==============================
+
+Abstract
+--------
+
+Created: August 31, 2015
+Author: Britton Smith
+
+This YTEP proposes to make data products created by yt into loadable
+datasets.  Primarily, this will provide the following features:
+
+  * exporting geometric data containers to datasets that can be reloaded 
+    for further geometric selection and analysis.
+
+  * exporting plot-type data (projections, slices, profiles) so that they 
+    can be moved, reloaded, and manipulated to make new images.
+
+Status
+------
+
+Completed
+
+Project Management Links
+------------------------
+
+  * `yt PR #1718 <https://bitbucket.org/yt_analysis/yt/pull-requests/1718/wip-adding-ytdata-frontend>`_: 
+    the accepted pull request containing the full implementation
+
+Detailed Description
+--------------------
+
+Currently, yt's main data products (data containers, projections, slices,
+profiles) can only be used with their full functionality with the original 
+dataset loaded.  This is cumbersome when the datasets are so large that they 
+can only be hosted at remote facilities.  Creating publication-quality images 
+from such data either requires a cycle of tweaking, transferring, viewing, 
+and cursing or creating custom intermediate data products and plotting codes.
+
+This YTEP proposes to create functionality that will allow for the above 
+data products to be exported to a format that can be reloaded as a 
+full-fledged dataset.
+
+The proposed functionality consists of two main components: functionality to 
+save objects to disk and a frontend responsible for reloading the saved 
+objects.
+
+Exporting
+^^^^^^^^^
+
+A general function for saving array data associated with an open dataset 
+will be responsible for writing data to disk.  Data will be written to a 
+single hdf5 file.  Metadata associated with the dataset (i.e., current_time, 
+current_redshift, cosmological parameters, domain dimensions) will be saved as 
+attributes of the root file group.  By default, data will be saved to a "grid" 
+group with "units" attributes saved for each dataset.  This function is 
+implemented as ``save_as_dataset`` in ``yt/frontends/ytdata/utilities.py``
+and imported in the main yt import.
+
+The above function will be called by the user-facing functions,
+``YTDataContainer.save_as_dataset``, ``ProfileND.save_as_dataset``, and
+``FixedResolutionBuffer.save_as_dataset``, which will optionally take a
+filename and a list of fields.  If no field list is given, then the fields
+that have been queried and cached will be saved.  This function will also
+make sure that fields necessary for geometric selection (grid position/cell
+size, particle position) are also saved.  Mesh data will be saved to the
+"grid" group and particle data will be saved to groups named after the
+specific particle type.
+
+ytdata Frontend
+^^^^^^^^^^^^^^^
+
+This frontend will be responsible for reloading all data saved with the above 
+method.  As this data is of multiple types, this will actually be multiple 
+frontends living under the general "ytdata" heading.  All dataset types will
+inherit from the ``YTDataset`` class.  See :ref:`ytdataset-types` for a
+description of each class.  For each loaded dataset, ``ds``, in the ytdata
+frontend, ``ds.data`` will provide direct access to the field data.
+
+Geometrical Data Containers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Fields queried from data containers are returned as unordered, one-dimension 
+arrays and, thus, most closely resemble particle datasets.  All geometric data 
+containers are reloaded as type ``YTDataContainerDataset``, which is a particle 
+dataset type.  Mesh data is stored with the corresponding ``dx``, ``dy``, and
+``dz`` fields such that derived fields like ``cell_volume`` can be created.  All
+mesh data is aliased to the "gas" field type.  The ``data`` attribute associated
+with the loaded dataset will be a data container configured identically to the
+original data container.  In the case of ray data containers, this is not
+possible as a ray is defined by cells it intersects and not cells/particles
+enclosed within.  In this case, ``data`` will be an instance of
+``ds.all_data()``.  Field access through conventional data containers is
+also possible.
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   sphere = ds.sphere([0.5]*3, (10, "Mpc"))
+   sphere.save_as_dataset(fields=["density", "particle_mass"])
+
+   sds = yt.load("DD0046_sphere.h5")
+
+   # sphere with the same center and radius
+   print (sds.data)
+   print (sds.data["grid", "density"])
+   print (sds.data["gas", "density"])
+   print (sds.data["all", "particle_mass"])
+   print (sds.data["all", "particle_position_x"])
+
+   # create a data container
+   ad = sds.all_data()
+   print (ad["grid", "density"])
+   print (ad["all", "particle_mass"])
+
+Grid Data Containers
+%%%%%%%%%%%%%%%%%%%%
+
+Covering grids, smoothed covering grids, and arbitrary grids return 3D arrays 
+and so can be treated as uniform grid datasets.  After being saved with 
+``save_as_dataset``, these are reloaded as type ``YTGridDataset``, which is a uniform 
+grid that also supports particles.  ``FixedResolutionBuffer`` objects saved
+with ``save_as_dataset`` will be reloaded as this type as well, only 2D.  
+In this case, ``ds.data`` will give access to the multi-dimensional field arrays.
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   cg = ds.covering_grid(level=0, left_edge=[0.25]*3, dims=[16]*3)
+   cg.save_as_dataset("cg.h5", ["density", "particle_mass"])
+   cg_ds = yt.load("cg.h5")
+
+   # this has the dimensions of the original covering grid
+   print (cg_ds.data["gas", "density"]).shape
+
+   # access via geometric selection
+   ad = cg_ds.all_data()
+   print (ad["gas", "density"])
+   print (ad["all", "particle_mass"])
+
+   ray = cg_ds.ray(cg_ds.domain_left_edge, cg_ds.domain_right_edge)
+   print (ray["gas", "density"])
+
+   # FRBs
+   proj = ds.proj("density", "x", weight_field="density")
+   frb = proj.to_frb(1.0, (800, 800))
+   frb.save_as_dataset(fields=["density"])
+   fds = yt.load("DD0046_proj_frb.h5")
+   print (fds.data["density"])
+
+Projections and Slices
+%%%%%%%%%%%%%%%%%%%%%%
+
+Projections and slices are like two-dimensional particle datasets where the x and 
+y fields are "px" and "py".  They are reloaded as type ``YTProjectionDataset``, 
+which is a subclass of ``YTDataContainerDataset``.  Reloaded projection or slice
+data can be selected geometrically or fed into a ``ProjectionPlot`` or
+``SlicePlot``.  In these cases, ``ds.data`` is an instance of ``ds.all_data()``.
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   proj = ds.proj("density", "x", weight_field="density")
+   proj.save_as_dataset("proj.h5")
+
+   gds = yt.load("proj.h5")
+   print (gds.data["gas", "density"])
+   p = yt.ProjectionPlot(gds, "x", "density", weight_field="density")
+   p.save()
+
+The above would enable someone to make projections or slices of large datasets
+remotely, then download the exported dataset, and perfect the final image on a 
+local machine.  On and off-axis slices are implemented.  Off-axis projections
+are not implemented at this time as they use totally different machinery.  In
+this case, the best strategy would be to create an FRB and call
+``save_as_dataset`` on that.
+
+General Array Data
+%%%%%%%%%%%%%%%%%%
+
+Array data written with the base ``save_as_dataset`` function can be reloaded 
+as a non-spatial dataset.  Geometric selection is not possible, but the data 
+can be accessed through the ``YTNonspatialGrid`` object, ``ds.data``.  This object
+will only grab data from the hdf5 file and do further selection on it.
+
+.. code-block:: python
+
+   from yt.frontends.ytdata.api import save_as_dataset
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+
+   region = ds.box([0.25]*3, [0.75]*3)
+   sphere = ds.sphere(ds.domain_center, (10, "Mpc"))
+
+   my_data = {}
+   my_data["region_density"] = region["density"]
+   my_data["sphere_density"] = sphere["density"]
+   save_as_dataset(ds, "test_data.h5", my_data)
+
+   ads = yt.load("test_data.h5")
+   print (ads.data["region_density"])
+   print (ads.data["sphere_density"])
+
+Profiles
+%%%%%%%%
+
+1, 2, and 3D profiles are like 1, 2, and 3D uniform grid datasets where dx, dy, 
+and dz are different and have different dimensions.  ``YTProfileDataset``
+objects inherit from the ``YTNonspatialDataset`` class.  Similarly, the data
+can be accessed from ``ds.data``.  The x and y bins will be saved as 1D fields
+and fields named after the x and y bin field names will be saved with the same
+shape as the actual profile data.  This will allow for easy array slicing of the
+profile based on the bin fields.
+
+.. code-block:: python
+
+   ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+   profile = yt.create_profile(ds.all_data(), ["density", "temperature"],
+                               "cell_mass", weight_field=None)
+   profile.save_as_dataset()
+
+   pds = yt.load("DD0046_profile.h5")
+   # print the profile data
+   print pds.data["cell_mass"]
+   # print the x and y bins
+   print pds.data["x"], pds.data["y"]
+   # bin data shaped like the profile
+   print pds.data["density"]
+   print pds.data["temperature"]
+
+.. _ytdataset-types:
+
+ytdata Dataset Types
+^^^^^^^^^^^^^^^^^^^^
+
+========================== ========================== ========================= ============ ===================
+Name                        Inheritance               Purpose                   Dataset Type Geometric Selection
+========================== ========================== ========================= ============ ===================
+``YTDataset``              ``Dataset``                common functionality for  n/a          n/a
+                                                      other dataset types
+``YTDataContainerDataset`` ``YTDataset``              geometric data containers particle     yes
+                                                      (sphere, region, ray, 
+                                                      disk)
+``YTSpatialPlotDataset``   ``YTDataContainerDataset`` projections, slices,      particle     yes
+                                                      cutting planes
+``YTGridDataset``          ``YTDataset``              covering grids,           grid         yes
+                                                      arbitrary grids,          w/particles
+                                                      fixed resolution buffers
+``YTNonspatialDataset``    ``YTGridDataset``          general array data        grid         no
+``YTProfileDataset``       ``YTNonspatialDataset``    1, 2, and 3D profiles     grid         no
+========================== ========================== ========================= ============ ===================
+
+Backwards Compatibility
+-----------------------
+
+Currently, the only API breakage is in the ``AbsorptionSpectrum``.   
+Previously, it accepted a generic hdf5 file created by the ``LightRay``.  
+As per the `open PR <https://bitbucket.org/yt_analysis/yt/pull-requests/1718/wip-adding-ytdata-frontend>`_,
+the ``LightRay`` now writes out a yt.loadable dataset that is loaded by the 
+``AbsorptionSpectrum``.
+
+Other than the above, this is all new functionality and so has no backward 
+incompatibility.  One general change made to the yt codebase is that places
+that refer to ``index`` fields (``x``, ``y``, ``z``, ``dx``, etc.) now refer
+to ``(<fluid_type>, "dx")`` instead of ``("index", "dx")``.  This is to allow
+fields like ``cell_volume`` to be created from the ``("grid", "dx")`` field
+that, for the ytdata frontend, lives on disk instead of the version being
+generated by the geometry handler.  For actual grid datasets, we simply
+create an alias from ``(<fluid_type>, "dx")`` to ``("index", "dx")`` upon
+loading.  This should be completely transparent to the user.
+
+Alternatives
+------------
+
+We could create custom binary files for every type of plot and data 
+container.  We could also revive the concept of saving pickled objects 
+that was used somewhat in yt-2.
