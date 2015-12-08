@@ -1,15 +1,6 @@
 YTEP-0028: Alternative Unit Systems
 ===================================
 
-To write a YTEP, copy this template to the next numerical number, add it to the
-repository, and issue a pull request.  Discussion of the YTEP will occur either
-on the mailing list (for large-scale changes) or in the PR itself (small items,
-such as formatting).
-
-This document has been patterned after the Matplotlib Enhancement Proposal
-Template (found `here
-<https://github.com/matplotlib/matplotlib/wiki/MEPTemplate>`_.)
-
 Abstract
 --------
 
@@ -26,33 +17,48 @@ In Progress
 Project Management Links
 ------------------------
 
-Any external links to:
-
-  * Pull requests
-  * Related issues in the bug tracker
-  * Previous implementations
-  * Mailing list discussions or Google Docs
 
 Detailed Description
 --------------------
 
+Background
+++++++++++
+
 Currently, yt works with what may be called a "cgs+Ampere" unit system. That is, 
-all 
+all units can be expressible in a set of "base" units, which are by default 
+reducible to the "centimeter-gram-second" system of units, which the exception of
+SI current units which are reducible to "Amperes" (and are not reducible to anything
+within the cgs system). 
 
 
-For simplicity, it would make 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
+Using the Different Unit Systems
+++++++++++++++++++++++++++++++++
 
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
+There will be three ways which unit-aware objects in yt may be converted to a 
+different unit system. they are:
+
+.. rubric:: in_base, convert_to_base
+
+.. code-block:: python
+
+    a = YTArray([1.0, 2.0, 3.0], "km/hr")
+    print(a.in_base("imperial"))
+
+the output of which is: 
+
+.. code-block:: pycon
+
+    YTArray([ 0.91134442,  1.82268883,  2.73403325]) ft/s
+    
+A call to ``in_base`` or ``convert_to_base`` without specifying a unit system will
+convert to the default "cgs+Ampere" unit system. 
+
+.. rubric:: load
+
+.. rubric:: Cosmology
+
+The community will be notified about this feature enhancement via the mailing list 
+and appropriate social media accounts. 
 
 Backwards Compatibility
 -----------------------
@@ -65,7 +71,10 @@ are fully backwards-compatible.
 Alternatives
 ------------
 
-The only alternative discussed at this time was to make the unit system set 
-globally for a given yt session using the configuration system. Another option is
+The only alternative discussed up to this point was to set the unit system
+globally for a given yt session using the configuration system. The system proposed
+here allows for more fine-grained control at the level of individual objects, e.g.
+``Dataset``\s, ``YTArray``\s, and ``Cosmology`` objects. Another option is
 to make the default base units themselves configurable (instead of always being 
-"cgs+Ampere"). 
+"cgs+Ampere"). This is disfavored since it does not appear to add additional
+functionality beyond the currently proposed scheme, and 
