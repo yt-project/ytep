@@ -116,7 +116,7 @@ include both the axis ordering *and* the units that each takes.  The first axis
 is called ``length`` with units of ``m``, the second is called ``mass`` with
 units of ``g`` and the third is ``time`` with units of ``s``.
 
-ote that these could all be length units, but with different names -- this
+Note that these could all be length units, but with different names -- this
 would also be a custom coordinate system where the naming scheme can be
 modified.
 
@@ -165,3 +165,7 @@ required.  This is mostly likely to happen places like centers specified to
 objects.  However, in updating the tests, it seems that these are minimally
 invasive and should have only very minor impact on user-facing scripts and
 APIs.
+
+Work is in progress to ensure that an ``IndexArray`` with homogeneous units
+behaves the same as a ``YTArray`` with those same units.  This should minimize
+impact.
