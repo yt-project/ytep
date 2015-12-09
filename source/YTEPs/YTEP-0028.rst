@@ -17,6 +17,7 @@ In Progress
 Project Management Links
 ------------------------
 
+Once the PR is submitted its link will appear here. 
 
 Detailed Description
 --------------------
@@ -197,9 +198,11 @@ Using ``UnitSystems`` in Field Definitions
 ++++++++++++++++++++++++++++++++++++++++++
 
 In order for derived fields to take advantage of the different unit systems, it will be 
-necessary to change the units in the field definitions. 
+necessary to change the units in the field definitions, so that the derived fields may be returned
+in the units of the system specified when the dataset was loaded. 
 
-For example, in setting up the specific angular momentum fields in ``yt.fields.specific_angular_momentum``:
+For example, in setting up the specific angular momentum fields in ``yt.fields.specific_angular_momentum``,
+we would change the units thus:
 
 .. code-block:: python
 
@@ -222,7 +225,12 @@ For example, in setting up the specific angular momentum fields in ``yt.fields.s
 Notice that the field definition code itself has not been altered at all except that the ``units``
 keyword argument to ``registry.add_field`` has been changed from ``cm**2/s`` to 
 ``unit_system["specific_angular_momentum"]``, which will set the units for the field to whatever is
-appropriate for the unit system associated with the dataset. 
+appropriate for the unit system associated with the dataset.
+
+This will not be appropriate for all fields--some fields naturally belong in certain units regardless
+of the underlying system used. In the context of galaxy clusters, ``"entropy"`` is an example, which 
+naturally belongs in units of ``keV*cm**2``. Whether or not to change units should be evaluated on a 
+per-field basis.
 
 Special Handling for Magnetic Fields
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -251,6 +259,52 @@ where :math:`\mu_0 = 4\pi \times 10^{-7}~\rm{N/A^2}` is the vacuum permeability.
 order to handle the different cases of the magnetic field units for the two different systems,
 it is necessary to have field definitions which can take the different dimensionalities into
 account.
+
+The most fundamental change which is required will be to change the way aliases are handled for
+the magnetic field vector fields. Normally, the dataset field and the aliased field will have the
+same dimensions. For example, in the case of a FLASH dataset, ``("flash","magx")`` and its alias
+``("gas","magnetic_field_x")`` will have the same dimensions of ``magnetic_field_cgs``, which are
+``sqrt((mass))/(sqrt((length))*(time))``. This is handled by specifying the alias in the
+``known_other_fields`` atttribute of the ``FieldInfoContainer`` like this:
+
+.. code-block:: python
+
+    class FLASHFieldInfo(FieldInfoContainer):
+        known_other_fields = (
+            ...
+            ("magx", (b_units, ["magnetic_field_x"], "B_x")),
+            ("magy", (b_units, ["magnetic_field_y"], "B_y")),
+            ("magz", (b_units, ["magnetic_field_z"], "B_z")),
+            ...
+        )
+
+Where the alias is the second item in the 3-element tuple after the field name. However, we may want
+to convert from a cgs unit system to an MKS unit system, which would require changing the dimensions of the 
+alias ``"magnetic_field_x"`` (while leaving the units and dimensions of the dataset field ``"magx"`` 
+intact). The solution is to remove the alias from ``known_other_fields`` and supply a helper function
+which creates the aliases, taking into account the specified unit system:
+
+.. code-block:: python
+
+    class FLASHFieldInfo(FieldInfoContainer):
+        known_other_fields = (
+            ...
+            ("magx", (b_units, [], "B_x")), # Note the alias has been removed
+            ("magy", (b_units, [], "B_y")),
+            ("magz", (b_units, [], "B_z")),
+            ...
+        )
+
+        def setup_fluid_fields(self):
+            from yt.fields.magnetic_field import \
+                setup_magnetic_field_aliases
+            ...
+            setup_magnetic_field_aliases(self, "flash", ["mag%s" % ax for ax in "xyz"])
+
+Again, this will have to be evaluated on a per-frontend basis as to what is most appropriate for the
+handling of the magnetic field units. The definitions for other magnetic-related fields such as 
+``"magnetic_pressure"`` and ``"alfven_speed"`` will also be modified to ensure that the units are
+handled properly for the different systems. 
 
 Other Ways to Use the Unit Systems
 ++++++++++++++++++++++++++++++++++
