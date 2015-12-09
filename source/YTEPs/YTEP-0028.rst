@@ -331,7 +331,7 @@ Alternatives
 The only alternative discussed up to this point was to set the unit system
 globally for a given yt session using the configuration system. The system proposed
 here allows for more fine-grained control at the level of individual objects, e.g.
-``Dataset``\s, ``YTArray``\s, and ``Cosmology`` objects. Another option is
-to make the default base units themselves configurable (instead of always being 
-"cgs+Ampere"). This is disfavored since it does not appear to add additional
-functionality beyond the currently proposed scheme, and 
+``Dataset``\s, ``YTArray``\s, and ``Cosmology`` objects, which should be sufficient for most (if 
+not all) purposes. Another option is to make the default base units themselves configurable. 
+This is disfavored since it does not appear to add additional functionality beyond the currently 
+proposed scheme, and would result in more widespread changes to the code base. 
