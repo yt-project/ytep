@@ -42,6 +42,12 @@ These methods are useful, but they require the user to convert to MKS "by hand" 
 to work within the MKS system (or another alternative unit system) which is more appropriate for their
 datasets and calculations. 
 
+This YTEP outlines a proposal for allowing different unit systems to be used in yt. The core of the 
+proposal is to allow this functionality on a per-object basis: namely, changing the unit system at the level
+of individual datasets, units, and unitful quantities, instead of on a global scale. The advantages of this 
+approach are that it is relatively simple, is easily extendable, and makes only minimal changes to the 
+fundamental code base. 
+
 The ``UnitSystem`` Object
 +++++++++++++++++++++++++
 
@@ -194,22 +200,65 @@ account.
 Other Ways to Use the Unit Systems
 ++++++++++++++++++++++++++++++++++
 
-There will be four different ways which unit-aware objects in yt may be converted to a 
+There will be other ways in which unit-aware objects in yt may be converted to a 
 different unit system. they are:
 
-.. rubric:: ``in_base``, ``convert_to_base`` methods
+.. rubric:: ``in_base``, ``convert_to_base``, ``get_base_equivalent`` methods
+
+These three methods, which currently convert unitful quantities and units to the yt base units
+of cgs (plus Ampere if the dimensionality includes ``current_mks``), will be modified to include
+a ``unit_system`` keyword argument, which will be set to ``"cgs"`` by default. The purpose of
+this keyword argument is to allow switching between different unit systems for ``YTArrays``, 
+``YTQuantities``, and ``Unit`` objects. This keyword argument may be set to a string corresponding
+to the name of the desired unit system. Some examples:
 
 .. code-block:: python
 
     a = YTArray([1.0, 2.0, 3.0], "km/hr")
     print(a.in_base("imperial"))
 
-the output of which is: 
-
 .. code-block:: pycon
 
     YTArray([ 0.91134442,  1.82268883,  2.73403325]) ft/s
     
+.. code-block:: python
+
+    b = YTQuantity(12., "g/cm**3")
+    b.convert_to_base("galactic")
+    print(b)
+    
+.. code-block:: pycon
+
+    1.7730691071344677e+32 Msun/kpc**3
+
+.. code-block:: python
+
+    c = YTQuantity(100., "mile/hr")
+    print(c.units.get_base_equivalent("mks"))
+
+.. code-block:: pycon
+
+    m/s
+
+Alternatively, a ``Dataset`` object may be passed as the ``unit_system`` argument, which will
+convert to the base code units of that dataset:
+
+.. code-block:: python
+
+    import yt
+    ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
+    sp = ds.sphere("c", (30., "kpc"))
+    print(sp["density"].in_base(ds))
+
+.. code-block:: pycon
+
+    [    744.93731689     717.57232666     682.97546387 ...,   40881.68359375
+        57788.68359375  397754.90625   ] code_mass/code_length**3
+
+Note that this will only work if the ``YTArray``, ``YTQuantity``, or ``Unit`` in question "knows"
+about those code units, e.g., it is from a data container from that ``Dataset`` or was initialized
+using ``ds.arr``. 
+
 A call to ``in_base`` or ``convert_to_base`` without specifying a unit system will
 convert to the default "cgs" unit system:
 
@@ -221,7 +270,8 @@ convert to the default "cgs" unit system:
 
     YTArray([ 27.77777778,  55.55555556,  83.33333333]) cm/s
 
-This is the current behavior. 
+which is the current behavior of the code, ensuring backwards-compatibility. The behavior 
+of the cgs and MKS-specific methods (e.g., ``in_cgs``, ``in_mks``, etc.) will not be modified. 
 
 .. rubric:: ``in_units``, ``convert_to_units`` methods
 
@@ -245,7 +295,7 @@ unit system employed by the dataset.
 
 .. rubric:: ``Cosmology`` object
 
-Current, the ``Cosmology`` object returns all quantities in cgs units. The proposed changes
+Currently, the ``Cosmology`` object returns all quantities in cgs units. The proposed changes
 will add a new keyword argument, ``unit_system``, which will be a string that corresponds to 
 the name identifier for the desired unit system, with a default value of ``"cgs"``. 
 
