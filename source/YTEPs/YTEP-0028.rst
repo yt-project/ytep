@@ -136,7 +136,62 @@ The main user-facing interface to the different unit systems will be through the
 function. ``load`` will take a new keyword argument, ``unit_system``, which will be a
 string that corresponds to the name identifier for the desired unit system, with a default
 value of ``"cgs"``. The main effect of changing the unit system will be to return all aliased 
-fields and derived fields in the units of the chosen system. 
+fields and derived fields in the units of the chosen system. For example, to change the units
+to MKS in a FLASH dataset:
+
+.. code-block:: python
+
+    ds = yt.load("GasSloshing/sloshing_nomag2_hdf5_plt_cnt_0100", unit_system="mks")
+    sp = ds.sphere("c", (100.,"kpc"))
+    print(sp["density"])
+    print(sp["flash","dens"])
+    print(sp["kinetic_energy"])
+    print(sp["angular_momentum_x"])
+
+.. code-block:: pycon
+
+    [  1.30865584e-23   1.28922012e-23   1.30364287e-23 ...,   1.61943869e-23
+       1.61525279e-23   1.59566008e-23] kg/m**3
+
+    [  1.30865584e-26   1.28922012e-26   1.30364287e-26 ...,   1.61943869e-26
+       1.61525279e-26   1.59566008e-26] code_mass/code_length**3
+
+    [  6.37117204e-13   6.12785535e-13   6.20621019e-13 ...,   3.12205509e-13
+       3.01537806e-13   3.39879277e-13] Pa
+
+    [ -3.97578436e+63  -3.92971077e+63  -3.95375204e+63 ...,   2.39040654e+63
+       2.39880417e+63   2.44245756e+63] kg*m**2/s
+
+Note that in this example, ``"density"`` is an alias to the FLASH field ``("flash","dens")``, and it
+has had its units converted to MKS, but the original FLASH field remains in its default code units.
+``"kinetic_energy"`` and ``"angular_momentum_x"`` are derived fields which have also had their units
+converted. 
+
+Another option is to express everything in terms of code units, which may be achieved by setting
+``unit_system="code"``:
+
+.. code-block:: python
+
+    ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030", unit_system="code")
+    sp = ds.sphere("c", (30., "kpc"))
+    print(sp["density"])
+    print(sp["kinetic_energy"])
+    print(sp["angular_momentum_x"])
+    
+.. code-block:: pycon
+
+    [    744.93731689     717.57232666     682.97546387 ...,   40881.68359375
+       57788.68359375  397754.90625   ] code_mass/code_length**3
+
+    [    97150.95501972     91893.64007627     85923.44662925 ...,
+      11686694.21560157  16358988.90006877  79837013.8427877 ] code_mass/(code_length*code_time**2)
+
+    [ -1.17917130e-10  -1.05648103e-10  -9.26664470e-11 ...,   2.05149702e-09
+       2.03607319e-09   6.72304619e-09] code_length**2*code_mass/code_time
+
+Currently, the plan is to have all frontends allow the user to set ``unit_system`` in the call to
+``load``, but this should be evaluated on a per-frontend basis. For some frontends, it may be more 
+appropriate to set the unit system explicitly, whether to ``"cgs"`` or some other system.
 
 Using ``UnitSystems`` in Field Definitions
 ++++++++++++++++++++++++++++++++++++++++++
@@ -219,7 +274,7 @@ to the name of the desired unit system. Some examples:
 
 .. code-block:: pycon
 
-    YTArray([ 0.91134442,  1.82268883,  2.73403325]) ft/s
+    [ 0.91134442,  1.82268883,  2.73403325] ft/s
     
 .. code-block:: python
 
@@ -245,7 +300,6 @@ convert to the base code units of that dataset:
 
 .. code-block:: python
 
-    import yt
     ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
     sp = ds.sphere("c", (30., "kpc"))
     print(sp["density"].in_base(ds))
@@ -253,7 +307,7 @@ convert to the base code units of that dataset:
 .. code-block:: pycon
 
     [    744.93731689     717.57232666     682.97546387 ...,   40881.68359375
-        57788.68359375  397754.90625   ] code_mass/code_length**3
+       57788.68359375  397754.90625   ] code_mass/code_length**3
 
 Note that this will only work if the ``YTArray``, ``YTQuantity``, or ``Unit`` in question "knows"
 about those code units, e.g., it is from a data container from that ``Dataset`` or was initialized
@@ -264,11 +318,12 @@ convert to the default "cgs" unit system:
 
 .. code-block:: python
 
+    a = YTArray([1.0, 2.0, 3.0], "km/hr")
     print(a.in_base())
     
 .. code-block:: pycon
 
-    YTArray([ 27.77777778,  55.55555556,  83.33333333]) cm/s
+    [ 27.77777778,  55.55555556,  83.33333333] cm/s
 
 which is the current behavior of the code, ensuring backwards-compatibility. The behavior 
 of the cgs and MKS-specific methods (e.g., ``in_cgs``, ``in_mks``, etc.) will not be modified. 
@@ -284,14 +339,15 @@ units, instead of doing this:
     
     ds.domain_left_edge.in_units("cm")
 
-the recommended behavior would be this:
+the new recommended implemenation would be this instead:
 
 .. code-block:: python
 
     ds.domain_left_edge.in_units(ds.unit_system["length"])
 
 which would allow ``domain_left_edge`` to be converted to the units of length in the
-unit system employed by the dataset. 
+unit system employed by the dataset. This, of course, depends on the context of the situation and the
+needs of the developer and/or user(s). 
 
 .. rubric:: ``Cosmology`` object
 
