@@ -217,10 +217,10 @@ we would change the units thus:
 
         ...
 
-    registry.add_field((ftype, "specific_angular_momentum_x"),
-                       function=_specific_angular_momentum_x,
-                       units=unit_system["specific_angular_momentum"],
-                       validators=[ValidateParameter("center")])
+        registry.add_field((ftype, "specific_angular_momentum_x"),
+                           function=_specific_angular_momentum_x,
+                           units=unit_system["specific_angular_momentum"],
+                           validators=[ValidateParameter("center")])
 
 Notice that the field definition code itself has not been altered at all except that the ``units``
 keyword argument to ``registry.add_field`` has been changed from ``cm**2/s`` to 
