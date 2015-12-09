@@ -7,7 +7,7 @@ Abstract
 Created: December 8, 2015
 Author: John ZuHone, Nathan Goldbaum, Matthew Turk
 
-This YTEP outlines a plan to support unit bases for yt. 
+This YTEP outlines a plan to support alternative unit systems for yt. 
 
 Status
 ------
@@ -24,20 +24,180 @@ Detailed Description
 Background
 ++++++++++
 
-Currently, yt works with what may be called a "cgs+Ampere" unit system. That is, 
-all units can be expressible in a set of "base" units, which are by default 
-reducible to the "centimeter-gram-second" system of units, which the exception of
-SI current units which are reducible to "Amperes" (and are not reducible to anything
-within the cgs system). 
+Currently, yt works with a "cgs"-based unit system. That is, all units can be expressible
+in a set of "base" units, which are reducible to the "centimeter-gram-second" system of 
+units. There is one exception to this rule, that of SI current units which are not reducible 
+to anything within the cgs system, and have a base unit of Amperes.
+ 
+In the current state of the code, there is minimal support for other unit systems. The extent
+of this support are the methods for converting unitful quantities (``YTArrays``, ``YTQuantities``)
+and units themselves to the SI or "MKS" (meter-kilogram-second) system. These are:
 
+* ``in_mks``: Takes a ``YTArray`` or ``YTQuantity`` and returns a new one in equivalent MKS base units.
+* ``convert_to_mks``: Converts the units of a ``YTArray`` or ``YTQuantity`` into the equivalent MKS base units.
+* ``get_mks_equivalent``: Takes a ``Unit`` object and returns the equivalent MKS units.
 
-Using the Different Unit Systems
-++++++++++++++++++++++++++++++++
+These methods are useful, but they require the user to convert to MKS "by hand" from the default
+"cgs" unit system used by yt, within which all calculations are carried out. Some users would prefer 
+to work within the MKS system (or another alternative unit system) which is more appropriate for their
+datasets and calculations. 
 
-There will be three ways which unit-aware objects in yt may be converted to a 
+The ``UnitSystem`` Object
++++++++++++++++++++++++++
+
+Managing different unit systems requires the creation of a new ``UnitSystem`` class. A given ``UnitSystem``
+object will consist of dict-like access to setting and getting default units with the keys corresponding
+to dimensions, whether strings (e.g., ``"velocity"``) or SymPy ``Symbol`` objects registered in 
+``yt.units.dimensions`` (e.g., ``yt.units.dimensions.current_mks``). Initialization of a ``UnitSystem``
+object requires setting the name of the system, as well as a set of base units:
+
+.. code-block:: python
+
+    cgs_unit_system = UnitSystem("cgs", "cm", "g", "s", "K", "radian")
+
+This will initialize the ``UnitSystem`` along with a set of base units. The required arguments are, in order:
+
+* ``name``: The shorthand name for the ``UnitSystem``.
+* ``length_unit``: The base length unit for this system.
+* ``mass_unit``: The base mass unit for this system.
+* ``time_unit``: The base time unit for this system.
+* ``temperature_unit``: The base temperature unit for this system.
+* ``angle_unit``: The base angular unit for this system.
+
+For MKS-like unit systems, an additional base unit for ``current_mks`` can be supplied:
+
+.. code-block:: python
+
+    mks_unit_system = UnitSystem("mks", "m", "kg", "s", "K", "radian",
+                                 current_mks_unit="A")
+
+The initialization of the ``UnitSystem`` will also add it to a ``unit_system_registry`` dictionary which
+may be queried for a given system by its name:
+ 
+.. code-block:: python
+
+    from yt import unit_system_registry
+    imperial_unit_system = unit_system_registry["imperial"]
+
+Once the ``UnitSystem`` exists, new unit defintions for 
+specific dimensions may be added in two ways. The first is to explicitly set a unit for a specific dimension:
+
+.. code-block:: python
+    
+    from yt.units.import dimensions
+    mks_unit_system["pressure"] = "Pa"
+    mks_unit_system[dimensions.energy] = "J" 
+    
+So, whenever yt asks for the unit corresponding to a given dimensionality (such as in a field definition),
+the unit specified here will be returned. The second way to add new units to the system is simply by 
+querying for the units for a particular dimension, without having set them previously. The effect of this
+is to set the units for that specific dimension by deriving them from the base units:
+
+.. code-block:: python
+
+    print(mks_unit_system["angular_momentum"]) # We haven't set a unit for this yet!
+    
+which will return ``kg*m**2/s`` because it will be derived from the base units of ``m``, ``kg``, and ``s``.
+
+Several unit systems will already be supplied for use with yt. They will be:
+
+* ``"cgs"``: Centimeters-grams-seconds unit system, with base of ``(cm, g, s, K, radian)``.
+* ``"mks"``: Meters-kilograms-seconds unit system, with base of ``(m, kg, s, K, radian)``.
+* ``"imperial"``: Imperial unit system, with base of ``(mile, lbm, s, R, radian)``.
+* ``"galactic"``: "Galactic" unit system, with base of ``(kpc, Msun, Myr, K, radian)``.
+* ``"solar"``: "Solar" unit system, with base of ``(AU, Mearth, yr, K, radian)``. 
+
+Users may create new ``UnitSystem`` objects on the fly, which will be added to the ``unit_system_registry``
+automatically as they are created. Both of these will be accessible from the top-level ``yt`` module. 
+
+``"code" UnitSystems``
+~~~~~~~~~~~~~~~~~~~~~~
+
+When a dataset is instantiated, a ``UnitSystem`` object corresponding to the code units for 
+that dataset will be created and added to the ``unit_system_registry``, where the name will be
+the string representation of the ``Dataset`` object:
+
+.. code-block:: python
+     
+    from yt import unit_system_registry, load
+    ds = load("GasSloshing/sloshing_nomag2_hdf5_plt_cnt_0100")
+    sloshing_unit_system = unit_system_registry[str(ds)]
+
+Unit Systems and ``Dataset`` objects
+++++++++++++++++++++++++++++++++++++
+
+The main user-facing interface to the different unit systems will be through the ``load``
+function. ``load`` will take a new keyword argument, ``unit_system``, which will be a
+string that corresponds to the name identifier for the desired unit system, with a default
+value of ``"cgs"``. The main effect of changing the unit system will be to return all aliased 
+fields and derived fields in the units of the chosen system. 
+
+Using ``UnitSystems`` in Field Definitions
+++++++++++++++++++++++++++++++++++++++++++
+
+In order for derived fields to take advantage of the different unit systems, it will be 
+necessary to change the units in the field definitions. 
+
+For example, in setting up the specific angular momentum fields in ``yt.fields.specific_angular_momentum``:
+
+.. code-block:: python
+
+    def setup_angular_momentum(registry, ftype = "gas", slice_info = None):
+        unit_system = registry.ds.unit_system
+        def _specific_angular_momentum_x(field, data):
+            xv, yv, zv = obtain_velocities(data, ftype)
+            rv = obtain_rvec(data)
+            rv = np.rollaxis(rv, 0, len(rv.shape))
+            rv = data.ds.arr(rv, input_units = data["index", "x"].units)
+            return yv * rv[...,2] - zv * rv[...,1]
+
+        ...
+
+    registry.add_field((ftype, "specific_angular_momentum_x"),
+                       function=_specific_angular_momentum_x,
+                       units=unit_system["specific_angular_momentum"],
+                       validators=[ValidateParameter("center")])
+
+Notice that the field definition code itself has not been altered at all except that the ``units``
+keyword argument to ``registry.add_field`` has been changed from ``cm**2/s`` to 
+``unit_system["specific_angular_momentum"]``, which will set the units for the field to whatever is
+appropriate for the unit system associated with the dataset. 
+
+Special Handling for Magnetic Fields
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Making magnetic fields compatible with different unit systems requires special handling. The
+reason for this is that the units for the magnetic field in the cgs and MKS systems are 
+not reducible to one another. Superficially, it would appear that they are, since the units 
+of the magnetic field in the cgs and MKS system are gauss (:math:`\rm{G}`) and tesla 
+(:math:`\rm{T}`), respectively, and numerically :math:`1~\rm{G} = 10^{-4}~\rm{T}`. However, 
+if we examine the base units, we find that they have different dimensions:
+
+.. math::
+
+    \rm{1~G = 1~\frac{\sqrt{g}}{\sqrt{cm}\cdot{s}}} \\
+    \rm{1~T = 1~\frac{kg}{A\cdot{s^2}}}
+
+It is easier to see the difference between the dimensionality of the magnetic field in the two
+systems in terms of the definition of the magnetic pressure:
+
+.. math::
+
+    p_B = \frac{B^2}{8\pi}~\rm{(cgs)} \\
+    p_B = \frac{B^2}{2\mu_0}~\rm{(MKS)}
+
+where :math:`\mu_0 = 4\pi \times 10^{-7}~\rm{N/A^2}` is the vacuum permeability. Therefore, in 
+order to handle the different cases of the magnetic field units for the two different systems,
+it is necessary to have field definitions which can take the different dimensionalities into
+account.
+
+Other Ways to Use the Unit Systems
+++++++++++++++++++++++++++++++++++
+
+There will be four different ways which unit-aware objects in yt may be converted to a 
 different unit system. they are:
 
-.. rubric:: in_base, convert_to_base
+.. rubric:: ``in_base``, ``convert_to_base`` methods
 
 .. code-block:: python
 
@@ -51,19 +211,66 @@ the output of which is:
     YTArray([ 0.91134442,  1.82268883,  2.73403325]) ft/s
     
 A call to ``in_base`` or ``convert_to_base`` without specifying a unit system will
-convert to the default "cgs+Ampere" unit system. 
+convert to the default "cgs" unit system:
 
-.. rubric:: load
+.. code-block:: python
 
-.. rubric:: Cosmology
+    print(a.in_base())
+    
+.. code-block:: pycon
+
+    YTArray([ 27.77777778,  55.55555556,  83.33333333]) cm/s
+
+This is the current behavior. 
+
+.. rubric:: ``in_units``, ``convert_to_units`` methods
+
+The behaviors of these methods will not be modified, but developers are encouraged to 
+take advantage of the unit systems when using them in other parts of the code. For 
+example, if it is known that an array needs to be converted to a specific set of length 
+units, instead of doing this:
+
+.. code-block:: python
+    
+    ds.domain_left_edge.in_units("cm")
+
+the recommended behavior would be this:
+
+.. code-block:: python
+
+    ds.domain_left_edge.in_units(ds.unit_system["length"])
+
+which would allow ``domain_left_edge`` to be converted to the units of length in the
+unit system employed by the dataset. 
+
+.. rubric:: ``Cosmology`` object
+
+Current, the ``Cosmology`` object returns all quantities in cgs units. The proposed changes
+will add a new keyword argument, ``unit_system``, which will be a string that corresponds to 
+the name identifier for the desired unit system, with a default value of ``"cgs"``. 
+
+.. code-block:: python
+
+    cosmo = Cosmology(unit_system="galactic")
+
+Alternatively, ``unit_system`` may be set to a ``Dataset`` object to use the code units of
+that dataset:
+
+.. code-block:: python 
+    
+    ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
+    cosmo = Cosmology(unit_system=ds)
+
+Notifying the Community
++++++++++++++++++++++++
 
 The community will be notified about this feature enhancement via the mailing list 
-and appropriate social media accounts. 
+and appropriate social media accounts. Appropriate documentation of this feature will be added.
 
 Backwards Compatibility
 -----------------------
 
-Since the default unit system will remain "cgs+Ampere", and the ``unit_system``
+Since the base unit system for all yt units will remain cgs, and the ``unit_system``
 keyword will always default to ``"cgs"`` for loading datasets, setting up 
 ``Cosmology`` objects, and unit conversions of arrays, the changes as proposed
 are fully backwards-compatible. 
