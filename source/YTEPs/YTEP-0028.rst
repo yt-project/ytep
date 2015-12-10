@@ -46,8 +46,8 @@ datasets and calculations.
 This YTEP outlines a proposal for allowing different unit systems to be used in yt. The core of the 
 proposal is to allow this functionality on a per-object basis: namely, changing the unit system at the level
 of individual datasets, units, and unitful quantities, instead of on a global scale. The advantages of this 
-approach are that it is relatively simple, is easily extendable, and makes only minimal changes to the 
-fundamental code base. 
+approach are that it is relatively simple, is easily extendable, and makes only a fairly small number of 
+changes to the fundamental code base. 
 
 The ``UnitSystem`` Object
 +++++++++++++++++++++++++
@@ -225,7 +225,9 @@ we would change the units thus:
 Notice that the field definition code itself has not been altered at all except that the ``units``
 keyword argument to ``registry.add_field`` has been changed from ``cm**2/s`` to 
 ``unit_system["specific_angular_momentum"]``, which will set the units for the field to whatever is
-appropriate for the unit system associated with the dataset.
+appropriate for the unit system associated with the dataset. The ``unit_system`` object may be queried
+with either SymPy ``symbol`` objects in ``yt.units.dimensions`` or strings corresponding to the variable
+names of those objects.
 
 This will not be appropriate for all fields--some fields naturally belong in certain units regardless
 of the underlying system used. In the context of galaxy clusters, ``"entropy"`` is an example, which 
@@ -391,13 +393,14 @@ units, instead of doing this:
 
 .. code-block:: python
     
-    ds.domain_left_edge.in_units("cm")
+    p_th = YTQuantity(1.0, "Pa")
+    p_th.in_units("erg/cm**3")
 
-the new recommended implemenation would be this instead:
+we may instead use the more general
 
 .. code-block:: python
 
-    ds.domain_left_edge.in_units(ds.unit_system["length"])
+    p_th.in_units(ds.unit_system["pressure"])
 
 which would allow ``domain_left_edge`` to be converted to the units of length in the
 unit system employed by the dataset. This, of course, depends on the context of the situation and the
