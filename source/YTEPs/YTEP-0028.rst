@@ -384,28 +384,6 @@ convert to the default "cgs" unit system:
 which is the current behavior of the code, ensuring backwards-compatibility. The behavior 
 of the cgs and MKS-specific methods (e.g., ``in_cgs``, ``in_mks``, etc.) will not be modified. 
 
-.. rubric:: ``in_units``, ``convert_to_units`` methods
-
-The behaviors of these methods will not be modified, but developers are encouraged to 
-take advantage of the unit systems when using them in other parts of the code. For 
-example, if it is known that an array needs to be converted to a specific set of length 
-units, instead of doing this:
-
-.. code-block:: python
-    
-    p_th = YTQuantity(1.0, "Pa")
-    p_th.in_units("erg/cm**3")
-
-we may instead use the more general
-
-.. code-block:: python
-
-    p_th.in_units(ds.unit_system["pressure"])
-
-which would allow ``domain_left_edge`` to be converted to the units of length in the
-unit system employed by the dataset. This, of course, depends on the context of the situation and the
-needs of the developer and/or user(s). 
-
 .. rubric:: ``Cosmology`` object
 
 Currently, the ``Cosmology`` object returns all quantities in cgs units. The proposed changes
