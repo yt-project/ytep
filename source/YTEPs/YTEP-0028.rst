@@ -113,6 +113,8 @@ Several unit systems will already be supplied for use with yt. They will be:
 * ``"imperial"``: Imperial unit system, with base of ``(mile, lbm, s, R, radian)``.
 * ``"galactic"``: "Galactic" unit system, with base of ``(kpc, Msun, Myr, K, radian)``.
 * ``"solar"``: "Solar" unit system, with base of ``(AU, Mearth, yr, K, radian)``. 
+* ``"planck"``: Planck natural units (:math:`\hbar = c = G = k_B = 1`), with base of ``(l_pl, m_pl, t_pl, T_pl, radian)``. 
+* ``"geometrized"``: Geometrized natural units (:math:`c = G = 1`), with base of ``(l_geom, m_geom, t_geom, K, radian)``. 
 
 Users may create new ``UnitSystem`` objects on the fly, which will be added to the ``unit_system_registry``
 automatically as they are created. Both of these will be accessible from the top-level ``yt`` module. 
