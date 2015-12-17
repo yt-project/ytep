@@ -60,7 +60,7 @@ object requires setting the name of the system, as well as a set of base units:
 
 .. code-block:: python
 
-    cgs_unit_system = UnitSystem("cgs", "cm", "g", "s", "K", "radian")
+    cgs_unit_system = UnitSystem("cgs", "cm", "g", "s")
 
 This will initialize the ``UnitSystem`` along with a set of base units. The required arguments are, in order:
 
@@ -68,14 +68,20 @@ This will initialize the ``UnitSystem`` along with a set of base units. The requ
 * ``length_unit``: The base length unit for this system.
 * ``mass_unit``: The base mass unit for this system.
 * ``time_unit``: The base time unit for this system.
-* ``temperature_unit``: The base temperature unit for this system.
-* ``angle_unit``: The base angular unit for this system.
 
-For MKS-like unit systems, an additional base unit for ``current_mks`` can be supplied:
+The optional arguments are:
+
+* ``temperature_unit``: The base temperature unit for this system. Defaults to ``"K"`` (Kelvin).
+* ``angle_unit``: The base angular unit for this system. Defaults to ``"rad"`` (radians).
+* ``current_mks``: The base angular unit for current in an MKS-like system. Defaults to ``None``. 
+
+If need be, the base units for temperature, angle, and MKS current can be supplied:
 
 .. code-block:: python
 
-    mks_unit_system = UnitSystem("mks", "m", "kg", "s", "K", "radian",
+    mks_unit_system = UnitSystem("mks", "m", "kg", "s", 
+                                 temperature_unit="K", 
+                                 angle_unit="radian",
                                  current_mks_unit="A")
 
 The initialization of the ``UnitSystem`` will also add it to a ``unit_system_registry`` dictionary which
@@ -108,8 +114,9 @@ which will return ``kg*m**2/s`` because it will be derived from the base units o
 
 Several unit systems will already be supplied for use with yt. They will be:
 
-* ``"cgs"``: Centimeters-grams-seconds unit system, with base of ``(cm, g, s, K, radian)``.
-* ``"mks"``: Meters-kilograms-seconds unit system, with base of ``(m, kg, s, K, radian)``.
+* ``"cgs"``: Centimeters-grams-seconds unit system, with base of ``(cm, g, s, K, radian)``. Uses the Gaussian
+  normalization for electromagnetic units. 
+* ``"mks"``: Meters-kilograms-seconds unit system, with base of ``(m, kg, s, K, radian, A)``.
 * ``"imperial"``: Imperial unit system, with base of ``(mile, lbm, s, R, radian)``.
 * ``"galactic"``: "Galactic" unit system, with base of ``(kpc, Msun, Myr, K, radian)``.
 * ``"solar"``: "Solar" unit system, with base of ``(AU, Mearth, yr, K, radian)``. 
