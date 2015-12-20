@@ -243,6 +243,36 @@ of the underlying system used. In the context of galaxy clusters, ``"entropy"`` 
 naturally belongs in units of ``keV*cm**2``. Whether or not to change units should be evaluated on a 
 per-field basis.
 
+For users adding their own derived fields, there will be two ways to take advantage of the new unit 
+systems functionality. If derived fields are being created from a dataset using ``ds.add_field``, they
+can set up the units in a similar way as above:
+
+.. code-block:: python
+
+    def _density_squared(field, data):
+        return data["density"]*data["density"]
+    ds.add_field(("gas","density_squared"), function=_density_squared, units=ds.unit_system["density"]**2)
+
+If using ``yt.add_field``, however, it will be necessary to set ``units="auto"`` in the call to ``add_field``.
+To provide an extra layer of error handling for this case, a ``dimensions`` keyword argument will be added
+to the ``DerivedField`` initialization, which will only be used if ``units="auto"``, and will be used to
+check that the dimensions supplied to ``add_field`` and the dimensions of the ``YTArray`` in the field definition
+are the same: 
+
+.. code-block:: python
+
+    from yt.units.dimensions import temperature
+    
+    inverse_temp = 1/temperature
+    
+    def _inv_temperature(field, data):
+        return 1.0/data["temperature"]
+    yt.add_field(("gas","inv_temperature"), function=_inv_temperature, units="auto", 
+                 dimensions=inverse_temp)
+                 
+If one does not supply a ``dimensions`` argument when ``units="auto"``, or if the dimensions are incompatible,
+errors will be thrown. 
+
 Special Handling for Magnetic Fields
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
