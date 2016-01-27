@@ -1,76 +1,131 @@
 YTEP-0029: Extension Packages
 =============================
 
-To write a YTEP, copy this template to the next numerical number, add it to the
-repository, and issue a pull request.  Discussion of the YTEP will occur either
-on the mailing list (for large-scale changes) or in the PR itself (small items,
-such as formatting).
-
-This document has been patterned after the Matplotlib Enhancement Proposal
-Template (found `here
-<https://github.com/matplotlib/matplotlib/wiki/MEPTemplate>`_.)
-
 Abstract
 --------
 
-Created: November 25, 2012
-Author: Your Name
+Created: January 25, 2016
 
-This section should contain one or two sentences describing the proposed
-change.  It should not contain detailed design information, but it can contain
-background information.
+Author: Matthew Turk
 
-This should contain a date
+The yt project is not the same as the yt codebase.  However, the bundling of
+analysis modules and maintaining a monolithic repository tends to blur the
+distinction between the two.  This YTEP is an attempt to identify how we can
+make the codebase more friendly to extension modules, and to encourage an
+ecosystem of independently developed packages that utilize yt.
 
 Status
 ------
 
-Status should be one of the following:
-
- #. Proposed
- #. Completed
- #. In Progress
- #. Declined
-
-YTEPs do not need to pass through every stage.
+This YTEP is proposed.
 
 Project Management Links
 ------------------------
 
-Any external links to:
-
-  * Pull requests
-  * Related issues in the bug tracker
-  * Previous implementations
-  * Mailing list discussions or Google Docs
+There has been discussion on yt-dev about this, but due to Dreamhost's constant
+problems with archiving mail, they may be gone forever, about which I will
+refrain from editorializing here.
 
 Detailed Description
 --------------------
 
-Here is where you should write detailed description of what the YTEP proposes.
-This needs to include:
+This YTEP proposes a few courses of action designed to promote the idea of yt
+as a dependency, rather than a destination, for analysis modules and external
+projects.
 
-  * Background
-  * Nature of the problem
-  * Nature of the solution
-  * How will the solution be implemented
-    * Brief outline of the code needed to implement this
-    * Code examples of using the solution, in appropriate
-    * How will the solution be tested?
-  * What are any stumbling points
-  * What is the proposed method for reaching out to the community about this?
+As it stands, many (the author included) have viewed yt as the "place" to put
+things, whether or not they contribute to its core mission.  There are several
+good reasons for this:
+
+ * **Distribution**: yt is largely a monolithic codebase, and if you have
+   downloaded and installed yt, you have access to all of the analysis modules.
+   This makes discoverability and distribution much easier.
+ * **Infrastructure**: yt has testing infrastructure which gets run on all pull
+   requests and new revisions.  As such, if the analysis module is in the
+   primary codebase, it too will be tested.  If functionality in yt changes,
+   the analysis module will track this.  Additionally, we provide the ability
+   to run tests on managed infrastructure.
+ * **Prestige**: (maybe?)  Having something be a part of yt adds to the sense
+   that it's part of the bigger project, and that it's somehow graduated to a
+   stable component.  (I am not sure this is real, but it's been mentioned to
+   me.)
+ * **Social infrastructure**: There's a mailing list for yt, so folks know
+   where to go.
+
+But, there are several -- sometimes quite large -- downsides to being part of
+the mainline yt codebase.
+
+ * **Project Standards**: The methods right now for developing in yt require
+   several iterations of code review as well as conforming to standards of
+   development practices.  For instance, this could include style or where the
+   code is developed (i.e., bitbucket/github/kallithea/etc).
+ * **Credit**: While the situation is certainly improving, and there is nothing
+   to stop a contributor from writing a paper describing a new analysis module
+   (in fact this is encouraged) it is still a part of a "project" codebase
+   rather than a standalone entity.  This can diminish the perception of
+   individual contributions, particularly by people not directly affiliated
+   with the mainline yt project.
+ * **Timeline**: The acceptance of a change into yt can often be on a weeks or
+   longer timescale, depending largely on the time being issuing a pull request
+   and the next PR triage.  For modules that are developed with much higher
+   frequency, this can be very cumbersome and costly in developer efforts.
+ * **Dependencies**: yt attempts to keep the number of dependencies at a
+   minimum; if a package wants to use them, it often has to either make them
+   on-demand or vendor them with the source.  We want to encourage packages to
+   utilize new technologies and experiment -- but at present, we can't allow
+   that into mainline.
+
+A solution to this problem would be to encourage an ecosystem of discoverable
+packages that build on yt as a dependency.  Three such packages exist at time
+of writing -- powderday, trident, and astroblend.
+
+What this YTEP proposes is to restructure our discussion of yt as a project to
+emphasize these types of packages and projects as citizens in the community,
+and provide to them a mechanism for people to find them.
+
+This will take a few forms:
+
+ * Re-designing the website to emphasize the burgeoning ecosystem of projects,
+   perhaps similar to the way astropy.org is set up.
+ * Offering, but not mandating, projects that they should direct questions to
+   the yt-users mailing list.
+ * Splitting out some particularly isolated projects from analysis modules.
+   This may include photon simulator and the sz generator.
+ * Provide entry points *in the code* for people to find out about available
+   analysis modules.  (Discussed below.)
+ * Utilize intersphinx documentation links for analysis modules, *or* offer to
+   host documentation on the main yt homepage.
+ * Determine mechanisms for recognizing projects as extensions, independent,
+   related, etc.
+
+At present, people can find analysis modules by doing something like:::
+
+   >>> dir(yt.amods)
+
+This returns a list of analysis modules.  This could be extended to *also*
+parse a small list of known external projects which could be installed.
+Importing one that was not installed would report that it wasn't installed and
+describe a method for installing it.
+
+Depending on the type of project, we may want to distinguish between yt
+extensions and projects that share the yt ecosystem.  For the former, we could
+evaluate using ``yt.extension`` as the namespace, if ``yt.analysis_module`` is
+not appropriate.  This would then provide (similar to how Flask `manages
+extension modules <http://flask.pocoo.org/docs/0.10/extensiondev/>`_) a naming
+scheme (say, ``ytext_projectname``) that would be imported into
+``yt.extension``.  This is not necessary, but is a possibility within the scope
+of this YTEP.
 
 Backwards Compatibility
 -----------------------
 
-This section should outline backwards compatibility issues.  In particular, it
-should focus on those issues that will appear to the main scripting API: will
-this break old scripts?  Will it break internal uses of the API?
+If we split out existing modules, they would need to be API compatible.  We
+would also want to make sure that they are well-supported by our
+infrastructure.
 
 Alternatives
 ------------
 
-*This section is optional.*
-
-What other means are there to accomplishing the goals of this YTEP, and why is
-this the best option?
+One possible alternative would be to make the ``yt.analysis_modules`` namespace
+a free-for-all of modifications, with much shorter timescales and essentially
+autonomous operation by developers.
