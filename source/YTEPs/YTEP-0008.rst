@@ -69,6 +69,7 @@ Version Release Date Days Since Last
 3.2     2015-07-24   N/A
 3.2.1   2015-09-09   47
 3.2.2   2015-11-13   65
+3.2.3   2016-02-04   83
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
@@ -148,6 +149,7 @@ Version Release Manager
 3.2     Britton Smith
 3.2.1   Nathan Goldbaum
 3.2.2   Nathan Goldbaum
+3.2.3   Nathan Goldbaum
 ======= ===============
 
 Backwards Compatibility
