@@ -97,6 +97,10 @@ This will take a few forms:
    host documentation on the main yt homepage.
  * Determine mechanisms for recognizing projects as extensions, independent,
    related, etc.
+ * Adding testing support can be difficult and labor intensive; however, we
+   should explore adding testing support for extensions under some criteria.
+   (Such as, does this depend on public APIs, do test failures constitute
+   upstream breakages, etc.)
 
 At present, people can find analysis modules by doing something like:::
 
