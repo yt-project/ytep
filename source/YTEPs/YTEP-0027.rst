@@ -1,0 +1,171 @@
+YTEP-0027: Non-Spatial Data
+===========================
+
+Abstract
+--------
+
+Created: December 1, 2015
+Author: Matthew Turk, Nathan Goldbaum, John ZuHone
+
+This YTEP outlines a plan to implement support for native non-spatial data
+representations in yt.
+
+Status
+------
+
+In Progress
+
+Project Management Links
+------------------------
+
+  * This pull request is the first attempt at implementing this:
+    https://bitbucket.org/yt_analysis/yt/pull-requests/1891/wip-supporting-non-spatial-coordinate
+  * This Trello card discusses it a bit:
+    https://trello.com/c/7d5PCUym/7-index-arrays as does this one:
+    https://trello.com/c/MXF1sWam/6-non-spatial-data
+
+Detailed Description
+--------------------
+
+Background
+++++++++++
+
+Currently, most of yt assumes that its data structures (particularly for
+purposes of selection and units) are related to spatial coordinates.  This
+leads to issues such as spherical and cylindrical coordinates believing their
+angular coordinates are in ``code_length``, having to pretend that pressure
+coordinates are ``code_length``, and so on.
+
+An additional complication is that at present, index operations (particularly
+in selection operations) cannot know in advance that their input arrays are in
+"index space."  This leads to costly operations that check the units (which are
+assumed to be ``code_length``) and converts if need be.  It is often very
+difficult to create a situation where the arrays are not in those units,
+though.
+
+Fortunately, there are very few places where the arrays used to index the
+dataset are utilized directly; for the most part, they are manually stripped of
+units and then re-applied with the correct units in classes such as the
+spherical coordinates handler.
+
+This YTEP concerns itself with a few things:
+
+ * Allowing datasets to be loaded that are indexed in non-spatial dimensions
+   (for instance, lat, lon, pressure)
+ * Developing unitful coordinate systems for these non-spatial datasets
+ * Implementing a custom coordinate handler
+
+Why is this hard?
++++++++++++++++++
+
+There are assumptions made in a number of places that data is spatial.  Often
+this shows up in one of these ways:
+
+ * Calls to ``ensure_code`` or conversions explicitly to ``code_length``.
+ * Assumptions that a set of units can be represented as a form of length, for
+   instance during integration.
+ * Inhomogeneous units in a single YTArray are not supported in the current
+   development tip of yt.  Some behavior can be mocked up using object arrays,
+   but this is incredibly unreliable.
+
+Implementation of Index Arrays
+++++++++++++++++++++++++++++++
+
+To address this issue, an implementation of an object explicitly for indexing
+data has been created, currently called an ``IndexArray``.  This object
+subclasses from ``YTArray``, but differs in some crucial ways.
+
+ * Multiple units may be specified.  These units must be of the same length as
+   the final axis of the array.
+ * The units in an array are immutable.  To change units, the array must be
+   copied.  Practically, this means that ``convert_to_units`` will raise an
+   exception, but it brings with it the benefit that it is difficult to find
+   oneself in a situation where something like ``domain_left_edge`` is not the
+   native units of the indexing system.
+ * Fancy-indexing is not possible; only slicing can be conducted.
+
+These arrays are almost always assumed to be created internally within yt.
+Some situations, such as specifying a "center" to an object, can accept
+``IndexArray`` objects.
+
+Implementation of Coordinates
++++++++++++++++++++++++++++++
+
+For inhomogeneous units to be useful, there must be a mechanism for specifying
+the units to a coordinate handler.  The implementation of a
+``CustomCoordinateHandler`` manages this task.  This coordinate handler assumes
+that the coordinate space is functionally Cartesian, but where the axes
+correspond to non-spatial information.  For instance, you might have the first
+axis be mass, the second time, the third distance.
+
+.. warning:: At present, distance metrics are *assumed* to be scaled
+             identically amongst the three axes.  This means that distance is
+             computed in a Euclidean fashion!
+
+To specify this, the ``CustomCoordinateHandler`` accepts an axis unit
+specification.  This extends the existing axis ordering argument to include
+axis units.  From the perspective of the user, this would look like this:::
+
+   ds = yt.load_uniform_grid(data, [30, 30, 30],
+       bbox=np.array([[0.0, 10.0], [0.0, 30.0], [0.4, 0.9]]),
+       geometry = ('custom', (('length', 'm'), ('mass', 'g'), ('time', 's')))
+   )
+
+In this function call, note that the ``geometry`` argument has been extended to
+include both the axis ordering *and* the units that each takes.  The first axis
+is called ``length`` with units of ``m``, the second is called ``mass`` with
+units of ``g`` and the third is ``time`` with units of ``s``.
+
+Note that these could all be length units, but with different names -- this
+would also be a custom coordinate system where the naming scheme can be
+modified.
+
+All coordinate handlers now have an ``axes_unit`` dict, which maps the axis
+names to units.
+
+Future developments may include allowing for specification of non-Euclidean
+distance functions.
+
+Impact on Plotting
+++++++++++++++++++
+
+``PlotWindow`` as a whole is designed to be used for plotting spatial datasets.
+Integrating non-spatial datasets presents us with two options:
+
+ * Modify ``PlotWindow`` such that it is generic with respect to units and
+   aspect ratios and usable for non-spatial data.
+ * Utilize something like ``PhasePlot`` or ``ParticlePlot`` for plotting image
+   data from non-spatial datasets.
+
+At present, extremely basic plotting functionality has been put into
+``PlotWindow`` to deal with non-spatial datasets, but this has also caused some
+minor impedance mismatches.
+
+The current long-term strategy is to refactor the two plotting interfaces to
+share a common base class (also likely with ``ParticlePlot``), and then have
+these choose the appropriate subclass for plotting non-spatial data and "do the
+right thing."
+
+Future: More than Three Dimensions
+++++++++++++++++++++++++++++++++++
+
+Utilizing ``IndexArray`` is the first step toward enabling additional
+dimensions of data access.  However, this set of functionality alone is by far
+insufficient.  In order to enable access to greater dimensionality of data,
+there must be concerted effort to eliminate assumptions of 3 dimensions and
+generalize data structures.  While this is now feasible, it is still quite the
+undertaking.
+
+Backwards Compatibility
+-----------------------
+
+The biggest potential source of problems with backwards compatibility arise
+from the utilization of ``YTArray`` objects where ``IndexArray`` objects are
+required.  This is mostly likely to happen places like centers specified to
+objects.  However, in updating the tests, it seems that these are minimally
+invasive and should have only very minor impact on user-facing scripts and
+APIs.
+
+Work is in progress to ensure that an ``IndexArray`` with homogeneous units
+behaves the same as a ``YTArray`` with those same units.  This should minimize
+impact.
