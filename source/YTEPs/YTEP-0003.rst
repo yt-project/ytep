@@ -293,6 +293,9 @@ Neutral ionic species (e.g. H I, O I) are represented as ``MM_p0``.
 For backwards compatibility, neutral species will be mirrored to 
 ``MM_`` fields, but this practice is deprecated as it is somewhat ambiguous
 if we are referring to just the neutral species or all atoms of that type.
+As an example, the neutral hydrogen density field will now be 
+called ``H_p0_density``, but it will be mirrored to the ``H_density`` field for 
+backwards compatibility.
 
 Finally, in those frontends which are single-fluid, we will define these fields
 for each species:
