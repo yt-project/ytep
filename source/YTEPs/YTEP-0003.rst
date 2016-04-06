@@ -324,3 +324,7 @@ results for mass density when the *alias* is queried.  The original name,
 ``Electron_Density``, will still be defined the way it currently is, to
 preserve access to the original, on-disk fields.  (It will be able to be
 converted to CGS, as well, and will not be scaled in doing so.)
+
+To refer to the number density of the entirety of a single atom or molecule 
+(regardless of its ionization state), please use the ``MM_nuclei_density`` 
+fields, as opposed to ``MM_number_density`` fields.
