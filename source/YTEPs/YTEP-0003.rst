@@ -96,9 +96,9 @@ Right now, one can turn it on via the `_setup_deprecated_fields` function:
 
 .. code-block:: python
 
-   from yt.mods import *
-   pf = load('IsolatedGalaxy/galaxy0030/galaxy0030')
-   pf._setup_deprecated_fields()
+   import yt
+   ds = yt.load('IsolatedGalaxy/galaxy0030/galaxy0030')
+   ds._setup_deprecated_fields()
 
 In the future we might also enable this via a config parameter.
 
@@ -273,7 +273,7 @@ that is unambiguous as well as terse.  We need to be able to resolve the
 following types of species:
 
  * CO (Carbon monoxide)
- * Co (Coblt)
+ * Co (Cobalt)
  * OVI (Oxygen ionized five times)
  * H2+ (Molecular Hydrogen ionized once)
  * H- (Hydrogen atom with an additional electron)
@@ -288,6 +288,14 @@ are *not* using an exclusively-lowercase convention here, as we did for the
 other field names.  The name ``El`` will be reserved for electron fields, as it
 is unambiguous and will not be utilized elsewhere.  Additionally, the isotope
 of ``2H`` will be included as ``D``.
+
+Neutral ionic species (e.g. H I, O I) are represented as ``MM_p0``. 
+For backwards compatibility, neutral species will be mirrored to 
+``MM_`` fields, but this practice is deprecated as it is somewhat ambiguous
+if we are referring to just the neutral species or all atoms of that type.
+As an example, the neutral hydrogen density field will now be 
+called ``H_p0_density``, but it will be mirrored to the ``H_density`` field for 
+backwards compatibility.
 
 Finally, in those frontends which are single-fluid, we will define these fields
 for each species:
@@ -316,3 +324,7 @@ results for mass density when the *alias* is queried.  The original name,
 ``Electron_Density``, will still be defined the way it currently is, to
 preserve access to the original, on-disk fields.  (It will be able to be
 converted to CGS, as well, and will not be scaled in doing so.)
+
+To refer to the number density of the entirety of a single atom or molecule 
+(regardless of its ionization state), please use the ``MM_nuclei_density`` 
+fields, as opposed to ``MM_number_density`` fields.

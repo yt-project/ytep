@@ -77,33 +77,26 @@ Current yt members:
   * John Zuhone (2014)
 
 Members have write access to all official yt repositories and can, therefore,
-accept pull requests.  Members are eligible to serve as leaders of the various
-subcomponents of the yt codebase.  Component leads shall meet quarterly or more
-often as needed to discuss the status of the codebase as well as current or
-planned development.  One representative shall act as the coordinator, in charge
-of making sure the team meeting happens and responsible for appointing their own
-replacement.  One other representative shall act as secretary and record the
-minutes of the meeting, which shall be posted to the yt-dev list and online.
-One subcomponent may have more than one representative, but at least one must be
-present for the team meeting.  New subcomponents may be added as necessary via
-member nomination and five affirmative member votes.  The nominator must also be
-willing to act as a representative for the new subcomponent until at least one
-other member agrees to be a representative as well.  The current list of
-subcomponents and their leaders and representatives is given below.
+accept pull requests.  Members are eligible to serve on the yt project steering
+committee.  The steering committe shall meet quarterly or more often as needed
+to discuss project-related business.  Members may join the steering committee by
+attending one of the team meetings and self-nominating.  One person on the
+steering committee shall act as the coordinator, in charge of making sure the
+team meetings happen.  All developers are welcome to participate in team
+meetings.
 
-    ================= ======================= ======================
-    Subcomponent      Current Leader          Former Representatives
-    ================= ======================= ======================
-    infrastructure    Matthew Turk
-    testing           Kacper Kowalik         
-    visualization     Nathan Goldbaum (s),
-                      Sam Skillman
-    analysis modules  Britton Smith (c),
-                      Hilary Egan
-    documentation     Cameron Hummels
-    ================= ======================= ======================
+Current steering committee members:
 
-c - meeting coordinator, s - meeting secretary
+  * Hilary Egan
+  * Nathan Goldbaum
+  * Cameron Hummels
+  * Kacper Kowalik
+  * Sam Skillman
+  * Britton Smith (c)
+  * Matthew Turk
+  * John Zuhone
+
+c - meeting coordinator
 
 Similar to subcomponent representatives, each frontend shall have at least one
 designated liason to act as a knowledge-base for issues relating to
@@ -120,6 +113,7 @@ of frontends and liasons is given below.
     Enzo           Britton Smith, Nathan Goldbaum
     FLASH          John ZuHone
     Gadget         Nathan Goldbaum
+    Gadget_FOF     Britton Smith
     GDF            Kacper Kowalik
     HaloCatalog    Britton Smith
     OWLS           
@@ -133,7 +127,7 @@ of frontends and liasons is given below.
 Team Meetings
 ^^^^^^^^^^^^^
 
-Public meetings, optimally including all of the subcomponent leaders and
+Public meetings, optimally including all members of the steering committee and
 frontend maintainers, should happen at least once a quarter. These meetings are
 to encourage frank and open discussion about the future of the project. Meetings
 will happen over video chat to encourage remote participation, and times should be
