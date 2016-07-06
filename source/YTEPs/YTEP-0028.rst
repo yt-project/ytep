@@ -17,7 +17,7 @@ In Progress
 Project Management Links
 ------------------------
 
-Once the PR is submitted its link will appear here. 
+PR: https://bitbucket.org/yt_analysis/yt/pull-requests/1904/wip-switching-between-different-base-units/
 
 Detailed Description
 --------------------
@@ -46,8 +46,8 @@ datasets and calculations.
 This YTEP outlines a proposal for allowing different unit systems to be used in yt. The core of the 
 proposal is to allow this functionality on a per-object basis: namely, changing the unit system at the level
 of individual datasets, units, and unitful quantities, instead of on a global scale. The advantages of this 
-approach are that it is relatively simple, is easily extendable, and makes only minimal changes to the 
-fundamental code base. 
+approach are that it is relatively simple, is easily extendable, and makes only a fairly small number of 
+changes to the fundamental code base. 
 
 The ``UnitSystem`` Object
 +++++++++++++++++++++++++
@@ -60,7 +60,7 @@ object requires setting the name of the system, as well as a set of base units:
 
 .. code-block:: python
 
-    cgs_unit_system = UnitSystem("cgs", "cm", "g", "s", "K", "radian")
+    cgs_unit_system = UnitSystem("cgs", "cm", "g", "s")
 
 This will initialize the ``UnitSystem`` along with a set of base units. The required arguments are, in order:
 
@@ -68,14 +68,20 @@ This will initialize the ``UnitSystem`` along with a set of base units. The requ
 * ``length_unit``: The base length unit for this system.
 * ``mass_unit``: The base mass unit for this system.
 * ``time_unit``: The base time unit for this system.
-* ``temperature_unit``: The base temperature unit for this system.
-* ``angle_unit``: The base angular unit for this system.
 
-For MKS-like unit systems, an additional base unit for ``current_mks`` can be supplied:
+The optional arguments are:
+
+* ``temperature_unit``: The base temperature unit for this system. Defaults to ``"K"`` (Kelvin).
+* ``angle_unit``: The base angular unit for this system. Defaults to ``"rad"`` (radians).
+* ``current_mks``: The base angular unit for current in an MKS-like system. Defaults to ``None``. 
+
+If need be, the base units for temperature, angle, and MKS current can be supplied:
 
 .. code-block:: python
 
-    mks_unit_system = UnitSystem("mks", "m", "kg", "s", "K", "radian",
+    mks_unit_system = UnitSystem("mks", "m", "kg", "s", 
+                                 temperature_unit="K", 
+                                 angle_unit="radian",
                                  current_mks_unit="A")
 
 The initialization of the ``UnitSystem`` will also add it to a ``unit_system_registry`` dictionary which
@@ -108,11 +114,14 @@ which will return ``kg*m**2/s`` because it will be derived from the base units o
 
 Several unit systems will already be supplied for use with yt. They will be:
 
-* ``"cgs"``: Centimeters-grams-seconds unit system, with base of ``(cm, g, s, K, radian)``.
-* ``"mks"``: Meters-kilograms-seconds unit system, with base of ``(m, kg, s, K, radian)``.
+* ``"cgs"``: Centimeters-grams-seconds unit system, with base of ``(cm, g, s, K, radian)``. Uses the Gaussian
+  normalization for electromagnetic units. 
+* ``"mks"``: Meters-kilograms-seconds unit system, with base of ``(m, kg, s, K, radian, A)``.
 * ``"imperial"``: Imperial unit system, with base of ``(mile, lbm, s, R, radian)``.
 * ``"galactic"``: "Galactic" unit system, with base of ``(kpc, Msun, Myr, K, radian)``.
 * ``"solar"``: "Solar" unit system, with base of ``(AU, Mearth, yr, K, radian)``. 
+* ``"planck"``: Planck natural units (:math:`\hbar = c = G = k_B = 1`), with base of ``(l_pl, m_pl, t_pl, T_pl, radian)``. 
+* ``"geometrized"``: Geometrized natural units (:math:`c = G = 1`), with base of ``(l_geom, m_geom, t_geom, K, radian)``. 
 
 Users may create new ``UnitSystem`` objects on the fly, which will be added to the ``unit_system_registry``
 automatically as they are created. Both of these will be accessible from the top-level ``yt`` module. 
@@ -217,20 +226,52 @@ we would change the units thus:
 
         ...
 
-    registry.add_field((ftype, "specific_angular_momentum_x"),
-                       function=_specific_angular_momentum_x,
-                       units=unit_system["specific_angular_momentum"],
-                       validators=[ValidateParameter("center")])
+        registry.add_field((ftype, "specific_angular_momentum_x"),
+                           function=_specific_angular_momentum_x,
+                           units=unit_system["specific_angular_momentum"],
+                           validators=[ValidateParameter("center")])
 
 Notice that the field definition code itself has not been altered at all except that the ``units``
 keyword argument to ``registry.add_field`` has been changed from ``cm**2/s`` to 
 ``unit_system["specific_angular_momentum"]``, which will set the units for the field to whatever is
-appropriate for the unit system associated with the dataset.
+appropriate for the unit system associated with the dataset. The ``unit_system`` object may be queried
+with either SymPy ``symbol`` objects in ``yt.units.dimensions`` or strings corresponding to the variable
+names of those objects.
 
 This will not be appropriate for all fields--some fields naturally belong in certain units regardless
 of the underlying system used. In the context of galaxy clusters, ``"entropy"`` is an example, which 
 naturally belongs in units of ``keV*cm**2``. Whether or not to change units should be evaluated on a 
 per-field basis.
+
+For users adding their own derived fields, there will be two ways to take advantage of the new unit 
+systems functionality. If derived fields are being created from a dataset using ``ds.add_field``, they
+can set up the units in a similar way as above:
+
+.. code-block:: python
+
+    def _density_squared(field, data):
+        return data["density"]*data["density"]
+    ds.add_field(("gas","density_squared"), function=_density_squared, units=ds.unit_system["density"]**2)
+
+If using ``yt.add_field``, however, it will be necessary to set ``units="auto"`` in the call to ``add_field``.
+To provide an extra layer of error handling for this case, a ``dimensions`` keyword argument will be added
+to the ``DerivedField`` initialization, which will only be used if ``units="auto"``, and will be used to
+check that the dimensions supplied to ``add_field`` and the dimensions of the ``YTArray`` in the field definition
+are the same: 
+
+.. code-block:: python
+
+    from yt.units.dimensions import temperature
+    
+    inverse_temp = 1/temperature
+    
+    def _inv_temperature(field, data):
+        return 1.0/data["temperature"]
+    yt.add_field(("gas","inv_temperature"), function=_inv_temperature, units="auto", 
+                 dimensions=inverse_temp)
+                 
+If one does not supply a ``dimensions`` argument when ``units="auto"``, or if the dimensions are incompatible,
+errors will be thrown. 
 
 Special Handling for Magnetic Fields
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -382,27 +423,6 @@ convert to the default "cgs" unit system:
 which is the current behavior of the code, ensuring backwards-compatibility. The behavior 
 of the cgs and MKS-specific methods (e.g., ``in_cgs``, ``in_mks``, etc.) will not be modified. 
 
-.. rubric:: ``in_units``, ``convert_to_units`` methods
-
-The behaviors of these methods will not be modified, but developers are encouraged to 
-take advantage of the unit systems when using them in other parts of the code. For 
-example, if it is known that an array needs to be converted to a specific set of length 
-units, instead of doing this:
-
-.. code-block:: python
-    
-    ds.domain_left_edge.in_units("cm")
-
-the new recommended implemenation would be this instead:
-
-.. code-block:: python
-
-    ds.domain_left_edge.in_units(ds.unit_system["length"])
-
-which would allow ``domain_left_edge`` to be converted to the units of length in the
-unit system employed by the dataset. This, of course, depends on the context of the situation and the
-needs of the developer and/or user(s). 
-
 .. rubric:: ``Cosmology`` object
 
 Currently, the ``Cosmology`` object returns all quantities in cgs units. The proposed changes
@@ -420,6 +440,35 @@ that dataset:
     
     ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
     cosmo = Cosmology(unit_system=ds)
+
+Physical Constants in the Different Unit Systems
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+Each ``UnitSystem`` object will have a ``constants`` attribute which can be used to obtain
+any physical constant in ``yt.utilities.physical_constants`` in the base units of that system.
+For example:
+
+.. code-block:: python
+
+    import yt
+    
+    galactic_units_system = yt.unit_system_registry["galactic"]
+    
+    G = galactic_units_system.constants.G
+    clight = galactic_units_system.constants.clight
+    mp = galactic_units.system.constants.mp
+    
+    print(G)
+    print(clight)
+    print(mp)
+    
+.. code-block:: pycon
+
+    4.498205661165364e-12 kpc**3/(Msun*Myr**2)
+
+    306.6013938381177 kpc/Myr
+
+    8.417430465502256e-58 Msun
 
 Notifying the Community
 +++++++++++++++++++++++
