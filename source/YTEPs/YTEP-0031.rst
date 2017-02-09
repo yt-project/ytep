@@ -58,7 +58,7 @@ Background
 Currently yt indexes particle data via a global in-memory octree mesh. This
 approach initially made it much easier to support particle data by employing
 existing infrastructure in yt for analyzing and visualizing octree
-meshes. Unfortunately, this approach also presented chalenges for improving the
+meshes. Unfortunately, this approach also presented challenges for improving the
 scalability and performance of yt. User feedback and developer input have also
 indicated a desire to present users with more access to the fundamental particle
 data rather than data interpolated onto an octree. Rather than using the global
@@ -75,6 +75,74 @@ Implementation
 
 Morton Bitmap Index
 +++++++++++++++++++
+
+The generated index serves to map how the domain is populated by particles 
+in datasets split across multiple files. This way, spatial queries can skip 
+files that do not contain particles in the selected part of the domain. The
+files are mapped by storing two nested Morton indices for each of the particles
+it contains in an EWAH compressed boolean array bitmap. Given a domain with 
+known boundaries in each dimension, a 3-dimension position can be described by 
+a single integer Morton index by 
+
+1. Dividing the domain into ``2^index_order1`` cells in each dimension with
+   widths (e.g. ``ddx = domain_width_x/(2^index_order1)``).
+#. Determining the 3 integers specifying the cell that contains the 3D
+   position (e.g. ``x/ddx``).
+#. Combine the 3 integers into a single integer by alternating bits from each
+   dimension.
+
+These indices can be stored as either integers or in boolean masks. In the case
+of the mask, an array of zeroed bits is created with a length equal to the 
+maximum possible index for the chosen value of ``index_order1``. Then the bits for
+the indices present are set to one. To save space, boolean masks in the form of 
+bitmaps can then be compressed further using the Enhanced Word-Aligned Hybrid 
+(EWAH) bitmap compression algorithm.
+
+One bitmap is created for each file. If an index is present in more than one
+file’s bitmap, this represents a collision and decreases the likelihood that
+the bitmap can be used to exclude files during spatial queries. This is unlikely
+if the particles are well partitioned between the files according to a domain
+decomposition scheme at the chosen order, but this is not generally true of
+particle datasets produced by astrophysical simulations. In these cases, it
+is better to create a more refined index.
+
+Using a larger ``index_order1`` increases the refinement of the index, but also 
+increases both the memory required to store the indices and the time required
+to query them for EWAH bitmaps. To combat this, we include a second refined
+index within those cells that have indices in multiple files’ bitmaps for the 
+coarse index. For each particle with a coarse index that collides with another
+file, a second refined Morton index is creating by following the same procedure 
+as for the coarse index, but exchanging the domain boundaries for the boundaries
+of the coarse index cell. The refined index for each file is then stored in a 
+EWAH bitmap for each coarse cell with a collision.
+
+The coarse and refined indices are generated in two separate I/O passes over 
+the entire dataset. To generate the coarse index, particles coordinates, and 
+softening lengths for SPH particles, are read in from each file. For each particle, 
+we then compute the Morton index corresponding to the particles position within 
+the domain. This index, ``mi`` is then used to set the ``mi``th element in a 
+boolean mask for the file to 1. If the particle is an SPH particle, neighboring 
+indices with cells that overlap a sphere with a radius equal to the particle’s 
+softening length and centered on the particle are also set to 1.
+
+Once a coarse boolean mask is obtained for each file, the masks are stored in
+a set of EWAH compressed bitmaps (``ewah_bool_array`` Cython extension 
+classes). Using logical boolean operations, we then identify those indices 
+that are set to 1 in more than one file’s mask (the collisions). 
+
+During a second I/O pass over the entire dataset, refined indices are created
+for those particles with colliding coarse indices. Both the coarse and refined
+indices are stored in an array for each file. One a file has been completely
+read in, those indices are sorted and used to create a map from coarse indices
+to EWAH compressed bitmaps. This is done because entries in EWAH compressed 
+bitmaps must be set in order.
+
+The Morton bitmap index is created for each particle dataset upon its first
+ingestion into yt and saved to a sidecar file. At all future ingestions of the
+dataset into yt, the index will be loaded from the sidecar file. Indexes are 
+managed through the ``ParticleBitmap`` class with index information stored 
+in the ``BoolArrayCollection`` Cython extension object.
+
 
 Data Selection and Changes to the Selector API
 ++++++++++++++++++++++++++++++++++++++++++++++
