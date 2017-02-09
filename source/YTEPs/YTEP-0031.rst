@@ -1,0 +1,114 @@
+.. _ytep-0031:
+
+YTEP-0031: Removing the global octree mesh for particle data
+============================================================
+
+Abstract
+--------
+
+| Created: February 9 2017
+| Author: Nathan Goldbaum, Meagan Lang, Matthew Turk
+
+This summarizes the effort to remove the global octree mesh to current used to
+index particle data. This effort can be separated into a low-level component and
+a high-level user-facing component. The low-level effort refactors particle I/O
+and data selection to make use of an indexing scheme based on compressed morton
+bitmaps. This approach dramatically improves memory usage and improves scaling
+for large particle datasets. The second high-level effort is a reworking of the
+yt user interface for particle and SPH data. This means that data object
+selections for fields that are now defined on the global octree mesh instead
+return field data at particle locations. For SPH data, visualizations of slices
+and projections are done in the image plane, making use of the "scatter"
+approach by smoothing SPH data directly onto images, making use of either a
+volumetric or projected SPH smoothing kernel. Fully local derived fields are
+calculated using yt's existing field definitions. Fields that need spatial
+derivatives are implemented using the SPH formalism and are also evaluated at
+the particle locations. Alltogether these changes allow for improved performance
+and scaling, and allow users to access, analyze, and visualize particle field
+data for SPH simulations in a more straightforward fashion. While we do not
+propose substantial API changes, these changes to yt's field system for particle
+data imply substantial changes to the *meaning* of yt's data selection
+system. We discuss the implications of these backward incompatible changes and
+how we intend to document and manage them in a way that is minimally disruptive
+to users.
+
+Status
+------
+
+In Progress. The implementation is mostly finished, although there are a few
+features that still need to be implemented.
+
+Project Management Links
+------------------------
+
+The code can be found in pull request 2382:
+
+https://bitbucket.org/yt_analysis/yt/pull-requests/2382
+
+The C++ compressed bitmap implementation we intend to vendor into yt:
+
+https://github.com/lemire/EWAHBoolArray
+
+Detailed Description
+--------------------
+
+Background
+**********
+
+Currently yt indexes particle data via a global in-memory octree mesh. This
+approach initially made it much easier to support particle data by employing
+existing infrastructure in yt for analyzing and visualizing octree
+meshes. Unfortunately, this approach also presented chalenges for improving the
+scalability and performance of yt. User feedback and developer input have also
+indicated a desire to present users with more access to the fundamental particle
+data rather than data interpolated onto an octree. Rather than using the global
+octree mesh to index particle data, we instead store particle positions via
+compressed Morton bitmaps. By calculating morton bitmaps for selector objects,
+we can quickly establish which I/O chunks provide particles at a given location
+in the dataset's domain. Since compressed bitmaps are much more memory efficient
+than the existing global octree, this approach enables visualization and
+analysis on much larger particle datasets without the need for excessive memory
+requirements.
+
+Implementation
+**************
+
+Morton Bitmap Index
++++++++++++++++++++
+
+Data Selection and Changes to the Selector API
+++++++++++++++++++++++++++++++++++++++++++++++
+
+Visualization of Slices and Projection
+++++++++++++++++++++++++++++++++++++++
+
+SPH Fields
+++++++++++
+
+Testing
++++++++
+
+Open Questions
+--------------
+
+The Projection Data Object
+**************************
+
+Cut Regions
+***********
+
+Global Octree or Octree Subset Data Object
+******************************************
+
+Volume Rendering
+****************
+
+Community engagement
+********************
+
+yt 4.0?
+*******
+
+Backwards Compatibility
+-----------------------
+
