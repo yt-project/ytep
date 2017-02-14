@@ -9,28 +9,35 @@ Abstract
 | Created: February 9 2017
 | Author: Nathan Goldbaum, Meagan Lang, Matthew Turk
 
-This summarizes the effort to remove the global octree mesh to current used to
-index particle data. This effort can be separated into a low-level component and
-a high-level user-facing component. The low-level effort refactors particle I/O
-and data selection to make use of an indexing scheme based on compressed morton
-bitmaps. This approach dramatically improves memory usage and improves scaling
-for large particle datasets. The second high-level effort is a reworking of the
-yt user interface for particle and SPH data. This means that data object
-selections for fields that are now defined on the global octree mesh instead
-return field data at particle locations. For SPH data, visualizations of slices
-and projections are done in the image plane, making use of the "scatter"
-approach by smoothing SPH data directly onto images, making use of either a
-volumetric or projected SPH smoothing kernel. Fully local derived fields are
-calculated using yt's existing field definitions. Fields that need spatial
-derivatives are implemented using the SPH formalism and are also evaluated at
-the particle locations. Alltogether these changes allow for improved performance
-and scaling, and allow users to access, analyze, and visualize particle field
-data for SPH simulations in a more straightforward fashion. While we do not
-propose substantial API changes, these changes to yt's field system for particle
-data imply substantial changes to the *meaning* of yt's data selection
-system. We discuss the implications of these backward incompatible changes and
-how we intend to document and manage them in a way that is minimally disruptive
-to users.
+The global particle octree index used by yt presents a barrier for improving the
+performance and scalability of visualizing and analyzing particle datasets. This
+YTEP proposes removing the global octree index, replacing it with a combination
+of a new IO system and changes to the high-level yt API to focus on returning
+particle-centric data. The particle I/O refactor makes use of an indexing scheme
+based on compressed morton bitmaps which dramatically improves memory usage and
+scaling for large particle datasets without the need for a global octree index.
+
+Rather than constructing a global index to maintain backward compatibility at
+the cost of scaling and performance, we instead propose a reworking of the yt
+user interface for particle and SPH data to be more "particle-centric". This
+means that data object selections for fields that are now defined on the global
+octree mesh will instead return field data at particle locations. For SPH data,
+visualizations of slices and projections are done in the image plane, making use
+of the "scatter" approach by smoothing SPH data directly onto images, employing
+either a volumetric or projected SPH smoothing kernel. Fully local derived
+fields are calculated using yt's existing field definitions but passing in data
+defined at particle locations. Fields that need spatial derivatives are
+implemented using the SPH formalism and are also evaluated at the particle
+locations.
+
+Alltogether these changes allow for improved performance and scaling, and allow
+users to access, analyze, and visualize particle field data for SPH simulations
+in a more straightforward fashion. While we do not propose substantial API
+changes for mesh or octree codes, these changes to yt's field system for
+particle data imply substantial changes to the *meaning* of yt's data selection
+system for particle data. We discuss the implications of these backward
+incompatible changes and how we intend to document and manage them in a way that
+is minimally disruptive to users.
 
 Status
 ------
@@ -55,23 +62,47 @@ Detailed Description
 Background
 **********
 
-Currently yt indexes particle data via a global in-memory octree mesh. This
-approach initially made it much easier to support particle data by employing
-existing infrastructure in yt for analyzing and visualizing octree
-meshes. Unfortunately, this approach also presented challenges for improving the
-scalability and performance of yt. User feedback and developer input have also
-indicated a desire to present users with more access to the fundamental particle
-data rather than data interpolated onto an octree. Rather than using the global
-octree mesh to index particle data, we instead store particle positions via
-compressed Morton bitmaps. By calculating morton bitmaps for selector objects,
-we can quickly establish which I/O chunks provide particles at a given location
-in the dataset's domain. Since compressed bitmaps are much more memory efficient
-than the existing global octree, this approach enables visualization and
-analysis on much larger particle datasets without the need for excessive memory
-requirements.
+Currently most user-facing operations on SPH data are produced by interpolating
+SPH data onto a volume-filling octree mesh. When support for SPH data was added
+to yt in the run-up to the yt-3.0 release, this approach allowed yt to support
+SPH data in a way that could reuse the existing infrastructure in yt for octree
+data and preserve core assumptions in yt that ``gas`` fields must correspond to
+a volume-filling AMR structure. While this did make initial support for SPH data
+much easier, it also had some downsides. In particular, the memory and CPU
+overhead of smoothing SPH data onto the octree can be prohibitive on particle
+datasets produced by large simulations. Visualizations of slices and projections
+produced by yt using the default ``n_ref`` and ``over_refine_factor`` are
+somewhat blocky since by default we use a relatively coarse octree to preserve
+memory. In addition, since we construct the global octree based on the positions
+of all particles, visualizations that include only one particle type sometimes
+include "holes" in regions undersampled by that particle type.
 
-Implementation
-**************
+These cosmetic and semantic issues are jarring to users of SPH codes, who tend
+to think of data defined at the particle locations rather than sampled onto an
+adaptive mesh. Making our high-level API focus more on particle-centric data
+will help to ease the cognitive dissonance felt by users of SPH codes when they
+work with yt.
+
+Over the past two years, Meagan Lang and Matt Turk implemented a new approach
+for handling I/O of particle data, based on storing compressed bitmaps
+containing morton indices instead of an in-memory octree. This new capability
+means that the global octree index is now no longer necessary to enable I/O
+chunking and spatial indexing of particle data in yt.
+
+In this document we describe the approach we take for replacing the global
+octree index with morton bitmasks. First, we describe the implementation of the
+Morton bitmask index, changes to the low-level selector API needed to support
+the morton bitmask work, and the testing strategy used for the morton bitmap
+indexing scheme. Next we discuss high-level changes to how yt handles particle
+data, discussion changes to the field system for SPH data, the implementation of
+the SPH pixelizer system for visualizations, a discussion of deposit fields, and
+a description of the strategy used to test the new approach for SPH data. We
+close with a discussion of questions that still need to be tackled before this
+work can be merged.
+
+
+Low-Level Implementation
+************************
 
 Morton Bitmap Index
 +++++++++++++++++++
@@ -110,14 +141,14 @@ decomposition scheme at the chosen order, but this is not generally true of
 particle datasets produced by astrophysical simulations. In these cases, it
 is better to create a more refined index.
 
-Using a larger ``index_order1`` increases the refinement of the index, but also 
+Using a larger ``index_order1`` increases the refinement of the index, but also
 increases both the memory required to store the indices and the time required
 to query them for EWAH bitmaps. To combat this, we include a second refined
-index within those cells that have indices in multiple files’ bitmaps for the 
+index within those cells that have indices in multiple files’ bitmaps for the
 coarse index. For each particle with a coarse index that collides with another
-file, a second refined Morton index is creating by following the same procedure 
+file, a second refined Morton index is creating by following the same procedure
 as for the coarse index, but exchanging the domain boundaries for the boundaries
-of the coarse index cell. The refined index for each file is then stored in a 
+of the coarse index cell. The refined index for each file is then stored in a
 EWAH bitmap for each coarse cell with a collision.
 
 The coarse and refined indices are generated in two separate I/O passes over the
@@ -131,15 +162,15 @@ equal to the particle’s softening length and centered on the particle are also
 set to 1.
 
 Once a coarse boolean mask is obtained for each file, the masks are stored in
-a set of EWAH compressed bitmaps (``ewah_bool_array`` Cython extension 
-classes). Using logical boolean operations, we then identify those indices 
-that are set to 1 in more than one file’s mask (the collisions). 
+a set of EWAH compressed bitmaps (``ewah_bool_array`` Cython extension
+classes). Using logical boolean operations, we then identify those indices
+that are set to 1 in more than one file’s mask (the collisions).
 
 During a second I/O pass over the entire dataset, refined indices are created
 for those particles with colliding coarse indices. Both the coarse and refined
 indices are stored in an array for each file. One a file has been completely
 read in, those indices are sorted and used to create a map from coarse indices
-to EWAH compressed bitmaps. This is done because entries in EWAH compressed 
+to EWAH compressed bitmaps. This is done because entries in EWAH compressed
 bitmaps must be set in order.
 
 The Morton bitmap index is created for each particle dataset upon its first
@@ -153,15 +184,62 @@ via the ``BoolArrayCollection`` Cython extension object (defined in
 ``yt/utilities/lib/ewah_bool_wrap.pyx``), which wraps the underlying
 ``EWAHBoolArray`` C++ library.
 
+In the current implementation users can control the creation of the bitmask
+index via the ``index_order`` and ``index_filename`` keyword arguments accepted
+by ``SPHDataset`` instances. These keyword arguments replace the deprecated
+``n_ref``, ``over_refine_factor`` and ``index_ptype`` keyword arguments. The
+``index_order`` is a two-element tuple corresponding to the maximum morton order
+for the coarse and refined index. Using a tuple for the ``index_order`` instead
+of two keyword arguments is not only more terse, but it will allow us to produce
+bitmask indexes in the future with multiple refined indices while maintaining
+the same public API. Currently the default ``index_order`` is ``(7, 5)``. If a
+user specifes ``index_order`` as an integer, the integer is taken as the order
+of the coarse index and the order of the refined index is set to ``1``,
+producing a trivial refined index. For example::
+
+  import yt
+  ds = yt.load('snapshot_033/snap_033.0.hdf5',
+               index_order=(5, 3), index_filename='my_index')
+  ds.index
+
+Running this script will produce the following output::
+
+  yt : [INFO     ] 2017-02-14 11:50:20,815 Allocating for 4.194e+06 particles
+  Initializing coarse index at order 5: 100%|██████| 12/12 [00:00<00:00, 14.60it/s]
+  Initializing refined index at order 3: 100%|█████| 12/12 [00:01<00:00,  8.80it/s]
+
+And produce a file named ``my_index`` in the same folder as
+``snapshot_033/snap_033.0.hdf5``. The second and all later times the script is
+run we only need to load the index from disk, so it produces the following
+output::
+
+  yt : [INFO     ] 2017-02-14 11:56:07,977 Allocating for 4.194e+06 particles
+  Loading particle index: 100%|███████████████████| 12/12 [00:00<00:00, 636.33it/s]
+
+Note that there 12 iterations for each loop. Each of these iterations correspond
+to a single IO chunk. If a file has fewer than 262144 particles, the entire file
+is used as an IO chunk. If a file has more than 262144 particles, the file is
+logically split into several subfiles, each containing up to 262144
+particles. Currently the chunk size of 262144 is hard-coded for all SPH
+frontends.
 
 Data Selection and Changes to the Selector API
 ++++++++++++++++++++++++++++++++++++++++++++++
+
+Testing
++++++++
+
+High-level Implementation
+*************************
 
 Visualization of Slices and Projection
 ++++++++++++++++++++++++++++++++++++++
 
 SPH Fields
 ++++++++++
+
+Deposition operations
++++++++++++++++++++++
 
 Testing
 +++++++
@@ -186,7 +264,3 @@ Community engagement
 
 yt 4.0?
 *******
-
-Backwards Compatibility
------------------------
-
