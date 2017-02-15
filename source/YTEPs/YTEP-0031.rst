@@ -220,11 +220,46 @@ Note that there 12 iterations for each loop. Each of these iterations correspond
 to a single IO chunk. If a file has fewer than 262144 particles, the entire file
 is used as an IO chunk. If a file has more than 262144 particles, the file is
 logically split into several subfiles, each containing up to 262144
-particles. Currently the chunk size of 262144 is hard-coded for all SPH
-frontends.
+particles. Currently the chunk size of 262144 particles is hard-coded for all
+SPH frontends.
 
 Data Selection and Changes to the Selector API
 ++++++++++++++++++++++++++++++++++++++++++++++
+
+The morton bitmaps needed for individual data objects are constructed using the
+existing low-level cython selection API. To determine whether a given morton
+index is "contained" in the geometric primitive defined by the selector we make
+use of the ``select_bbox`` selection API call, since each index corresponds to a
+single cell in an octree. If the selector fully encloses the bounding box for
+the cell defined by a given morton index, the existing ``select_bbox`` function
+is sufficient. However, given that the goal of the morton bitmap index is to
+reduce the number of files we need to read from for a given selection operation,
+more care must be taken near the "edges" of a selector. For this reason, we have
+added a new function to the selector API, ``select_bbox_edge``. This function is
+identical to ``select_bbox`` in the case when a bounding box is fully contained
+inside of the geometric primitive associated with a selector, simply returning 1
+in these cases. However, if the bounding box is only partially contained in the
+geometric primitive, ``select_bbox_edge`` returns 2, indicating partial
+overlap. This is used in the bitmap index code to indicate that the coarse
+morton index does not have sufficient resolution in this region, triggering the
+generation of refined morton indices in this region. These smaller bounding
+boxes will have a higher probability of being either fully contained or fully
+excluded from a data object, decreasing the probability of a file collision. The
+``select_bbox_edge`` function has been implemented for all selectors and if this
+YTEP is accepted will be a required part of the API for new selectors in the
+future.
+
+In addition to the above change, a more minor change was necessary to the
+portion of the selector API used to count and select particles contained in a
+given selector. Currently, all particles are assumed to be pointlike, which will
+lead to incorrect selections for particles that actually have finite volumes
+like SPH particles. To account for this, the signature of the ``count_points``
+and ``select_points`` functions were changed so that instead of accepting only
+single scalar radius for all particles, they can accept an array of possibly
+variable radii as well. If non-zero radii are passed in, particle selection
+operates via the ``select_sphere`` method instead of the ``select_point`` method
+that is currently used. Since some selectors did not yet have implementations
+of ``select_sphere``, we have added new implementations where necessary.
 
 Testing
 +++++++
