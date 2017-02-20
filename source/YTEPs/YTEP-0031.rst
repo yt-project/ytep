@@ -264,14 +264,95 @@ of ``select_sphere``, we have added new implementations where necessary.
 Testing
 +++++++
 
-High-level Implementation
-*************************
+Removing the Global Octree Mesh
+*******************************
 
-Visualization of Slices and Projection
-++++++++++++++++++++++++++++++++++++++
+Currently, all i/o operations are mediated via the global octree
+index. Particles are read in from the output file as needed based on their
+position in the octree.  With the arrival of the compressed bitmap index scheme
+described above, we no longer need to use the global octree to manage I/O
+chunking. Making the global octree redundant in this way raises the question
+about whether the octree is really needed at all.
+
+Currently yt makes a distinction between particle fields and mesh fields. All
+SPH-smoothed fields (e.g. ``('gas', 'density')``) are smoothed onto the global
+octree mesh. To make a concrete example, let's try loading an SPH zoom-in
+simulation of a galaxy and ask for the ``('gas', 'density')`` field::
+
+  import yt
+  ds = yt.load('GadgetDiskGalaxy/snapshot_200.hdf5')
+
+  ad = ds.all_data()
+  density = ad['gas', 'density']
+
+  print(density.shape)
+  print(ds.particle_type_counts)
+
+Running this script on the latest development version of yt at time of writing
+(``abf5a8eff1b2``) produces the following output::
+
+  (5661944,)
+  {'PartType0': 4334546,
+   'PartType1': 4786616,
+   'PartType2': 2333848,
+   'PartType3': 0,
+   'PartType4': 450921,
+   'PartType5': 1149}
+
+On my laptop, this script also takes about 116 seconds to run, with 105 s spent
+performing the SPH smoothing operation onto the global octree. Note also how the
+number of leaf octs in the octree (5661944) does not match the number of SPH
+particles (``PartType0``). This discrepancy is a common source of initial
+confusion for users of SPH codes when they first try to use yt to analyze their
+data.
+
+We can ask ourselves whether it makes sense to always smooth data onto the
+global octree. It makes intuitive sense for users of AMR codes if does
+operations on a volume-filling mesh for AMR data, since the volume filling mesh
+is the "real" data. However, for SPH data, the global octree mesh is not
+representative of the "native" data. By making the return value of most yt
+operations for SPH fields be defined on the octree mesh, yt is not being "true"
+to the data and also makes it harder than it needs to be to access the particle
+as such.
+
+In this YTEP, **we propose changing the data object API for SPH data by ensuring
+that all SPH smoothed fields return data defined at the locations of SPH
+particles**. This means that rather than relying on smoothing data onto the
+global octree, we will instead always return data defined at the particle
+locations. This means that running the script included above would produce the
+following output::
+
+  (4334546,)
+  {'PartType0': 4334546,
+   'PartType1': 4786616,
+   'PartType2': 2333848,
+   'PartType3': 0,
+   'PartType4': 450921,
+   'PartType5': 1149}
+
+And that the ``('gas', 'density')`` field would merely be an alias to the
+``('PartType0', 'Density')`` field available on-disk. Since we no longer need to
+smooth data onto the in-memory global octree, this substantially reduces the
+memory needed to work with SPH data while simultaneously substantially improving
+performance. Just as an example, in the version of the yt that implements this
+YTEP, the script at the top of this section requires only 3.3 seconds to run.
+
+The details of how this backward incompatible change to the user yt user
+experience for SPH data will be implemented is detailed below. This includes all
+design decisions that have been made in the prototype version of yt that
+implements this YTEP. In addition, there are still several design decisions
+about how to implement this YTEP that have not yet been decided on. For more
+details about these issues, see the "Open Questions" section at the bottom of
+this document.
 
 SPH Fields
 ++++++++++
+
+Data Selection for SPH Fields
++++++++++++++++++++++++++++++
+
+Visualization of Slices and Projection
+++++++++++++++++++++++++++++++++++++++
 
 Deposition operations
 +++++++++++++++++++++
