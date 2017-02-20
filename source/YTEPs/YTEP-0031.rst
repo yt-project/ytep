@@ -14,7 +14,7 @@ performance and scalability of visualizing and analyzing particle datasets. This
 YTEP proposes removing the global octree index, replacing it with a combination
 of a new IO system and changes to the high-level yt API to focus on returning
 particle-centric data. The particle I/O refactor makes use of an indexing scheme
-based on compressed morton bitmaps which dramatically improves memory usage and
+based on compressed Morton bitmaps which dramatically improves memory usage and
 scaling for large particle datasets without the need for a global octree index.
 
 Rather than constructing a global index to maintain backward compatibility at
@@ -30,7 +30,7 @@ defined at particle locations. Fields that need spatial derivatives are
 implemented using the SPH formalism and are also evaluated at the particle
 locations.
 
-Alltogether these changes allow for improved performance and scaling, and allow
+Altogether these changes allow for improved performance and scaling, and allow
 users to access, analyze, and visualize particle field data for SPH simulations
 in a more straightforward fashion. While we do not propose substantial API
 changes for mesh or octree codes, these changes to yt's field system for
@@ -75,7 +75,7 @@ produced by yt using the default ``n_ref`` and ``over_refine_factor`` are
 somewhat blocky since by default we use a relatively coarse octree to preserve
 memory. In addition, since we construct the global octree based on the positions
 of all particles, visualizations that include only one particle type sometimes
-include "holes" in regions undersampled by that particle type.
+include "holes" in regions under-sampled by that particle type.
 
 These cosmetic and semantic issues are jarring to users of SPH codes, who tend
 to think of data defined at the particle locations rather than sampled onto an
@@ -85,14 +85,14 @@ work with yt.
 
 Over the past two years, Meagan Lang and Matt Turk implemented a new approach
 for handling I/O of particle data, based on storing compressed bitmaps
-containing morton indices instead of an in-memory octree. This new capability
+containing Morton indices instead of an in-memory octree. This new capability
 means that the global octree index is now no longer necessary to enable I/O
 chunking and spatial indexing of particle data in yt.
 
 In this document we describe the approach we take for replacing the global
-octree index with morton bitmasks. First, we describe the implementation of the
+octree index with Morton bitmasks. First, we describe the implementation of the
 Morton bitmask index, changes to the low-level selector API needed to support
-the morton bitmask work, and the testing strategy used for the morton bitmap
+the Morton bitmask work, and the testing strategy used for the Morton bitmap
 indexing scheme. Next we discuss high-level changes to how yt handles particle
 data, discussion changes to the field system for SPH data, the implementation of
 the SPH pixelizer system for visualizations, a discussion of deposit fields, and
@@ -188,12 +188,12 @@ In the current implementation users can control the creation of the bitmask
 index via the ``index_order`` and ``index_filename`` keyword arguments accepted
 by ``SPHDataset`` instances. These keyword arguments replace the deprecated
 ``n_ref``, ``over_refine_factor`` and ``index_ptype`` keyword arguments. The
-``index_order`` is a two-element tuple corresponding to the maximum morton order
+``index_order`` is a two-element tuple corresponding to the maximum Morton order
 for the coarse and refined index. Using a tuple for the ``index_order`` instead
 of two keyword arguments is not only more terse, but it will allow us to produce
 bitmask indexes in the future with multiple refined indices while maintaining
 the same public API. Currently the default ``index_order`` is ``(7, 5)``. If a
-user specifes ``index_order`` as an integer, the integer is taken as the order
+user specifies ``index_order`` as an integer, the integer is taken as the order
 of the coarse index and the order of the refined index is set to ``1``,
 producing a trivial refined index. For example::
 
@@ -226,13 +226,13 @@ SPH frontends.
 Data Selection and Changes to the Selector API
 ++++++++++++++++++++++++++++++++++++++++++++++
 
-The morton bitmaps needed for individual data objects are constructed using the
-existing low-level cython selection API. To determine whether a given morton
+The Morton bitmaps needed for individual data objects are constructed using the
+existing low-level Cython selection API. To determine whether a given Morton
 index is "contained" in the geometric primitive defined by the selector we make
 use of the ``select_bbox`` selection API call, since each index corresponds to a
 single cell in an octree. If the selector fully encloses the bounding box for
-the cell defined by a given morton index, the existing ``select_bbox`` function
-is sufficient. However, given that the goal of the morton bitmap index is to
+the cell defined by a given Morton index, the existing ``select_bbox`` function
+is sufficient. However, given that the goal of the Morton bitmap index is to
 reduce the number of files we need to read from for a given selection operation,
 more care must be taken near the "edges" of a selector. For this reason, we have
 added a new function to the selector API, ``select_bbox_edge``. This function is
@@ -241,8 +241,8 @@ inside of the geometric primitive associated with a selector, simply returning 1
 in these cases. However, if the bounding box is only partially contained in the
 geometric primitive, ``select_bbox_edge`` returns 2, indicating partial
 overlap. This is used in the bitmap index code to indicate that the coarse
-morton index does not have sufficient resolution in this region, triggering the
-generation of refined morton indices in this region. These smaller bounding
+Morton index does not have sufficient resolution in this region, triggering the
+generation of refined Morton indices in this region. These smaller bounding
 boxes will have a higher probability of being either fully contained or fully
 excluded from a data object, decreasing the probability of a file collision. The
 ``select_bbox_edge`` function has been implemented for all selectors and if this
