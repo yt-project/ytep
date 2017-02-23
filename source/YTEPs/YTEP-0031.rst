@@ -15,7 +15,8 @@ YTEP proposes removing the global octree index, replacing it with a combination
 of a new IO system and changes to the high-level yt API to focus on returning
 particle-centric data. The particle I/O refactor makes use of an indexing scheme
 based on compressed Morton bitmaps which dramatically improves memory usage and
-scaling for large particle datasets without the need for a global octree index.
+scaling for large particle datasets by eliminating the need for a global octree
+index.
 
 Rather than constructing a global index to maintain backward compatibility at
 the cost of scaling and performance, we instead propose a reworking of the yt
@@ -94,11 +95,11 @@ octree index with Morton bitmasks. First, we describe the implementation of the
 Morton bitmask index, changes to the low-level selector API needed to support
 the Morton bitmask work, and the testing strategy used for the Morton bitmap
 indexing scheme. Next we discuss high-level changes to how yt handles particle
-data, discussion changes to the field system for SPH data, the implementation of
-the SPH pixelizer system for visualizations, a discussion of deposit fields, and
-a description of the strategy used to test the new approach for SPH data. We
-close with a discussion of questions that still need to be tackled before this
-work can be merged.
+data, changes to the field system for SPH data, the implementation of the SPH
+pixelizer system for visualizations, a discussion of deposit fields, and a
+description of the strategy used to test the new approach for SPH data. We close
+with a discussion of questions that still need to be tackled before this work
+can be merged.
 
 
 Low-Level Implementation
@@ -154,17 +155,17 @@ EWAH bitmap for each coarse cell with a collision.
 The coarse and refined indices are generated in two separate I/O passes over the
 entire dataset. To generate the coarse index, the coordinates of all particles,
 as well as the softening lengths for SPH particles, are read in from each
-file. For each particle, we then compute the Morton index corresponding to the
+file. For each particle we then compute the Morton index corresponding to the
 particles position within the domain. This index, ``mi`` is then used to set the
 ``mi``\ th element in a boolean mask for the file to 1. If the particle is an
 SPH particle, neighboring indices with cells that overlap a sphere with a radius
 equal to the particle’s softening length and centered on the particle are also
 set to 1.
 
-Once a coarse boolean mask is obtained for each file, the masks are stored in
-a set of EWAH compressed bitmaps (``ewah_bool_array`` Cython extension
-classes). Using logical boolean operations, we then identify those indices
-that are set to 1 in more than one file’s mask (the collisions).
+Once a coarse boolean mask is obtained for each file, the masks are stored in a
+set of EWAH compressed bitmaps (implemented in the ``ewah_bool_array`` Cython
+extension classes). Using logical boolean operations, we then identify those
+indices that are set to 1 in more than one file’s mask (the collisions).
 
 During a second I/O pass over the entire dataset, refined indices are created
 for those particles with colliding coarse indices. Both the coarse and refined
@@ -267,7 +268,7 @@ Testing
 Removing the Global Octree Mesh
 *******************************
 
-Currently, all i/o operations are mediated via the global octree
+Currently, all I/O operations are mediated via the global octree
 index. Particles are read in from the output file as needed based on their
 position in the octree.  With the arrival of the compressed bitmap index scheme
 described above, we no longer need to use the global octree to manage I/O
@@ -307,13 +308,12 @@ confusion for users of SPH codes when they first try to use yt to analyze their
 data.
 
 We can ask ourselves whether it makes sense to always smooth data onto the
-global octree. It makes intuitive sense for users of AMR codes if does
-operations on a volume-filling mesh for AMR data, since the volume filling mesh
-is the "real" data. However, for SPH data, the global octree mesh is not
-representative of the "native" data. By making the return value of most yt
-operations for SPH fields be defined on the octree mesh, yt is not being "true"
-to the data and also makes it harder than it needs to be to access the particle
-as such.
+global octree. It makes intuitive sense for users of AMR codes for yt to return
+data defined on a volume-filling mesh, since the volume filling mesh is the
+"real" data. However, for SPH data, the global octree mesh is not representative
+of the "native" data. By making the return value of most yt operations for SPH
+fields be defined on the octree mesh, yt is not being "true" to the data and
+also makes it harder than it needs to be to access the particle data as such.
 
 In this YTEP, **we propose changing the data object API for SPH data by ensuring
 that all SPH smoothed fields return data defined at the locations of SPH
@@ -337,16 +337,149 @@ memory needed to work with SPH data while simultaneously substantially improving
 performance. Just as an example, in the version of the yt that implements this
 YTEP, the script at the top of this section requires only 3.3 seconds to run.
 
-The details of how this backward incompatible change to the user yt user
-experience for SPH data will be implemented is detailed below. This includes all
-design decisions that have been made in the prototype version of yt that
-implements this YTEP. In addition, there are still several design decisions
-about how to implement this YTEP that have not yet been decided on. For more
-details about these issues, see the "Open Questions" section at the bottom of
-this document.
+The details of how this backward incompatible change to the yt user experience
+for SPH data will be implemented is detailed below. This includes all design
+decisions that have been made in the prototype version of yt that implements
+this YTEP. In addition, there are still several design decisions about how to
+implement this YTEP that have not yet been decided on. For more details about
+these issues, see the "Open Questions" section at the bottom of this document.
+
+Identifying the SPH Particle
+++++++++++++++++++++++++++++
+
+All of the proposals in this YTEP require that there be special handling for
+fields that correspond to the SPH particle type. Currently yt does not have a
+way of identifying whether a given particle type in a particle dataset is an SPH
+particle. To ameliorate this, we propose adding a new private attribute of
+``SPHDataset`` instances, ``_sph_ptype``. This attribute should resolve to the
+string name of the SPH particle type for the given output type. For example, for
+Gadget HDF5 data, the ``_sph_ptype`` is ``'PartType0'``. Having this attribute
+available makes it much easier to write code that does special handling for SPH
+data.
 
 SPH Fields
 ++++++++++
+
+Here we discuss changes to the yt field system for SPH particle data that will
+enable removing the global octree mesh.
+
+Local Fields
+^^^^^^^^^^^^
+
+Currently yt assumes that fields with a ``'gas'`` field type are defined on a
+volume filling mesh. This YTEP proposes relaxing that assumption for SPH data so
+that ``'gas'`` fields correspond to *particle* fields. Since we would like to
+reuse the existing field definitions in yt as much as possible, we need to
+explore how to adjust the field system to allow reuse of existing fields when
+the field data might represent local particle data, SPH smoothed quantities, or
+mesh fields, depending on the type of data being loaded.
+
+As a reminder, ``sampling_type`` is a newly introduced keyword
+argument that can be passed to the initializer for yt ``DerivedField`` objects
+that will be released publicly as part of yt 3.4. It replaces the
+``particle_type`` keyword argument, allowing more flexibility to define new
+types of fields that are sampled in novel ways without needing to expose
+additional keyword arguments like ``particle_type``. Currently, the default
+value of ``sampling_type`` is ``'cell'``, preserving the old default behavior
+(e.g. ``particle_type=False``).
+
+We propose changing the default value of the ``sampling_type`` used for yt
+derived fields from ``'cell'`` to a new value: ``'local'``. Derived fields with
+``sampling_type='local'`` are fully local functions of other derived fields
+(which themselves do not have to be fully local). It turns out that nearly all
+of the fields that are currently defined inside yt with ``sampling_type='cell'``
+are actually fully local and the field functions they encode can be readily
+reused with particle data. In the version of yt that implements this YTEP, all
+fully local derived fields defined inside yt have had their field definitions
+altered such that ``sampling_type='local'``.
+
+With this accomplished, making all fully local derived fields work simply
+requires setting up SPH particle fields with aliases to yt "universal" field
+names. To make that concrete, this means that a Gadget HDF5 output needs an
+alias from ``('PartType0', 'Density')`` to ``('gas', 'density')``. With this
+alias defined, all fully local derived fields that depend only on ``('gas',
+'density')`` will automatically work. In addition, any *particle* derived fields
+defined for the ``PartType0`` with field names that begin with ``'particle_'``
+will be aliased to ``'gas'`` fields without the ``'particle_`` prefix. For
+example, the ``('PartType0', 'particle_angular_momentum_x')`` field is aliased
+to ``('gas', 'angular_momentum_x')``. This means that any ``'gas'`` derived
+fields that depend on ``('gas', 'angular_momentum_x')`` being defined will
+function as expected. In other words, we use the existing system of particle
+fields to bootstrap the needed "input" fields for the bulk of the ``'gas'``
+derived fields. The aliasing described here is implemented in the
+``setup_smoothed_fields`` member function of the ``FieldInfoContainer`` class.
+
+One side effect of this approach is that there are some "odd" ``'gas'`` derived
+fields (particularly if one is coming from an AMR code). For example, ``('gas',
+'position')`` is defined as an alias to ``('PartType0',
+'particle_position')``. It may not be a good idea in the end to alias **all**
+particle fields for the SPH particle type to ``'gas'`` fields, and it may be
+necessary to add a blacklist of fields that should *not* be aliased, or that
+should be aliased with explicit particle field names (e.g. maybe it would be
+most helpful to define ``('gas', 'particle_position')``).
+
+Non-local Fields
+^^^^^^^^^^^^^^^^
+
+Unfortunately, not all fields are fully local. We would optimally like to
+support fields that require some sort of difference operation, in particular
+physically meaningful fields like the gas vorticity or divergence. Currently
+these fields are not supported for particle data (since ghost zones have not yet
+been implemented for octrees), so if this effort makes it easier to add support
+for these fields, that will be a substantial improvement.
+
+It turns out that within the SPH formalism there is a straightforward way to
+compute fields that depend on spatial derivatives. These formulae are used
+internally in SPH codes to estimate various terms in the equations of fluid
+dynamics. Thankfully, we can make use of these formulae for visualization and
+analysis purposes. There is a very nice paper by Dan Price [PricePaper]_ that
+works through this formalism, from which we can derive several formulae for
+partial derivatives and vector derivatives. For some quantity :math:`A` that is
+a function of position, the partial derivative of :math:`A` with respect to
+:math:`x` at the position of particle :math:`a` can be evaluated via:
+
+.. math::
+
+    \frac{\partial{A_a}}{\partial{x}} = \sum_b \frac{m_b}{\rho_b} \frac{\phi_b}
+    {\phi_a} \left(A_b - A_a\right) \frac{\partial_a{W_{ab}}}{\partial{x}}
+
+Here :math:`m_b` and :math:`\rho_b` are the mass of and gas density associated
+with the :math:`b`'th particle, :math:`\phi` is an arbitrary function of
+position (common choices are :math:`1` and :math:`\rho`), and :math:`W_a` is the
+SPH smoothing kernel at the position of particle :math:`a`. The derivative
+inside the sum in the above expression is evaluated at the position of particle
+:math:`a`.
+
+Similarly for the gradient, divergence, and curl:
+
+.. math::
+
+    \nabla_a A = \sum_b \frac{m_b}{\rho_b} \frac{\phi_b}{\phi_a}
+    \left(A_b -A_a\right) \nabla_a W_{ab}
+
+    \left<\nabla \cdot \mathbf{A}\right>_a = \sum_b \frac{m_b}{\rho_b}
+    \frac{\phi_b}{\phi_a} \left(\mathbf{A}_b - \mathbf{A}_a\right) \cdot
+    \nabla_a W_{ab}
+
+    \left<\nabla \times \mathbf{A}\right>_a = - \sum_b \frac{m_b}{\rho_b}
+    \frac{\phi_b}{\phi_a} \left(\mathbf{A}_b - \mathbf{A}_a\right) \times
+    \nabla_a W_{ab}
+
+These symmetrized formulae (i.e. they all include a term that looks like
+:math:`A_b - A_a`) have the advantage that the derivative of a constant field is
+zero by construction.
+
+To actually use these formula, we will need to calculate on a
+particle-by-particle basis the list of nearest neighbors for each particle and
+then evaluate these formulae at the locations of each particle. This has not yet
+been implemented in the version of yt that implements this YTEP, but we expect
+it to be straightforward using the existing functionality in yt to generate
+nearest neighbor lists.
+
+Non-local fields that do not depend on an explicit derivative operation will
+(e.g. ``('gas', 'averaged_density')``) will not be implemented for SPH data.
+
+.. [PricePaper] http://adsabs.harvard.edu/abs/2012JCoPh.231..759P
 
 Data Selection for SPH Fields
 +++++++++++++++++++++++++++++
@@ -374,6 +507,9 @@ Global Octree or Octree Subset Data Object
 
 Volume Rendering
 ****************
+
+Do We Need Particle Fields?
+***************************
 
 Community engagement
 ********************
