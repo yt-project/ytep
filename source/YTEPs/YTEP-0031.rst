@@ -599,10 +599,107 @@ more sense to instead sample directly from the particle data.
 Deposition operations
 +++++++++++++++++++++
 
+While we do want to make it easier to access particle-centric data, we need to
+make sure it's still possible to locally deposit and SPH smooth data onto
+grids. Not only is that a useful operation for users of SPH codes, but it's also
+functionality that yt currently provides, so we need to ensure that currently
+supported operations on ``covering_grid`` and ``arbitrary_grid`` data objects
+continue to work and produce sensible results. We will add tests to verify that
+this is the case.
+
 .. _data-object-tests:
 
 Testing
 +++++++
+
+The testing strategy for this work follows two basic approaches so far. First,
+we make sure that all derived fields that are associated with a number of
+real-world SPH datasets from http://yt-project.org/data can be calculated
+without generating any errors. This ensures both that the derived field system
+is functioning but also that the I/O routines in the various SPH frontends are
+functioning correctly. These tests are present in
+``yt.fields.tests.test_sph_fields``.
+
+In addition, we have added support in the stream frontend for loading SPH
+data. This allows us to create fake in-memory SPH datasets that we can construct
+in a way that make them easier to reason about for testing than a real-world SPH
+dataset. The primary route for generating these dataset is a new function in the
+``yt.testing`` namespace, ``fake_sph_orientation_ds``. This function has the
+following very straightforward definition::
+
+  def fake_sph_orientation_ds():
+      """Returns an in-memory SPH dataset useful for testing
+
+      This dataset should have one particle at the origin, one more particle
+      along the x axis, two along y, and three along z. All particles will
+      have non-overlapping smoothing regions with a radius of 0.25, masses of 1,
+      and densities of 1, and zero velocity.
+      """
+      from yt import load_particles
+
+      npart = 7
+
+      # one particle at the origin, one particle along x-axis, two along y,
+      # three along z
+      data = {
+          'particle_position_x': (
+              np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]), 'cm'),
+          'particle_position_y': (
+              np.array([0.0, 0.0, 1.0, 2.0, 0.0, 0.0, 0.0]), 'cm'),
+          'particle_position_z': (
+              np.array([0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0]), 'cm'),
+          'particle_mass': (np.ones(npart), 'g'),
+          'particle_velocity_x': (np.zeros(npart), 'cm/s'),
+          'particle_velocity_y': (np.zeros(npart), 'cm/s'),
+          'particle_velocity_z': (np.zeros(npart), 'cm/s'),
+          'smoothing_length': (0.25*np.ones(npart), 'cm'),
+          'density': (np.ones(npart), 'g/cm**3'),
+      }
+
+      bbox = np.array([[-4, 4], [-4, 4], [-4, 4]])
+
+      return load_particles(data=data, length_unit=1.0, bbox=bbox)
+
+This example also demonstrates how ``load_particles`` can be used by users in
+this work to load SPH data written in data formats that aren't yet supported by
+a frontend. This testing dataset has one particle at the origin, another
+particle along the x axis, two more along the y axis, and three along z. All
+particles have the same smoothing length, such that the smoothing volumes of any
+of the particles in the dataset do not overlap. This means that we can construct
+various data objects and reason about which particles we should be selecting
+given the geometry of the particles in the dataset and the boundaries of the
+data object. In addition, we take care to make sure that the boundaries of the
+data objects do not necessarily directly overlap with the position of a particle
+near the boundary. This ensures that particles are selected when their smoothing
+volume overlaps with a data object, not necessarily based on the particle
+positions. These tests are present in
+``yt.data_objects.tests.test_sph_data_objects``. Currently all of the data
+objects supported by yt are explicitly tested here. As an example, here is the
+test that verifies the slice data object is working correctly::
+
+  # The number of particles along each slice axis at that coordinate
+  SLICE_ANSWERS = {
+      ('x', 0): 6,
+      ('x', 0.5): 0,
+      ('x', 1): 1,
+      ('y', 0): 5,
+      ('y', 1): 1,
+      ('y', 2): 1,
+      ('z', 0): 4,
+      ('z', 1): 1,
+      ('z', 2): 1,
+      ('z', 3): 1,
+  }
+
+  def test_slice():
+      ds = fake_sph_orientation_ds()
+      for (ax, coord), answer in SLICE_ANSWERS.items():
+          # test that we can still select particles even if we offset the slice
+          # within each particle's smoothing volume
+          for i in range(-1, 2):
+              sl = ds.slice(ax, coord + i*0.1)
+              assert_equal(sl['gas', 'density'].shape[0], answer)
+
 
 Open Questions
 --------------
