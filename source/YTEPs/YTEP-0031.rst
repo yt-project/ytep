@@ -265,6 +265,22 @@ of ``select_sphere``, we have added new implementations where necessary.
 Testing
 +++++++
 
+Testing is provided for both the low level routines controlling access to the 
+bitmap, as well for higher level routines that control bitmap generation. Low 
+level tests are located in `yt.utilities.lib.tests.test_geometry_utils`. This 
+includes tests of the routines for generating Morton indices from cartesian 
+coordinates, extracting single bit coordinates, and locating neighboring morton 
+indices at the coarse or refined index level both with and without periodic 
+boundary conditions.
+
+Higher level tests are located in `yt.geometry.tests.test_particle_octree`
+and include the framework to create test datasets with arbitrary domain
+decomposition schemes across a specified number of files. Tests are included 
+for creating bitmap indices for datasets with no collisions and all collisions 
+that check the number of coarse and refined cells against known answers. In
+addition we also provided tests for saving/loading bitmaps and identifying 
+input files for rectangular selections on known domain decomposition schemes.
+
 Removing the Global Octree Mesh
 *******************************
 
