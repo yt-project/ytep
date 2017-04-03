@@ -1,0 +1,114 @@
+YTEP-1000: GitHub Migration
+===========================
+
+Abstract
+--------
+
+Created: March 25, 2017
+Author: Lots of folks
+
+The primary source code and project management for yt should be moved from
+bitbucket to github, and as a result, from mercurial to git. This document
+outlines a timeline, conversion and import mechanism, and how to manage this
+transition.
+
+Status
+------
+
+Proposed.
+
+The yt steering committee has evaluated the broad strokes, and it was presented
+to the yt community at the beginning of March. There were no objections, and
+this document is to be iterated on to decide on the migration strategy and
+timeline.
+
+Project Management Links
+------------------------
+
+ * Mailing list message describing the situation:
+   http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2017-March/006792.html
+
+Detailed Description
+--------------------
+
+As discussed in the email to yt-dev, we should move from BitBucket to GitHub as
+a result of the pervasive network effect of GitHub and its impact on the
+community of yt developers.
+
+The process of migration needs to be planned to minimize disruption to
+developer and user workflow. It will proceed in roughly three stages.
+
+Stage 1
++++++++
+
+A clone is created on GitHub, and this is evaluated by the developers.
+The specifics of the conversion procedures (specifically, things like any
+branch filtering, tag conversions, embedding of hashes and so on) will be
+examined. A few particular items of note are that the changeset hashes in
+commit messages and issues are of particular interest. Any commit messsage
+filtering or file size reduction will be considered. This clone will not be
+final, and will not be open for pull requests, changes, etc. It will be a
+one-way and one-time sync.
+
+Possible timeline: April 10, 2017
+
+To Do items during this stage:
+
+ * Create initial clone (this can be done manually)
+
+Stage 2
++++++++
+
+Once the conversion process has been decided on, a bidirectional sync will be
+set up. New PRs will be accepted at GitHub, and a winding down of PRs on the
+bitbucket site will begin. Documentation for development will be updated to
+reflect the new normal. Issues will migrate to GitHub.
+
+Possible timeline: May 1, 2017
+
+To Do items during this stage:
+
+ * Set up autosyncing mechanism between hg and git repository (look into
+   https://bitbucket.org/metallapan/bitsynchub/)
+ * Migrate issues to GitHub (1:1 mapping of numbers)
+ * Set up Jenkins jobs using git and GitHub plugins
+ * Rewrite `yt update`
+ * Update documentation
+ * Update slack bot
+
+Stage 3
++++++++
+
+New PRs will not be accepted on bitbucket, but existing PRs will be
+allowed and accepted. Infrastructure will switch to GitHub as the principal
+source of truth.
+
+Possible timeline: Unknown, but unlikely to be before June or July, 2017.
+
+To Do items during this stage:
+
+ * Migrate users (ask for their GH handle) and their access levels
+ * Migrate webhooks (trident, PR handler will be obsolete, yt-svn)
+ * Move supplemental repositories, including YTEPs, website, etc.
+
+Once Stage 3 has been completed, the bitbucket repository will be marked
+read-only.
+
+Progress and Notes
+++++++++++++++++++
+
+During the course of the stages, we will update this YTEP with notes on
+conversion processes, etc.
+
+Backwards Compatibility
+-----------------------
+
+This will almost certainly *not* break internal APIs other than those
+identified in the "todo" section above, which are all related to project
+maintenance like updating and so on.
+
+The developer workflow will break, but we are attempting to mitigate that
+through this YTEP.
+
+Finally, the documentation (identified as needing to be updated) will be
+updated to reflect the new normal.
