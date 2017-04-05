@@ -57,7 +57,7 @@ http://github.com/yt-project/yt_fast_export .  This includes `git notes` for
 each changeset hash, but they must be pulled specifically using `git fetch
 origin "refs/notes/*:refs/notes/*"` .
 
-Possible timeline: April 10, 2017
+Possible timeline: Starting April 10, 2017
 
 To Do items *during* this stage:
 
@@ -78,8 +78,8 @@ declined that are still "in progress" will need to be converted to github pull
 requests, the process for which will be documented.  The simplest mechanism
 will be through `hg export` and `git import`, which will squash patches.
 
-Possible timeline: May 1, 2017.  This stage is contingent on the Stage 1
-To-Do's being completed, but should be roughly three weeks after Stage 1 is
+Possible timeline: Starting May 1, 2017.  This stage is contingent on the Stage
+1 To-Do's being completed, but should be roughly three weeks after Stage 1 is
 entered.
 
 To Do items *during* this stage:
@@ -96,9 +96,9 @@ Stage 3
 This is the final stage.  At this point, the switch will be flipped, and no
 more PRs or code review will be accepted on BitBucket.
 
-Possible timeline: May 15, 2017.  This stage is contingent on the Stage 2
-To-Do's being completed, but should be roughly two weeks after Stage 2 is
-entered.
+Possible timeline: Starting May 15, 2017.  This stage is contingent on the
+Stage 2 To-Do's being completed, but should be roughly two weeks after Stage 2
+is entered.
 
 To Do items *during* this stage:
 
