@@ -1,0 +1,127 @@
+YTEP-1000: GitHub Migration
+===========================
+
+Abstract
+--------
+
+Created: March 25, 2017
+Author: Lots of folks
+
+The primary source code and project management for yt should be moved from
+bitbucket to github, and as a result, from mercurial to git. This document
+outlines a timeline, conversion and import mechanism, and how to manage this
+transition.
+
+Status
+------
+
+Proposed.
+
+The yt steering committee has evaluated the broad strokes, and it was presented
+to the yt community at the beginning of March. There were no objections, and
+this document is to be iterated on to decide on the migration strategy and
+timeline.
+
+Project Management Links
+------------------------
+
+ * Mailing list message describing the situation:
+   http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2017-March/006792.html
+
+Detailed Description
+--------------------
+
+As discussed in the email to yt-dev, we should move from BitBucket to GitHub as
+a result of the pervasive network effect of GitHub and its impact on the
+community of yt developers.
+
+The process of migration needs to be planned to minimize disruption to
+developer and user workflow. It will proceed in roughly three stages.
+
+Stage 1
++++++++
+
+A clone is created on GitHub, and this is evaluated by the developers.
+The specifics of the conversion procedures (specifically, things like any
+branch filtering, tag conversions, embedding of hashes and so on) will be
+examined. A few particular items of note are that the changeset hashes in
+commit messages and issues are of particular interest. Any commit messsage
+filtering or file size reduction will be considered. This clone will not be
+final, and will not be open for pull requests, changes, etc. It will be a
+one-way and one-time sync.
+
+Whatever methods are used to do this conversion will be written in this YTEP.
+
+An example using `fast-export` can be found at
+http://github.com/yt-project/yt_fast_export .  This includes `git notes` for
+each changeset hash, but they must be pulled specifically using `git fetch
+origin "refs/notes/*:refs/notes/*"` .
+
+Possible timeline: Starting April 10, 2017
+
+To Do items *during* this stage:
+
+ * Create initial clone (this can be done manually)
+ * Test migration of issues to GitHub (1:1 mapping of numbers)
+ * Set up Jenkins jobs using git and GitHub plugins
+ * Rewrite `yt update`
+ * Update documentation
+ * Update slack bot
+ * Migrate supplemental repositories to GitHub
+
+Stage 2
++++++++
+
+This is a brief stage, during which we wind down PRs from the Bitbucket
+repository.  All PRs will be either accepted or declined.  All PRs that are
+declined that are still "in progress" will need to be converted to github pull
+requests, the process for which will be documented.  The simplest mechanism
+will be through `hg export` and `git import`, which will squash patches.
+
+Possible timeline: Starting May 1, 2017.  This stage is contingent on the Stage
+1 To-Do's being completed, but should be roughly three weeks after Stage 1 is
+entered.
+
+To Do items *during* this stage:
+
+ * Accept or decline all PRs on BitBucket.  Those PRs that are not accepted by
+   the conclusion will need to be moved to GitHub
+ * Switch infrastructure over to GitHub
+ * Open up PRs on GitHub and begin code review there
+ * Migrate users (ask for their GH handle) and their access levels
+
+Stage 3
++++++++
+
+This is the final stage.  At this point, the switch will be flipped, and no
+more PRs or code review will be accepted on BitBucket.
+
+Possible timeline: Starting May 15, 2017.  This stage is contingent on the
+Stage 2 To-Do's being completed, but should be roughly two weeks after Stage 2
+is entered.
+
+To Do items *during* this stage:
+
+ * None that I can think of.
+
+Once Stage 3 has been completed, the bitbucket repository will be marked
+read-only.
+
+Progress and Notes
+++++++++++++++++++
+
+During the course of the stages, we will update this YTEP with notes on
+conversion processes, etc.
+
+Backwards Compatibility
+-----------------------
+
+This will almost certainly *not* break internal APIs other than those
+identified in the "todo" section above, which are all related to project
+maintenance like updating and so on.
+
+The developer workflow will break, but we are attempting to mitigate that
+through this YTEP.
+
+Finally, the documentation (identified as needing to be updated) will be
+updated to reflect the new normal.
