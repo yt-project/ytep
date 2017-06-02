@@ -69,14 +69,18 @@ to yt in the run-up to the yt-3.0 release, this approach allowed yt to support
 SPH data in a way that could reuse the existing infrastructure in yt for octree
 data and preserve core assumptions in yt that ``gas`` fields must correspond to
 a volume-filling AMR structure. While this did make initial support for SPH data
-much easier, it also had some downsides. In particular, the memory and CPU
-overhead of smoothing SPH data onto the octree can be prohibitive on particle
-datasets produced by large simulations. Visualizations of slices and projections
-produced by yt using the default ``n_ref`` and ``over_refine_factor`` are
-somewhat blocky since by default we use a relatively coarse octree to preserve
-memory. In addition, since we construct the global octree based on the positions
-of all particles, visualizations that include only one particle type sometimes
-include "holes" in regions under-sampled by that particle type.
+much easier, it also had some downsides. In particular, because the octree was a
+single, global object, the memory and CPU overhead of smoothing SPH data onto
+the octree can be prohibitive on particle datasets produced by large
+simulations. Constructing the octree during the initial indexing phase also
+required each particle (albeit, in a 64-bit integer) to be present in memory
+simultaneously for a sorting operation, which was memory
+prohibitive. Visualizations of slices and projections produced by yt using the
+default ``n_ref`` and ``over_refine_factor`` are somewhat blocky since by
+default we use a relatively coarse octree to preserve memory. In addition, since
+we construct the global octree based on the positions of all particles,
+visualizations that include only one particle type sometimes include "holes" in
+regions under-sampled by that particle type.
 
 These cosmetic and semantic issues are jarring to users of SPH codes, who tend
 to think of data defined at the particle locations rather than sampled onto an
@@ -165,7 +169,10 @@ set to 1.
 Once a coarse boolean mask is obtained for each file, the masks are stored in a
 set of EWAH compressed bitmaps (implemented in the ``ewah_bool_array`` Cython
 extension classes). Using logical boolean operations, we then identify those
-indices that are set to 1 in more than one file’s mask (the collisions).
+indices that are set to 1 in more than one file’s mask (the collisions). The
+EWAH format is particularly good at logical operations, as it does not
+necessarily require decompression to determine whether or not particular bits
+are set.
 
 During a second I/O pass over the entire dataset, refined indices are created
 for those particles with colliding coarse indices. Both the coarse and refined
@@ -547,7 +554,8 @@ for slices, off-axis slices, and axis-aligned projections to make use of an
 SPH-centric pixelization operation. For inspiration, we look to `SPLASH
 <http://users.monash.edu.au/~dprice/splash/>`_, an open-source SPH visualization
 tool written in Fortran. The algorithms used in SPLASH are detailed in the
-SPLASH method paper [SPLASHPaper]_.
+SPLASH method paper [SPLASHPaper]_. We note that we have not consulted the
+SPLASH source code in support of this implementation.
 
 The key to the pixelization algorithm used in SPLASH is to compute the SPH
 smoothing operation via the "scatter" approach. Rather than looping over pixels
