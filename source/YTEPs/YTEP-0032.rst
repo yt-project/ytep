@@ -259,8 +259,8 @@ and ``select_points`` functions were changed so that instead of accepting only
 single scalar radius for all particles, they can accept an array of possibly
 variable radii as well. If non-zero radii are passed in, particle selection
 operates via the ``select_sphere`` method instead of the ``select_point`` method
-that is currently used. Since some selectors did not yet have implementations
-of ``select_sphere``, we have added new implementations where necessary.
+that is currently used. Since some selectors did not yet have implementations of
+``select_sphere``, we have added new implementations where necessary.
 
 Testing
 +++++++
@@ -512,7 +512,9 @@ particles with positions outside of 3D data containers will be selected, since
 if the smoothing volume overlaps these particles still contribute to estimates
 of fluid quantities inside of the data object. See :ref:`data-object-tests` for
 more discussion of the testing strategy used to validate the yt data object and
-data selection system for SPH particles.
+data selection system for SPH particles. To allow for use cases where it is
+convenient to treat SPH particles as infinitesimal, we will add the ability to
+dynamically turn on and off this behavior with a configuration option.
 
 We have implemented and added unit tests for all of the following data objects:
 
@@ -833,9 +835,8 @@ Cut Regions
 We have not yet implemented the Cut Region data object since it's not clear how
 it should work for particle data. Similar to the projection data object, the cut
 region data object does not currently work when it is defined in terms of a
-threshold on a particle field. We should decide about what makes sense
-here. Optimally a decision here will also clarify what we need to do to handle
-field cuts on particle fields for grid data as well.
+threshold on a particle field. It may be possible to define an internal particle
+filter to implement cuts on Lagrangian data.
 
 Volume Rendering
 ****************
