@@ -45,7 +45,7 @@ good reasons for this:
    primary codebase, it too will be tested.  If functionality in yt changes,
    the analysis module will track this.  Additionally, we provide the ability
    to run tests on managed infrastructure.
- * **Hostin**: We will allow these projects to host data on hub.yt as well as
+ * **Hosting**: We will allow these projects to host data on hub.yt as well as
    have their websites either as subrepositories in the main `yt-project/website`
    repository or as subdirectories.  This will allow them to share our hosting
    infrastructure without developing their own, if they so wish.
