@@ -45,6 +45,10 @@ good reasons for this:
    primary codebase, it too will be tested.  If functionality in yt changes,
    the analysis module will track this.  Additionally, we provide the ability
    to run tests on managed infrastructure.
+ * **Hosting**: We will allow these projects to host data on hub.yt as well as
+   have their websites either as subrepositories in the main `yt-project/website`
+   repository or as subdirectories.  This will allow them to share our hosting
+   infrastructure without developing their own, if they so wish.
  * **Prestige**: (maybe?)  Having something be a part of yt adds to the sense
    that it's part of the bigger project, and that it's somehow graduated to a
    stable component.  (I am not sure this is real, but it's been mentioned to
@@ -101,6 +105,7 @@ This will take a few forms:
    should explore adding testing support for extensions under some criteria.
    (Such as, does this depend on public APIs, do test failures constitute
    upstream breakages, etc.)
+ * Accept either subrepos or subdirectories in `yt-project/website`.
 
 At present, people can find analysis modules by doing something like:::
 
