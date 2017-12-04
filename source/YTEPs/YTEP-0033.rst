@@ -1,0 +1,69 @@
+YTEP-0033: Dropping Python2 Support
+===================================
+
+Abstract
+--------
+
+Created: November 28, 2017
+Author: Nathan Goldbaum
+
+I propose to drop support for Python2.7 in the next major release of yt, version 4.0, after releasing a final feature release version that includes support for Python2.7, yt 3.5.
+
+Status
+------
+
+Proposed.
+
+Project Management Links
+------------------------
+
+This has come up in the past on the mailing list:
+
+http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2017-April/006851.html
+
+This document formalizes much of the discussion in that mailing list thread.
+
+Detailed Description
+--------------------
+
+Background
+^^^^^^^^^^
+
+Python 2.7, the last major release in the Python 2 series, is currently in maintenance mode, only receiving critical bugfixes. Even this minimal level of support will end on `April 12, 2020 <https://www.python.org/dev/peps/pep-0373/>`_, when Python 2.7 will go end of life. At that point, Python 2.7 will no longer receive even security fixes. It is thus incumbent on us to not encourage our users to use an insecure, unsupported version of Python that may not even necessarily build on future versions of operating systems by maintaining support for Python 2.7 indefinitely.
+
+Beyond that, for purely selfish reasons, we as a community have taken on costs to support both Python 2 and Python 3 in the same codebase. All contributions must happen in the dialect of Python that simultaneously functions under both major versions. We make heavy use of ``six``, requiring contributors to learn about ``six`` to make even trivial contributions that happen to touch on Python 2/3 incompatibilities. We must run tests on both versions to avoid version-specific bugs and regressions. We are unable to use new features that have been added in Python 3 since these features are unavailable in Python 2.
+
+For this reason, many projects in the scientific python ecosystem have either already ended support or proposed ending support for Python 2.7 in the near future. These efforts are summarized in the `Python 3 statement <http://www.python3statement.org/>`_, including a timeline that depicts the end of Python 2.7 support for projects that have signed the statement.
+
+Proposed Solution
+^^^^^^^^^^^^^^^^^
+
+I propose that we drop support for Python 3 in the major release of yt that happens after the next major release, yt 3.5. This release will be called yt 4.0, and may include a number of other major changes to the yt user experience, including `the demeshening <http://ytep.readthedocs.io/en/latest/YTEPs/YTEP-0032.html>`_ and `non-spatial indexing <http://ytep.readthedocs.io/en/latest/YTEPs/YTEP-0027.html>`_. In principle we could do a release and call it yt 3.6 that drops Python 2.7 support, however given that this is a major backwards incompatible change for the subset of our users who use Python 2.7, I think it would be best to signal this change with a major version number bump. We could also release yt 4.0 with the only breaking change being dropping of Python 2.7 support and then subsequently make other major changes that we are planning, however I feat that this approach would tax our limited development resources and draw out the transition further.
+
+Given our recent pace of development, I would expect yt 3.5 to be released summer 2018 and yt 4.0 will be released summer 2019. Some projects are treating their last release that supports Python 2.7 as a "long term support" (LTS) release. Given our development resources, I do not think that we have the bandwidth available to simultaneously support both yt 4.0 and yt 3.5 at the same level, however I do expect that we will make regular bugfix releases of the yt 3.5 series while yt 4.0 is under active development. This means that we will support yt 3.5 for approximately a year and officially end all support for Python 2.7 with the release of yt 4.0 in 2019.
+
+These timelines are roughly comparable with projects that we directly depend on. In particular:
+
+    * SymPy: Dropping support `in 2019 <https://groups.google.com/d/msg/sympy/3SXUEjeNhrM/wrm9ZSQEAgAJ>`_.
+    * Numpy: Dropping support `January 1 2019 <https://github.com/numpy/numpy/blob/master/doc/neps/dropping-python2.7-proposal.rst>`_
+    * Matplotlib: Dropping support `in 2018 <https://mail.python.org/pipermail/matplotlib-devel/2017-October/000892.html>`_
+
+In principle we don't need to be constrained by the timelines of projects we depend on, since we need only use the last version that supports Python 2.7, but that would add yet another maintenance burden, since we would not be able to use the latest and greatest version of a downstream project for development.
+
+Since we will be backporting bugfixes to the yt 3.5 release branch while yt 4.0 is under development, we will keep the uses of ``six`` and other python 2/3 compatibility code in an effort to make backporting easier. Once yt 4.0 is released we will be able to begin removing compatibility shims and ``__future__`` imports. We will be able to immediately drop the tests for Python 2.7 support on th development branch.
+
+Community Outreach
+^^^^^^^^^^^^^^^^^^
+
+I am planning to make both yt-dev and yt-users aware of this proposal, with the hope of soliciting feedback from interested users who do not normally participate in development discussions. Additionally, if this proposal is accepted, we will announce the future timeline for releases, along with the planned timeline for dropping Python 2.7 support in all release announcements. This should give more than a year of warning for community members to either say their peace about Python 2.7 support, or to make preparations to migrate user scripts to use Python 3.
+
+Backwards Compatibility
+-----------------------
+
+Users who must remain on Python 2.7 for whatever reason will no longer be able to run the latest version of yt. Existing versions will continue to function, however. Users who currently run yt under python 3 (this is the default option in the install script since April) will see no change.
+
+Alternatives
+------------
+
+* Maintain support for Python 2.7 indefinitely.
+* Maintain support for Python 2.7 for the yt 4.x series, dropping support in yt 5.0 or in a subsequent verison. This would likely mean maintaining support beyond 2020.
