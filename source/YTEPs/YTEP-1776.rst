@@ -9,7 +9,7 @@ Abstract
 Created: August 24, 2014
 Author: Britton Smith
 
-This document describes the structure, policies, procedures, and processes 
+This document describes the structure, policies, procedures, and processes
 of the yt development team.
 
 Status
@@ -119,12 +119,12 @@ of frontends and liasons is given below.
     Gadget_FOF     Britton Smith
     GDF            Kacper Kowalik
     HaloCatalog    Britton Smith
-    OWLS           
+    OWLS
     OWLSSubfind    Britton Smith
-    RAMSES         
+    RAMSES         Corentin Cadiou
     Rockstar       Britton Smith
     SDF            Sam Skillman
-    Tipsy          
+    Tipsy
     ============== =================
 
 Team Meetings
