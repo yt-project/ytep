@@ -1,0 +1,153 @@
+YTEP-0034: yt FITS Image Standard
+=================================
+
+Abstract
+--------
+
+Created: August 28, 2018
+Author: John ZuHone
+
+This YTEP will define the standard for ``FITSImageData`` objects written
+from slices, projections, and covering grids, for better support for reading
+these objects back into yt as datasets using the FITS frontend, using the
+dataset class ``YTFITSDataset``.
+
+Status
+------
+
+In Progress.
+
+Project Management Links
+------------------------
+
+The relevant code has been written and is in a PR which is under review:
+
+Detailed Description
+--------------------
+
+From its beginning, yt has been capable of producing projected images of 
+simulations as representations of the quantities which would be observed on 
+the sky plane. This enables comparisons of simulation predictions to real 
+data. 
+
+
+yt has long had the capability to read FITS image files as datasets using the
+FITS frontend. 
+
+This YTEP serves to define the "yt FITS standard" for FITS images produced
+from 3D simulation datasets using the ``FITSImageData`` class and its 
+subclasses. All changes to ``FITSImageData`` or the ``YTFITSDataset`` classes
+will be required to adhere to this standard.
+
+Overall File Structure
+======================
+
+yt FITS images shall be a single FITS file with one or more image header data
+units (hereafter HDUs), each one containing a 2 or 3-dimensional array. The
+dimensions of each array shall be consistent with the others for the entire 
+file. The first or "primary" HDU will also contain an image array. 
+
+Header Information
+==================
+
+Each FITS header associated with a a field in the FITS file shall be 
+entirely self-descripting with respect to the properties of the field, the 
+current time of the dataset, the coordinate system of the dataset, and the 
+unit system of the entire file. 
+
+Field Properties
+++++++++++++++++
+
+Unit Information
+++++++++++++++++
+
+Each header will be entirely self-describing as to the unit system of the
+dataset, including the dimensions of length, time, mass, velocity, 
+temperature, and magnetic field units. In most cases, these units will be
+derived from the underlying dataset used by ``FITSImageData`` to produce
+the file, but it will be possible for the user to specify their own code
+unit definitions in the instantiation of the ``FITSImageData`` object. 
+
+Coordinate System
++++++++++++++++++
+
+Each header shall have the coordinate system of the datset stored in the 
+WCS keywords. These will be 
+
+Other Metadata
+++++++++++++++
+
+Each header shall have the current time of the dataset stored in the header
+keyword ``"TIME"``, where the units shall be the code time units of the
+dataset. 
+
+Future iterations of this standard may allow for other optional metadata
+such as the redshift, etc., which can be checked upon instantiation of the
+``YTFITSDataset`` instance. 
+
+Example Header
+++++++++++++++
+
+The following is an example header for a density field created from a slice
+of a FLASH dataset, as printed out by the AstroPy command-line tool 
+``fitsheader``:
+
+.. code-block:: text
+
+    SIMPLE  =                    T / conforms to FITS standard
+    BITPIX  =                  -64 / array data type
+    NAXIS   =                    2 / number of array dimensions
+    NAXIS1  =                  256
+    NAXIS2  =                  256
+    EXTEND  =                    T
+    EXTNAME = 'DENSITY '           / extension name
+    BTYPE   = 'density '
+    BUNIT   = 'g/cm**3 '
+    WCSAXES =                    2
+    CRPIX1  =                128.5
+    CRPIX2  =                128.5
+    CDELT1  =             1.953125
+    CDELT2  =             1.953125
+    CUNIT1  = 'kpc     '
+    CUNIT2  = 'kpc     '
+    CTYPE1  = 'LINEAR  '
+    CTYPE2  = 'LINEAR  '
+    CRVAL1  =                  0.0
+    CRVAL2  =                  0.0
+    LATPOLE =                 90.0
+    WCSNAME = 'yt      '
+
+Many of the items in the header are automatically filled, but the rest are
+defined by yt. 
+
+Here is where you should write detailed description of what the YTEP proposes.
+This needs to include:
+
+  * Background
+  * Nature of the problem
+  * Nature of the solution
+  * How will the solution be implemented
+    * Brief outline of the code needed to implement this
+    * Code examples of using the solution, in appropriate
+    * How will the solution be tested?
+  * What are any stumbling points
+  * What is the proposed method for reaching out to the community about this?
+
+Backwards Compatibility
+-----------------------
+
+FITS files generated using ``FITSImageData`` prior to these changes will still 
+be readable, and may be recognizable as ``YTFITSDataset`` objects if they have
+the ``"WCSNAME"`` keyword set to ``"yt"`` in the FITS header. If not, they will
+still be readable as generic ``FITSDataset`` objects as before. Since previous 
+FITS files made with ``FITSImageData`` did not include unit information in their
+headers, units for these files will back to default cgs values if recognized as
+``YTFITSDataset`` instances by yt. 
+
+Alternatives
+------------
+
+Leaving things the way they are, which means that we will have support for
+writing ``FITSImageData`` objects to FITS files which can be read in and 
+*mostly* understood by yt with the currently available metadata, but unit
+support will be incomplete and some corner cases may be missed.
