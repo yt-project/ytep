@@ -147,11 +147,11 @@ of a FLASH dataset, as printed out by the AstroPy command-line tool
     EXTNAME = 'DENSITY '           / extension name
     BTYPE   = 'density '
     BUNIT   = 'g/cm**3 '
-    LUNIT   =                  1.0 / kpc
-    TUNIT   =                  1.0 / s
-    MUNIT   =                  1.0 / g
-    VUNIT   =                  1.0 / cm/s
-    BFUNIT  =    3.544907701811032 / gauss
+    LUNIT   =                  1.0 / [kpc]
+    TUNIT   =                  1.0 / [s]
+    MUNIT   =                  1.0 / [g]
+    VUNIT   =                  1.0 / [cm/s]
+    BFUNIT  =    3.544907701811032 / [gauss]
     TIME    = 1.18350909938232E+17
     WCSAXES =                    2
     CRPIX1  =                256.5
