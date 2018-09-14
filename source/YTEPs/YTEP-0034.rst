@@ -71,7 +71,7 @@ Header Information
 ==================
 
 Each FITS header associated with a a field in the FITS file shall be 
-entirely self-descripting with respect to the properties of the field, the 
+entirely self-describing with respect to the properties of the field, the 
 current time of the dataset, the coordinate system of the dataset, and the 
 unit system of the entire file. The file shall be distinguished as a yt 
 FITS file by setting the ``WCSNAME`` property equal to ``yt``.  
