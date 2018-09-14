@@ -1,0 +1,193 @@
+YTEP-0034: yt FITS Image Standard
+=================================
+
+Abstract
+--------
+
+Created: September 9, 2018
+Author: John ZuHone
+
+This YTEP will define the standard for ``FITSImageData`` objects written
+from slices, projections, and covering grids, for better support for reading
+these objects back into yt as datasets using the FITS frontend, using the
+dataset class ``YTFITSDataset``.
+
+Status
+------
+
+In Progress.
+
+Project Management Links
+------------------------
+
+The relevant code has been written and is in a PR which is under review:
+
+https://github.com/yt-project/yt/pull/2010
+
+Detailed Description
+--------------------
+
+From its beginning, yt has been capable of producing projected images of 
+simulations as representations of the quantities which would be observed on 
+the sky plane. This enables comparisons of simulation predictions to real 
+data. Nearly all observational data in astronomy is in the `Flexible Image 
+Transport System (FITS) format <https://en.wikipedia.org/wiki/FITS>`_. 
+Therefore, yt also has a method to write slices, projections, and regularly 
+gridded data derived from datasets to FITS files using the ``FITSImageData`` 
+class. Documentation on how to use this class and its subclasses may be found 
+`here <https://yt-project.org/doc/visualizing/writing_fits_images.html>`_.
+
+FITS files consist of a list of "header data units" (hereafter HDUs), each of 
+which contain data in image (an array of :math:`n` dimensions with 
+:math:`n \geq 2`) or table form, associated with a header which typically
+contains information about the coordinate system and other metadata. The
+header provides an opportunity to standardize FITS files written by yt so that
+the data is as self-describing as possible with respect to coordinates, units,
+and fields.
+
+yt has also long had the capability to read FITS image files as datasets using 
+the FITS frontend and the ``FITSDataset`` class. In general, each FITS HDU is 
+classified as a yt field, and the metadata in its header is used to define the
+properties of the dataset. However, there is no universal standard for FITS 
+files, and therefore in most cases a number of properties of these datasets
+may be undefined (e.g., units, coordinates, etc.).
+
+At the very least, the FITS files produced by yt should be standardized. This 
+requires ensuring that both the ``FITSImageData`` class and a new subclass of
+``FITSDataset``, ``YTFITSDataset``, adhere to this standard. This YTEP serves 
+to define the "yt FITS standard" for FITS images produced from 2/3D datasets 
+using the ``FITSImageData`` class in yt and its subclasses. 
+
+Overall File Structure
+======================
+
+yt FITS images shall be a single FITS file with one or more image HDUs, each 
+one containing a 2 or 3-dimensional array with will correspond to a "field" in
+standard yt parlance. The dimensions of each array shall be consistent with the
+others for the entire file. The first or "primary" HDU will also contain an 
+image array. 
+
+Header Information
+==================
+
+Each FITS header associated with a a field in the FITS file shall be 
+entirely self-describing with respect to the properties of the field, the 
+current time of the dataset, the coordinate system of the dataset, and the 
+unit system of the entire file. The file shall be distinguished as a yt 
+FITS file by setting the ``WCSNAME`` property equal to ``yt``.  
+
+Field Properties
+++++++++++++++++
+
+The name of each field shall be stored in both the ``EXTNAME`` and ``BTYPE``
+properties of the header. The units of the field shall be stored in the
+``BUNIT`` property of the header. 
+
+Unit Information
+++++++++++++++++
+
+Each header will be entirely self-describing as to the unit system of the
+dataset, including the dimensions of length, time, mass, velocity, 
+temperature, and magnetic field units. In most cases, these units will be
+derived from the underlying dataset used by ``FITSImageData`` to produce
+the file, but it will be possible for the user to specify their own code
+unit definitions in the instantiation of the ``FITSImageData`` object. For
+images created by subclasses of ``FITSImageData`` such as ``FITSSlice``, 
+``FITSProjection``, etc., the ``length_unit`` of the file will be given 
+by the units specified in the ``width`` keyword argument or be chosen 
+automatically based on the size of the image. 
+
+Coordinate System
++++++++++++++++++
+
+Each header shall have the coordinate system of the dataset stored in the 
+WCS keywords. These will set up a linear coordinate system with an origin
+in pixel space at the center of the image. The relevant keyword arguments
+are: 
+
+* ``CTYPE[123]``: The coordinate system type, all of which shall be 
+  ``"LINEAR"`` for all axes.
+* ``CUNIT[123]``: The units of the coordinate axes, in dimensions of 
+  length and in the specified ``length_unit`` of the FITS image. The units 
+  should be the same for all axes.
+* ``CRPIX[123]``: The reference pixel coordinate of the image, which
+  shall always be the center of the image: ``0.5*(n[xyz]+1)``, where
+  ``n[xyz]`` is the number of pixels in each dimension.
+* ``CDELT[123]``: The width of each pixel along each axis in the units 
+  specified by ``CUNIT[123]``.
+* ``CRVAL[123]``: The reference physical coordinate of the image, which 
+  corresponds to the same location as ``CRPIX[123]``.
+
+Other Metadata
+++++++++++++++
+
+Each header shall have the current time of the dataset stored in the header
+keyword ``"TIME"``, where the units shall be the code time units of the
+dataset. 
+
+Future iterations of this standard may allow for other optional metadata
+such as the redshift, etc., which can be checked upon instantiation of the
+``YTFITSDataset`` instance. 
+
+.. |fitsheader| replace:: ``fitsheader``
+.. _fitsheader: http://docs.astropy.org/en/stable/io/fits/usage/scripts.html#module-astropy.io.fits.scripts.fitsheader
+
+Example Header
+++++++++++++++
+
+The following is an example header for a density field created from a slice
+of a FLASH dataset, as printed out by the AstroPy command-line tool 
+|fitsheader|_:
+
+.. code-block:: text
+
+    SIMPLE  =                    T / conforms to FITS standard
+    BITPIX  =                  -64 / array data type
+    NAXIS   =                    2 / number of array dimensions
+    NAXIS1  =                  512
+    NAXIS2  =                  512
+    EXTEND  =                    T
+    EXTNAME = 'DENSITY '           / extension name
+    BTYPE   = 'density '
+    BUNIT   = 'g/cm**3 '
+    LUNIT   =                  1.0 / [kpc]
+    TUNIT   =                  1.0 / [s]
+    MUNIT   =                  1.0 / [g]
+    VUNIT   =                  1.0 / [cm/s]
+    BFUNIT  =    3.544907701811032 / [gauss]
+    TIME    = 1.18350909938232E+17
+    WCSAXES =                    2
+    CRPIX1  =                256.5
+    CRPIX2  =                256.5
+    CDELT1  =            0.9765625
+    CDELT2  =            0.9765625
+    CUNIT1  = 'kpc     '
+    CUNIT2  = 'kpc     '
+    CTYPE1  = 'LINEAR  '
+    CTYPE2  = 'LINEAR  '
+    CRVAL1  =                  0.0
+    CRVAL2  =                  0.0
+    LATPOLE =                 90.0
+    WCSNAME = 'yt      '
+
+Many of the items in the header are automatically filled, but the rest are
+defined by yt. 
+
+Backwards Compatibility
+-----------------------
+
+FITS files generated using ``FITSImageData`` prior to these changes will still 
+be readable, and may be recognizable as ``YTFITSDataset`` objects if they have
+the ``"WCSNAME"`` keyword set to ``"yt"`` in the FITS header. If not, they will
+still be readable as generic ``FITSDataset`` objects as before. Since previous 
+FITS files made with ``FITSImageData`` did not include unit information in their
+headers, units for these files will back to default cgs values if recognized as
+``YTFITSDataset`` instances by yt. 
+
+Alternatives
+------------
+
+Leaving things the way they are, which means that we will have support for
+writing ``FITSImageData`` objects to FITS files which can be read in and 
+*mostly* understood by yt with the currently available metadata, but unit
+support will be incomplete and some corner cases may be missed.
