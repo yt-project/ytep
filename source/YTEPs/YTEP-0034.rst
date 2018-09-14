@@ -42,7 +42,7 @@ which contain data in image (an array of :math:`n` dimensions with
 :math:`n \geq 2`) or table form, associated with a header which typically
 contains information about the coordinate system and other metadata. The
 header provides an opportunity to standardize FITS files written by yt so that
-the data is as self-descripting as possible with respect to coordinates, units,
+the data is as self-describing as possible with respect to coordinates, units,
 and fields.
 
 yt has also long had the capability to read FITS image files as datasets using 
