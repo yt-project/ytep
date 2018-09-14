@@ -30,11 +30,11 @@ Detailed Description
 From its beginning, yt has been capable of producing projected images of 
 simulations as representations of the quantities which would be observed on 
 the sky plane. This enables comparisons of simulation predictions to real 
-data. Nearly all observational data in astronomy is in the Flexible Image 
-Transfer System (FITS) format. Therefore, yt also has a method to write 
-slices, projections, and regularly gridded data derived from datasets to
-FITS files using the ``FITSImageData`` class. Documentation on how to use
-this class and its subclasses may be found 
+data. Nearly all observational data in astronomy is in the `Flexible Image 
+Transport System (FITS) format <https://en.wikipedia.org/wiki/FITS>`_. 
+Therefore, yt also has a method to write slices, projections, and regularly 
+gridded data derived from datasets to FITS files using the ``FITSImageData`` 
+class. Documentation on how to use this class and its subclasses may be found 
 `here <https://yt-project.org/doc/visualizing/writing_fits_images.html>`_.
 
 FITS files consist of a list of "header data units" (hereafter HDUs), each of 
@@ -129,12 +129,15 @@ Future iterations of this standard may allow for other optional metadata
 such as the redshift, etc., which can be checked upon instantiation of the
 ``YTFITSDataset`` instance. 
 
+.. |fitsheader| replace:: ``fitsheader``
+.. _fitsheader: http://docs.astropy.org/en/stable/io/fits/usage/scripts.html#module-astropy.io.fits.scripts.fitsheader
+
 Example Header
 ++++++++++++++
 
 The following is an example header for a density field created from a slice
 of a FLASH dataset, as printed out by the AstroPy command-line tool 
-``fitsheader``:
+|fitsheader|_:
 
 .. code-block:: text
 
