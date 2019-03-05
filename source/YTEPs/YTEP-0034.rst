@@ -59,7 +59,7 @@ to define the "yt FITS standard" for FITS images produced from 2/3D datasets
 using the ``FITSImageData`` class in yt and its subclasses. 
 
 Overall File Structure
-======================
+----------------------
 
 yt FITS images shall be a single FITS file with one or more image HDUs, each 
 one containing a 2 or 3-dimensional array with will correspond to a "field" in
@@ -68,7 +68,7 @@ others for the entire file. The first or "primary" HDU will also contain an
 image array. 
 
 Header Information
-==================
+------------------
 
 Each FITS header associated with a a field in the FITS file shall be 
 entirely self-describing with respect to the properties of the field, the 

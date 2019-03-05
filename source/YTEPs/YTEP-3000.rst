@@ -44,10 +44,10 @@ Release Blockers
 These are components that need implementing before yt 3.0 can be released.
 This is not the same as reaching a "complete" implementation; the important
 work is to ensure that subsequent API breakages are minimal.  We are tracking
-these on the `yt-3.0 Trello Board<https://trello.com/b/Y5XV4Hod/yt-3-0>`_.
+these on the `yt-3.0 Trello Board <https://trello.com/b/Y5XV4Hod/yt-3-0>`__.
 
  * Merging unitrefactor; waiting only on documentation and rebranding merge at
-   this time. (:ref:`YTEP-0011 <ytep-0011>` and :ref:`YTEP-0017 <YTEP-0017>`.)
+   this time. (:ref:`YTEP-0011 <ytep-0011>` and :ref:`YTEP-0017 <ytep-0017>`.)
  * De-astroification of yt and renaming of generic objects which has been
    mostly accomplished in the rebranding bookmark.
  * Removing dict-like access to static output (:ref:`YTEP-0018 <ytep-0018>`),

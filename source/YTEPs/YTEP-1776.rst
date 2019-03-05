@@ -20,8 +20,8 @@ In Progress
 Project Management Links
 ------------------------
 
-  * `Apache Software Foundation <http://incubator.apache.org/>`_
-  * Initial governance discussion on yt-dev: `here <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2014-August/013549.html>`_.
+  * `Apache Software Foundation <http://incubator.apache.org/>`__
+  * Initial governance discussion on yt-dev: `here <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2014-August/013549.html>`__.
 
 Detailed Description
 --------------------
@@ -31,7 +31,7 @@ Team Structure
 
 The yt development team consists of developers and members.  Anyone contributing
 at least one changeset to the codebase is a developer and shall be listed in the
-Contributors section `here <http://yt-project.org/about.html>`_.  A member is
+Contributors section `here <http://yt-project.org/about.html>`__.  A member is
 someone who has made continued and significant contribution to the project
 (changes to the codebase, discussion on mailing lists, feedback on pull
 requests, etc.) for some period of time.  After such a period, potential new
@@ -43,7 +43,7 @@ revoked for anyone who is deemed to be directly harmful to the project or the
 community upon a nomination by another member and five supporting member votes.
 Upon the initial creation of yt membership status, all developers having
 contributed at least 50 changesets shall be granted membership.  The `Project
-Members <http://yt-project.org/members.html>`_ page gives a description of the
+Members <http://yt-project.org/members.html>`__ page gives a description of the
 requirements for membership and provides a list of all members and the year in
 which membership was granted.
 

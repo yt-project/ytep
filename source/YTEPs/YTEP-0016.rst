@@ -266,7 +266,7 @@ To accommodate the flow control outlined above, the following classes will need
 to be implemented, with the following specifications.  These will be in Cython.
 A base class (listed below) will form the basis for each type of traversal.
 
-.. code-block:: python
+.. code-block:: cython
 
    struct ray_state:
        np.float64_t v_dir[3]
