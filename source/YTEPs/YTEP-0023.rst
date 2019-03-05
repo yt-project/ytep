@@ -10,7 +10,7 @@ Author: Britton Smith
 
 This document contains the code of conduct for the yt community.  It is a
 near exact copy of the `Astropy Community Code of Conduct 
-<https://github.com/astropy/astropy-APEs/blob/master/APE8.rst>`_, except 
+<https://github.com/astropy/astropy-APEs/blob/master/APE8.rst>`__, except 
 that we will employ our own confidential email address for community 
 members to report violations.
 
@@ -118,7 +118,7 @@ associated social events, and one-to-one interactions.
 
 The yt Community Code of Conduct was adapted from the 
 `Astropy Community Code of Conduct 
-<http://www.astropy.org/about.html#codeofconduct>`_,
+<http://www.astropy.org/about.html#codeofconduct>`__,
 which was partially inspired by the PSF code of conduct.
 
 Alternatives
