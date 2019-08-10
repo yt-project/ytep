@@ -1,6 +1,6 @@
-.. _ytep-1776:
+.. _ytep-0000:
 
-YTEP-1776: Team Infrastructure
+YTEP-0000: Team Infrastructure
 ==============================
 
 Abstract
