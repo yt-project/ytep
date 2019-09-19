@@ -9,7 +9,7 @@ Author: Matthew Turk
 
 At present, yt has numerous instances of classes with a set of properties that are not defined at a top-level, that are generally restricted to one or a handful of things, and that utilize a fairly large amount of validation, coercion, and monitoring code.
 
-Utilizing libraries such as `traitlets<https://traitlets.readthedocs.io/en/stable/>`_, we can reduce the total code required to retain these properties, reuse code more readily across object definitions, and improve maintainability.  This YTEP outlins a step-by-step path forward for implementing this.
+Utilizing libraries such as `traitlets<https://traitlets.readthedocs.io/en/stable/>`_, we can reduce the total code required to retain these properties, reuse code more readily across object definitions, and improve maintainability.  This YTEP outlines a step-by-step path forward for implementing this.
 
 Status
 ------
