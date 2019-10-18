@@ -1,0 +1,91 @@
+.. _ytep-0000:
+
+YTEP-0000: Project Governance
+=============================
+
+Abstract
+--------
+
+Created: August 24, 2014
+Author: Britton Smith
+Modified: August 09, 2019
+Author: Madicken Munk
+
+This document describes the high-level structure, policies, procedures, and processes
+of the yt project.
+
+Status
+------
+
+In Progress
+
+Project Management Links
+------------------------
+
+  * `Apache Software Foundation <http://incubator.apache.org/>`__
+  * Initial governance discussion on yt-dev: `here <http://lists.spacepope.org/pipermail/yt-dev-spacepope.org/2014-August/013549.html>`__.
+  * Secondary discussion about need to update governance from yt-exec: `here <https://github.com/yt-project/project-records/blob/master/meeting-notes/notes-20190528.md>`__. 
+
+Detailed Description
+--------------------
+
+Motivation
+^^^^^^^^^^
+
+The yt project consists of a number of repositories within the yt project
+organization. The organization itself has a number of people interacting with
+and contributing to these associated repositories. Here we propose a broad
+overview of the governance model of the project, which will be detailed in a
+specific governance repository within the yt project, at:
+https://github.com/yt-project/governance. Major changes to the governance model
+will be iterated upon here, and details about the model will happen in the
+governance repository. This will allow small changes within the governance
+documentation to move quickly and not need to go through a major vote to update
+the YTEP. 
+
+Structure
+^^^^^^^^^
+
+The governance document will do the following
+
+  * Define where the governance documents apply, and how to override them, if
+    relevant
+  * Provide guidelines on project licensing
+  * Link to the Code of Conduct, state what happens if a violation occurs, and
+    what avenues are available for reporting violations
+  * State how conflicts of interest are handled among voting members of the
+    community
+  * State who the voting members of the community are
+  * Outline and define the roles within the project, including: 
+    contributors, developers, reviewers, and maintainers 
+  * Define how to become a project member, what expections exist for project
+    members, how to become an emeritus member of the project, 
+    and how to revoke project membership
+  * Define how to become a steering committee member, what expections exist for
+    steering committee members, and how members are voted into the steering
+    committee, and how long membership on the steering committee lasts
+  * Create a project leadership structure that facilites project
+    sustainability, inclusive onboarding practices, and mentorship to learn and
+    understand packages/subpackages within the yt project. 
+  * Make clear guidelines on how voting occurs for changes in the project,
+    including:
+
+    * minor documentation changes
+    * code changes and major documentation changes
+    * changes to API principles and changes to dependencies or supported versions
+    * changes to the project governance
+    * project membership.
+
+  * State when project meetings happen, at what frequency that they occur,
+    how they are announced to the community, and where they are documented. 
+
+Backwards Compatibility
+-----------------------
+
+Sic semper inordinatio.
+
+Alternatives
+------------
+
+The alternative is to continue with no official guidelines and somehow manage,
+or to continue with an older version of the governance model. 
