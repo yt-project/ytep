@@ -25,15 +25,15 @@ Detailed Description
 Background
 ^^^^^^^^^^
 
-Currently, testing in yt makes use of the `nose <https://nose.readthedocs.io/en/latest/>`_ framework. Nose was designed to be an extension of python's built-in ``unittest`` module. While perfectly functional, Nose has several drawbacks. First, it has been in a self-described maintenance mode for the last several years, which puts the project in danger of ceasing. Second, much of Nose's functionality comes from third-party plugins, which often have lacking or poor documentation. Third, beyond fairly basic setup and teardown fixtures, Nose lacks modularity and tests carry additional boilerplate code.
+Currently, testing in yt makes use of the `nose <https://nose.readthedocs.io/en/latest/>`_ framework. While perfectly functional, Nose has several drawbacks. First, it has been in a self-described maintenance mode for the last several years, which puts the project in danger of ceasing. Second, much of Nose's functionality comes from third-party plugins, which often have lacking or poor documentation. Third, beyond fairly basic setup and teardown fixtures, Nose lacks modularity and tests carry additional boilerplate code.
 
-The first proposal of this YTEP is to switch yt's testing framework from Nose to `pytest <http://pytest.org/en/latest/>`_. Pytest offers many of the same benefits of nose: automatic test discovery, the ability to selectively run tests, a large number of external plugins, the ability to be fine-tuned via configuration files, and compatibility with unittest. In addition to these benefits, pytest also: is actively maintained and developed, is compatible with nose testing frameworks, has a large collection of internal hooks, and has an excellent and fully-featured fixture system. In fact, this fixture system is arguably the best reason to use Pytest.
+The first proposal of this YTEP is to switch yt's testing framework from Nose to `pytest <http://pytest.org/en/latest/>`_. Pytest offers many of the same benefits of nose: automatic test discovery, the ability to selectively run tests, a large number of external plugins, the ability to be fine-tuned via configuration files, and compatibility with unittest. In addition to these benefits, pytest is also: actively maintained and developed, compatible with nose testing frameworks, and equipped with a fully-featured fixture system. In fact, this fixture system is arguably the best reason to use Pytest.
 
 Pytest fixtures, as described in the documentation, are explicit, modular, and easily scalable. This makes writing tests easier, faster, more flexible, and require less boilerplate. Additionally, pytest automatically collects and groups tests that share fixtures together, which can help minimize resource use.
 
 The second proposal of this YTEP is a general reorganization and streamlining for yt's answer testing framework.
 
-Currently, many answer tests in yt generate large arrays of data. In order to facilitate comparison, these arrays need to be saved. Unfortunately, their size necessitates that these answers be stored separately from the main code base of the project. This makes running the answer tests as a developer much more difficult. It also introduces a fair amount of code into yt that is related to managing and retrieving these remotely stored files. This makes generating answers for new functionality rather complicated.
+Currently, many answer tests in yt generate large arrays of data. In order to facilitate comparison, these arrays need to be saved. Unfortunately, their size necessitates that these answers be stored separately from the main yt code base and makes answer comparisons slow.
 
 In an effort to combat these issues, this YTEP proposes implementing the answers as hashes of the generated array data. Since these hashes are short, simple strings, they can be stored in human-readable yaml files, take up much less disk space, and can facilitate more efficient comparisons when actually running the tests. As an added benefit, they can be packaged with the code itself, thereby making running and managing the answer tests much easier.
 
@@ -42,7 +42,7 @@ Converting to Pytest
 
 Currently, the answer tests are mostly implemented as yield tests using nose. Pytest no longer supports yield tests because they resulted in multiple test functions being generated (one for each parameter combination), and these generated test functions did not properly support fixtures, as described `here <https://docs.pytest.org/en/latest/deprecations.html#yield-tests>`_.
 
-The first step in reorganizing the tests is, therefore, to eliminate all yield tests. Each function that previously yielded a test now properly calls a test function with the desired parameters, where assertions are made. This makes the tests easier to read, as most of the boilerplate associated with yielding is gone (e.g., changing the ``__name__`` attribute of the yielded test class).
+The first step in reorganizing the tests is, therefore, to remove all yield tests. Each function that previously yielded a test now properly calls a test function with the desired parameters, where assertions are made. This makes the tests easier to read, as most of the boilerplate associated with yielding is gone (e.g., changing the ``__name__`` attribute of the yielded test class).
 
 The second step is to organize the answer tests into classes (e.g., all of the enzo answer tests go in a class called ``TestEnzo``). This not only provides a natural organizational structure within the code itself, but it also provides a simple way of ensuring that all related answer tests get saved to the same answer file. The class structure also facilitates easier running of specific tests, especially in the case where answer tests and unit tests share the same module.
 
@@ -50,57 +50,29 @@ As an extension of the above, each answer test (e.g., ``FieldValuesTest``) that 
 
 This structure removes the need for each individual answer test to have it's own ``__init__`` and ``compare`` methods. The test code is now exclusively what previously resided in the ``run`` method.
 
-Several other changes have been implemented, as well. Previously, when running answer tests that used large data files, the ``--answer-big-data`` option had to be passed to nose. This remains the case, as described below. However, that option was previously passed to the decorators ``requires_ds`` and ``requires_sim``. This is no longer the case. Those decorators now only check to make sure the requested resource exists. The big data files are now handled by a pytest mark ``pytest.mark.skipif(not pytest.getoption('--answer-big-data'))``. Further, these decorators used to ``return lambda: None`` whenever the desired resource was not found. Pytest did not recognize these lambdas as valid functions, and so they have been replaced with a ``skip`` method that also employs ``assert False`` in order to mark the test as failing.
+Several other changes have been implemented, as well. Previously, when running answer tests that used large data files, the ``--answer-big-data`` option had to be passed to nose. This remains the case, as described below. However, that option was previously passed to the decorators ``requires_ds`` and ``requires_sim``. This is no longer the case. Those decorators now only check to make sure the requested resource exists. The big data files are now handled by a pytest mark ``pytest.mark.big_data``. Further, these decorators used to ``return lambda: None`` whenever the desired resource was not found. Pytest did not recognize these lambdas as valid functions, and so they have been replaced with a ``skip`` method that also employs ``assert False`` in order to mark the test as failing.
 
-The last change made to the code base in switching from nose to pytest is the addition of ``conftest.py`` files.  These are configuration files that are used by pytest in order to define custom fixtures for processes such as setup, teardown, and using temporary directories and files.
+The last change made to the code base in switching from nose to pytest is the addition of ``conftest.py`` files.  These are configuration files that are used by pytest in order to define custom fixtures for processes such as setup, teardown, parametrizing tests, and using temporary directories and files.
 
-The primary ``conftest.py`` file resides in the root of the yt repo and it defines the command-line parser as well as the fixtures used across each of the answer tests. Additionally, other ``conftest.py`` files have been defined in each of the frontend directories in order to define fixtures for loading specific data files. Pytest will automatically group all of the tests sharing these fixtures together in order to limit the amount of time spent loading in data files.
+The primary ``conftest.py`` file resides in the root of the yt repo and it defines the command-line parser as well as the fixtures used across each of the answer tests. Additionally, other ``conftest.py`` files have been defined in each of the frontend directories in order to define fixtures for loading specific data files, and using ``pytest_generate_tests`` to parametrize those answer tests that require it.
 
 Hash Implementation
 ^^^^^^^^^^^^^^^^^^^
 
-In order to generate appropriate hashes, each method of ``AnswerTest`` that previously returned any sort of array that would later be stored now returns a bytes array instead. This is implemented via ``numpy``'s ``tostring()`` method. These bytes arrays can then be passed to the newly implemented ``generate_hash`` function that resides in ``yt/utilities/answer_testing/utils.py``. Currently, this function makes use of the ``md5`` method of the ``hashlib`` library and returns ``hashlib.md5(data).hexdigest()``, which gives the digest as a string of hexadecimal digits.
+In order to generate appropriate hashes, each method of ``AnswerTest`` that returns an array now has that array hashed via the ``hashing`` fixture defined in the central ``conftest.py`` file. This fixture saves the arguments that the test function employed (e.g., what field it was parametrized with) and then makes use of the ``md5`` method of the ``hashlib`` library to get the hash as a string of hexadecimal digits.
 
-In order to facilitate easier diagnosis of failing tests, each combination of test parameters receives its own hash. For example, if the ``field_values_test`` is being run on each field in ``ds.field_list``, then each call to ``field_values_test`` will generate its own hash. These hashes are then saved in an ``OrderedDict`` whose keys are the test parameter values (in this case, the field name). Once completed, these are written to yaml files with the following format:
+In order to facilitate easier diagnosis of failing tests, each combination of test parameters receives its own hash. For example, if the ``field_values_test`` is being run on each field in ``ds.field_list``, then each call to ``field_values_test`` will generate its own hash. These hashes are then saved in a ``dict`` whose keys are the test parameter values (in this case, the field name). Once completed, these are written to yaml files with the following format:
 
 .. code-block:: yaml
 
   calling_function_name:
-    test_name:
-      test_parameter1_value1:
-        test_parameter2_value1:
-          ...
-            test_parametern_value1: hash
-            test_parametern_value2: hash
-            ...
-
-That is, the answers are written as a series of nested dictionaries. The first key is the name of the method calling the test (e.g., ``test_toro1d`` from ``TestEnzo``), the next key is the answer test name (e.g., ``field_values_test``) followed by each of the test parameters, finally ending with the actual hash generated from calling the test with the aforementioned combination of test parameters.
-
-In code, this is akin to:
-
-.. code-block:: python
-
-  hashes = OrderedDict()
-  hashes['field_values_test'] = OrderedDict()
-  for f in ds.field_list:
-    hashes['field_values_test'][f] = OrderedDict()
-    for d in ds_objs:
-      hashes['field_values_test'][f][d] = utils.generate_hash(self.field_values_test(ds, f, d))
-  with open(answer_file, 'w') as f:
-    yaml.dump(hashes, f, default_flow_style=False)
+    test_name: hash
+    test_parameter1_value1: value
+    test_parameter2_value1: value
 
 This produces small, human-readable text files that can be easily packaged with the main code base. This makes running and managing the tests simpler.
 
-Doing a comparison is also now more straightforward, as well. Once the hashes to be compared to the saved values have been generated, as above, they can be compared to the saved values as:
-
-.. code-block:: python
-
-  saved_hashes = yaml.load(saved_answer_file)
-  assert hashes == saved_hashes
-
-If there are differences between the two, an assertion error will be raised, showing exactly which test(s) and test parameter(s) is (are) different.
-
-The above saving, loading, and comparison of the generated hashes has been implemented in a new convenience function ``handle_hashes(save_dir, save_file, hashes, answer_store)`` in ``yt/utilities/answer_testing/utils.py``.
+The saving, loading, and comparison of the generated hashes has been implemented in a new convenience function ``handle_hashes(save_dir, save_file, hashes, answer_store)`` in ``yt/utilities/answer_testing/utils.py``.
 
 The ``save_dir`` argument is the path to the directory where the answers are either to be saved or loaded from, the ``save_file`` argument specifies the name of the answer file to either save to or load from, the ``hashes`` are the newly generated data to be either saved or loaded, and the ``answer_store`` argument specifies whether or not the passed data should be saved or compared.
 
@@ -112,7 +84,7 @@ Running the Tests
 Unit Tests
 """"""""""
 
-This section covers how to actually run the existing answer tests. The goal was to keep the process as similar to the previous implementation as possible. Previously, unit tests could be run from the command line in the ``$YT_GIT`` directory (where this refers to the root of the yt repo) as
+The goal was to keep the process as similar to the previous implementation as possible. Previously, unit tests could be run from the command line in the ``$YT_GIT`` directory (where this refers to the root of the yt repo) as
 
 .. code-block:: bash
 
@@ -136,13 +108,13 @@ or use pytest's powerful ``-k`` flag, which enables test selection by name. For 
 
 .. code-block:: bash
 
-  $ pytest -s -v -k "TestEnzo"
+  $ pytest -s -v -k "TestClass"
 
-and pytest will collect every test and then ignore all of the tests not contained in the ``TestEnzo`` class. To run only a specific method within a given class, one would do:
+and pytest will collect every test and then ignore all of the tests not contained in the ``TestClass`` class. To run only a specific method within a given class, one would do:
 
 .. code-block:: bash
 
-  $ pytest -s -v -k "TestEnzo and test_toro1d"
+  $ pytest -s -v -k "TestClass and test_method"
 
 See `this link <https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests>`_ for more on pytest's selection capabilities and options.
 
@@ -155,7 +127,9 @@ To run the answer tests previously, one had to first tell yt where the test data
 
   $ yt config set yt test_data_dir /path/to/yt-data
 
-This remains true here, as well. To actually run the answer tests for a specific frontend previously, one would do:
+This remains true here, as well.
+
+Previously, to run the answer tests for a specific frontend, one would do:
 
 .. code-block:: bash
 
@@ -190,7 +164,7 @@ Now the format is:
     answer_file_name2_xyz.yaml
   ...
 
-Where ``TestClassName`` refers to the name of the class containing the tests that all share the same answer file, e.g., ``TestEnzo``. All of the tests in ``TestClassName1`` have their answers saved to ``answer_file_name1.xyz.yaml`` or compared against the answers already saved in the aforementioned file. The ``xyz`` identifier is used to identify certain answer changesets. Comparing against a different answer changeset requires only changing that identifier in the ``tests.yaml`` file.
+The ``xyz`` identifier is used to identify certain answer changesets. Comparing against a different answer changeset requires only changing that identifier in the ``tests.yaml`` file.
 
 There are several answer tests (e.g., ``TestArt.test_d9p``) that use particularly large data files. Previously, to run these tests, they had to be specifically selected via the ``--answer-big-data`` command line option. This remains the case:
 
@@ -201,11 +175,10 @@ There are several answer tests (e.g., ``TestArt.test_d9p``) that use particularl
 Writing New Tests
 ^^^^^^^^^^^^^^^^^
 
-There are potentially three steps to writing new answer tests. The first is if one is defining a set of tests for a new frontend or new functionality. As before, one should create a ``tests`` directory inside of the new frontend directory and, within the ``tests`` directory, create a file called ``test_outputs.py``. Within this file, one should define a new class that inherits from ``AnswerTest`` and is marked by pytest as being an answer test, with an optional mark if it uses a large data file. All of the frontend tests should now be methods of this class. These test methods should utilize the actual answer tests defined as methods of ``AnswerTest``, if applicable, and utilize ``generate_hash`` and ``handle_hashes``. For example:
+If one is writing tests for a new frontend, one should create a ``tests`` directory inside of the new frontend directory and, within the ``tests`` directory, create a file called ``test_outputs.py``. Within this file, one should define a new class that inherits from ``AnswerTest`` and is marked by pytest as being an answer test. All of the frontend tests should now be methods of this class. For example:
 
 .. code-block:: python
 
-  from collections import OrderedDict
   import pytest
 
   from yt.utilities.answer_testing import framework as fw
@@ -214,25 +187,40 @@ There are potentially three steps to writing new answer tests. The first is if o
   # The first decorator tell pytest to skip the tests in this class if the
   # --with-answer-testing option was not passed on the command line. The
   # second decorator tells pytest to use the answer_file fixture, which
-  # properly sets TestNewFrontend.answer_file
-  @pytest.mark.skipif(not pytest.config.getoption('--with-answer-testing'))
+  # properly sets TestNewFrontend answer_file
+  @pytest.mark.answer_test
   @pytest.mark.usefixtures('answer_file')
   class TestNewFrontend(fw.AnswerTest):
+    # By using the hashing fixture, all of the data stored in test_result
+    # will be hashed upon the method's completion
+    @pytest.mark.usefixtures('hashing')
     @utils.requires_ds(test_data_file)
-    def test_method1:
+    # The method can be parametrized in the conftest.py file. See below
+    def test_method1(self, param1, param2):
       ds = utils.data_dir_load(test_data_file)
-      hashes = OrderedDict()
-      hashes['field_values'] = OrderedDict()
-      fields = ds.field_list
-      dobjs = [None, ('sphere', ('max', (0.1, 'unitary')))]
-      for f in fields:
-        hashes['field_values'][f] = OrderedDict()
-        for d in dobjs:
-          hashes['field_values'][f][d] = utils.generate_hash(self.field_values_test(ds, f, d))
-      hashes = {'test_method1': hashes}
-      utils.handle_hashes(self.save_dir, self.answer_file, hashes, self.answer_store)
+      test_result = self.some_answer_test(ds, param1, param2)
+      self.hashes.update({'some_answer_test' : test_result})
 
-The second step applies if one is actually writing a new answer test (such as the ``field_values_test``). In this case, one should make the test a method of the ``AnswerTest`` class and it should, if applicable, return a bytes array, so that the answer can be hashed. For example:
+If desired, each test method can be individually parametrized by creating a ``conftest.py`` file next to the ``test_outputs.py`` file. The example above would utilize this file like so:
+
+.. code-blocK:: python
+
+  def pytest_generate_tests(metafunc):
+    if metafunc.function.__name__ == 'test_method1':
+      metafunc.parametrize('param1', list_of_param1_values, ids=list_of_param1_ids)
+      metafunc.parametrize('param2', list_of_param2_values, ids=list_of_param2_ids)
+
+This ``pytest_generate_tests`` function will generate a separate test function for each combination of values in the two parameter lists. To parametrize against multiple parameters without having every combination:
+
+.. code-blocK:: python
+
+  def pytest_generate_tests(metafunc):
+    if metafunc.function.__name__ == 'test_method1':
+      metafunc.parametrize('param1, param2', list_of_parameter_combination_tuples, ids=list_of_ids)
+
+That is, one must generate a list whose elements are ``(param1, param2)`` tuples.
+
+If one is writing a new answer test (such as the ``field_values_test``), one should make the test a method of the ``AnswerTest`` class. For example:
 
 .. code-block:: python
 
@@ -241,10 +229,9 @@ The second step applies if one is actually writing a new answer test (such as th
     # The other methods are here. New method goes below
     def my_new_answer_test(self, test_param1, test_param2):
       # Do stuff
-      # Result is a numpy array
-      return result.tostring()
+      return result
 
-The third step is to register the new frontend's test class with an answer file. This should be done by updating ``yt_repo/tests/tests.yaml`` with:
+Any new frontend must have its tests registered and assigned an answer file. This should be done by updating ``yt_repo/tests/tests.yaml`` with:
 
 .. code-block:: yaml
 
