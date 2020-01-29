@@ -6,8 +6,9 @@ Abstract
 
 Created: November 28, 2017
 Author: Nathan Goldbaum
+Revision: Matt Turk
 
-I propose to drop support for Python2.7 in the next major release of yt, version 4.0, after releasing a final feature release version that includes support for Python2.7, yt 3.5.
+I propose to drop support for Python2.7 in the next major release of yt after 3.5.  This may be either yt 3.6 or yt 4.0, depending on release schedule.
 
 Status
 ------
@@ -38,9 +39,11 @@ For this reason, many projects in the scientific python ecosystem have either al
 Proposed Solution
 ^^^^^^^^^^^^^^^^^
 
-I propose that we drop support for Python 2 in the major release of yt that happens after the next major release, yt 3.5. This release will be called yt 4.0, and may include a number of other major changes to the yt user experience, including `the demeshening <http://ytep.readthedocs.io/en/latest/YTEPs/YTEP-0032.html>`_ and `non-spatial indexing <http://ytep.readthedocs.io/en/latest/YTEPs/YTEP-0027.html>`_. In principle we could do a release and call it yt 3.6 that drops Python 2.7 support, however given that this is a major backwards incompatible change for the subset of our users who use Python 2.7, I think it would be best to signal this change with a major version number bump. We could also release yt 4.0 with the only breaking change being dropping of Python 2.7 support and then subsequently make other major changes that we are planning, however I feat that this approach would tax our limited development resources and draw out the transition further.
+I propose that we drop support for Python 2 in the major release of yt that happens after the next major release, yt 3.5. This release will be either yt 3.6 or yt 4.0, and may include a number of other major changes to the yt user experience, including `the demeshening <http://ytep.readthedocs.io/en/latest/YTEPs/YTEP-0032.html>`_ and `non-spatial indexing <http://ytep.readthedocs.io/en/latest/YTEPs/YTEP-0027.html>`_.
 
-Given our recent pace of development, I would expect yt 3.5 to be released summer 2018 and yt 4.0 will be released summer 2019. Some projects are treating their last release that supports Python 2.7 as a "long term support" (LTS) release. Given our development resources, I do not think that we have the bandwidth available to simultaneously support both yt 4.0 and yt 3.5 at the same level, however I do expect that we will make regular bugfix releases of the yt 3.5 series while yt 4.0 is under active development. This means that we will support yt 3.5 for approximately a year and officially end all support for Python 2.7 with the release of yt 4.0 in 2019.
+In the past, we had suggested that yt 3.6 would not exist, or would not drop python 2.7 support, but the delay in yt 4.0 release has changed this timeline.
+
+Some projects are treating their last release that supports Python 2.7 as a "long term support" (LTS) release. Given our development resources, I do not think that we have the bandwidth available to simultaneously support both yt 4.0 and yt 3.5 at the same level, however I do expect that we will make regular bugfix releases of the yt 3.5 series while yt 4.0 is under active development. This means that we will support yt 3.5 for approximately a year and officially end all support for Python 2.7 with the release of yt 4.0 in 2019.
 
 These timelines are roughly comparable with projects that we directly depend on. In particular:
 
