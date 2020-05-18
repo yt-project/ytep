@@ -100,6 +100,13 @@ correct way to introduce this file is by specifying yt's build requirements with
 A proof of concept for this is `#2598 <https://github.com/yt-project/yt/pull/2598>`_,
 where CI builds are run correctly across all tested python versions (3.6, 3.7, 3.8).
 
+A serious counter-argument to applying black is that it implies messing up with ``git
+blame`` by making a single contributor the defacto last-author of a large number of
+lines they have not even necessarily read. Most recent versions of ``git`` can be
+configured to ignore specific commits in ``git blame``. However, ``black``'s own README
+currently points out that github's UI for ``git-blame`` does not support this feature
+(yet ?).
+ 
 
 **outreach**
 
