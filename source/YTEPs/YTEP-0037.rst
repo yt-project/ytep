@@ -124,10 +124,9 @@ Yes.
 Alternatives
 ------------
 
-* Enforcing styling guidelines through pier review for each PR. Obviously this is a
+* Enforcing styling guidelines through peer review for each PR. Obviously this is a
   lot more work. Additionally, this methodology is prone to error and may cause delay in
   the PR approval process in case the authors disagree with the reviewers on the
   application of styling rules.
 * Leaving code style decisions up to authors, and embracing the style diversity. 
-
 
