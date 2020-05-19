@@ -24,6 +24,7 @@ The follow PR corpus demonstrates the feasibility of the proposal
   * code formatting with `black <https://github.com/psf/black>`_ (`#2596 <https://github.com/yt-project/yt/pull/2596>`_)
   * redirect internal imports from the wrapper module ``yt.units`` to ``unyt`` (`#2597 <https://github.com/yt-project/yt/pull/2597>`_)
   * add a ``pyproject.toml`` file (`#2598 <https://github.com/yt-project/yt/pull/2598>`_)
+  * add a precommit hook configuration file (`#2600 <https://github.com/yt-project/yt/pull/2600>`_)
 
 Detailed Description
 --------------------
@@ -114,8 +115,7 @@ Enforcing these change throughout future contributions can be done by
 
 * updating the Developper Guide (done in part in `#2592 <https://github.com/yt-project/yt/pull/2592>`_)
 * offering a precommit hook configuration file to help contributors automate the linting stage locally (``precommit_hook.yaml``)
-
-
+such a configuration file is propoed in  `#2600 <https://github.com/yt-project/yt/pull/2600>`_
 Backwards Compatibility
 -----------------------
 
