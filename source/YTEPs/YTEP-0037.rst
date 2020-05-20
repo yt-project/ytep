@@ -134,7 +134,7 @@ solution to this is to sanitize the pr-branch (on author side) with:
 
 I tested this strategy locally by simulating blackening at an arbitrary point in the
 past and merging the current state of the code base back in, producing a net zero diff
-with a direct blackening of the current state. In practive I advise caution, and
+with a direct blackening of the current state. In practice I advise caution, and
 sanitized code should be reviewed before merging.
 
 
