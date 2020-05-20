@@ -18,7 +18,7 @@ Proposed
 Project Management Links
 ------------------------
 
-The follow PR corpus demonstrates the feasibility of the proposal
+The following PR corpus demonstrates the feasibility of the proposal
 
   * sorting imports with `isort <https://github.com/timothycrosley/isort>`_ (`#2592 <https://github.com/yt-project/yt/pull/2592>`_)
   * code formatting with `black <https://github.com/psf/black>`_ (`#2596 <https://github.com/yt-project/yt/pull/2596>`_)
@@ -151,4 +151,3 @@ Alternatives
   the PR approval process in case the authors disagree with the reviewers on the
   application of styling rules.
 * Leaving code style decisions up to authors, and embracing the style diversity. 
-
