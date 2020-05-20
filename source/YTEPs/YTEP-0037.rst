@@ -50,7 +50,7 @@ outliers, that would be time-consuming to go through by hand. Taking the example
 yt-4.0 branch at the time of writing, there are 2676 lines exceeding 80 characters (~2%
 of the whole code base), or, visually
 
-.. image:: ../images/lw-ytep-35.png
+.. image:: ../images/lw-ytep-37.png
 
 Note that in some cases, ``black`` will leave long lines as is. For instance, it won't
 split a 200-chars long string. 
@@ -107,15 +107,37 @@ lines they have not even necessarily read. Most recent versions of ``git`` can b
 configured to ignore specific commits in ``git blame``. However, ``black``'s own README
 currently points out that github's UI for ``git-blame`` does not support this feature
 (yet ?).
- 
 
-**outreach**
+It should be noted that ``black`` does not have a parser for Cython files, but
+interstingly ``flake8`` and ``isort`` do. Thus it is possible to add style checks for
+Cython extensions to the CI pipeline.
+
+**outreach and transition**
 
 Enforcing these change throughout future contributions can be done by
 
 * updating the Developper Guide (done in part in `#2592 <https://github.com/yt-project/yt/pull/2592>`_)
 * offering a precommit hook configuration file to help contributors automate the linting stage locally (``precommit_hook.yaml``)
 such a configuration file is propoed in  `#2600 <https://github.com/yt-project/yt/pull/2600>`_
+
+It is expected that transitioning to the "blackened" version of the code will add a bit
+of overhead in merging pre-existing PRs. Specifically, a simple ``git merge <pr-branch>
+<target-blackened-branch>`` will almost certainly raise git conflicts. A potential
+solution to this is to sanitize the pr-branch (on author side) with:
+
+.. code:: shell
+
+    pip install black
+    black --line-width <N> yt/
+    git merge --strategy ours <target-blackened-branch>
+    git push
+
+I tested this strategy locally by simulating blackening at an arbitrary point in the
+past and merging the current state of the code base back in, producing a net zero diff
+with a direct blackening of the current state. In practive I advise caution, and
+sanitized code should be reviewed before merging.
+
+
 Backwards Compatibility
 -----------------------
 
