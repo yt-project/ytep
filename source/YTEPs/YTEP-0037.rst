@@ -77,8 +77,8 @@ to enforcing 80).
 
 In first drafting the PR linked above, I chose a line-lenght of 100, so as to minimize
 the amount of manual tweaking left to me after a ``black`` pass.
-I estimated that imposing a strict limit to 80 chars would leave 4320 lines to be
-manually updated, while caping at 88 leaves a mere ... 1341 (still a 75% less work :-)).
+I estimated that imposing a strict limit to 80 chars would leave 468 lines to be
+manually updated, while caping at 88 leaves a mere 116 (75% less work :-)).
 
 
 **sorting imports**
