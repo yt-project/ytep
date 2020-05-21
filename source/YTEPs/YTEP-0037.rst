@@ -49,8 +49,8 @@ From ``black``'s `documentation <https://black.readthedocs.io/en/stable/the_blac
   (...)
   The coding style used by Black can be viewed as a strict subset of PEP 8.
 
-so it is expected that ``black`` plays nicely with ``flake8`` by consruction.
-``black`` applies an opinated style, and offers very little configuration option
+so it is expected that ``black`` plays nicely with ``flake8`` by construction.
+``black`` applies an opinated style, and offers very little configuration options
 by design. Only the target line length can be changed. This makes it a critical 
 point, requiring discussion if this YTEP is approved.
 
@@ -60,15 +60,17 @@ The guidelines states that
 
     Line widths should not be more than 80 characters
 
-Despite this being respected in most of the code base, there remain a large amount of
+Despite this being respected in most of the code base, there remains a large amount of
 outliers, that would be time-consuming to go through by hand. Taking the example of the
 yt-4.0 branch at the time of writing, there are 2676 lines exceeding 80 characters (~2%
 of the whole code base), or, visually
 
 .. image:: ../images/lw-ytep-37.png
 
-Note that in some cases, ``black`` will leave long lines as is. For instance, it won't
-split a 200-chars long string. 
+Note that when long strings are present, ``black`` will not attempt to split them to
+shorten the individual lines.
+This is most important in the case of dosctrings, and I explore the tools available to
+validate them hereafter (see `additional rules`_).
 
 There is a range of possible values we might give preference to. Python's standard
 library caps linelenght at 79, pandas does so at 80. By default, ``black`` will target
@@ -100,11 +102,11 @@ code base, we import directly from ``unyt`` as often as possible, so as to limit
 confusion between ``unyt`` and its wrapper interface ``yt.units``. This is done in 
 `#2597 <https://github.com/yt-project/yt/pull/2597>`_.
 
-
+.. _additional rules:
 **additional rules (flake8 pluggings)**
 
-`flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8`` pluggin that
-goes beyond code style and detects some additional anti-patterns, most of which are
+`flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8`` plugging
+that goes beyond code style and detects some additional anti-patterns, most of which are
 correspond very likely to design flaws in otherwise syntaxically valid statement. For
 instance, it will catch mutable default values such as in
 
@@ -113,7 +115,7 @@ instance, it will catch mutable default values such as in
     def spam(a={}, b=[]):
         #...
 
-which, in most context, should be rewritten as 
+which, in most contexts, should be rewritten as 
 
 .. code:: python
 
