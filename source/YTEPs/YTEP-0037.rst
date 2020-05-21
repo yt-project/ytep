@@ -103,12 +103,21 @@ confusion between ``unyt`` and its wrapper interface ``yt.units``. This is done 
 
 **additional rules**
 
-It has already been the case that some coding bad-practice were not detecte by
-``flake8``. For instance, bare except statements (see `2474 <https://github.com/yt-project/yt/pull/2474>`_
-)
-
 `flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8``
-pluggin that adds warnings to this problem and more.
+pluggin that goes beyond code style and detect some additional anti-patterns,
+most of which can be regarded as highly suspected design flaws in otherwise
+syntaxically valid statement.
+For instance, it will catch mutable default values such as in
+
+.. code:: python
+
+    def spam(a={}, b=[]):
+        print("bacon")
+
+Which is a well known "gotcha", as documented for instance `here <https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments>`_
+In short, this plugin detects bugs that went under the radar up to now, so it's
+probably worth adding it to our linting CI.
+
 
 **side effects**
 
@@ -196,6 +205,7 @@ A possible roadmap
 
 * merge `#2600 <https://github.com/yt-project/yt/pull/2600>`_
 * merge `#2595 <https://github.com/yt-project/yt/pull/2595>`_
+* reduce flake8 ignore list, add bugbear plugin and correct detected anti-patterns
 
 
 Backwards Compatibility
