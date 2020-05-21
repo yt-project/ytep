@@ -101,13 +101,12 @@ confusion between ``unyt`` and its wrapper interface ``yt.units``. This is done 
 `#2597 <https://github.com/yt-project/yt/pull/2597>`_.
 
 
-**additional rules**
+**additional rules (flake8 pluggings)**
 
-`flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8``
-pluggin that goes beyond code style and detects some additional anti-patterns,
-most of which are correspond very likely to design flaws in otherwise
-syntaxically valid statement. For instance, it will catch mutable default values
-such as in
+`flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8`` pluggin that
+goes beyond code style and detects some additional anti-patterns, most of which are
+correspond very likely to design flaws in otherwise syntaxically valid statement. For
+instance, it will catch mutable default values such as in
 
 .. code:: python
 
@@ -128,6 +127,20 @@ This is a well known "gotcha", as documented for instance
 `here <https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments>`_.
 In short, this plugin detects bugs that went under the radar up to now, so it's
 probably worth adding it to our linting CI.
+
+
+Another plugging can be added to enforce docstring formatting
+(`flake8-docstrings <https://github.com/PyCQA/flake8-docstrings>`_), and has a
+straight-forward option configuration to validate docstrings are numpy-styled. However,
+there is currently a very large debt in errors caught by this tool, and no way to
+automatically solve them. However, it could still be added to our linting CI, if check
+for *new* errors only, such as
+
+.. code:: bash
+
+    git diff upstream/master -u -- "*.py" | flake8 --diff
+
+(snippet borrowed from pandas' contributing guide)
 
 
 **side effects**
