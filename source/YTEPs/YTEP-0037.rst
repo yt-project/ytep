@@ -104,17 +104,28 @@ confusion between ``unyt`` and its wrapper interface ``yt.units``. This is done 
 **additional rules**
 
 `flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8``
-pluggin that goes beyond code style and detect some additional anti-patterns,
-most of which can be regarded as highly suspected design flaws in otherwise
-syntaxically valid statement.
-For instance, it will catch mutable default values such as in
+pluggin that goes beyond code style and detects some additional anti-patterns,
+most of which are correspond very likely to design flaws in otherwise
+syntaxically valid statement. For instance, it will catch mutable default values
+such as in
 
 .. code:: python
 
     def spam(a={}, b=[]):
-        print("bacon")
+        #...
 
-Which is a well known "gotcha", as documented for instance `here <https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments>`_
+which, in most context, should be rewritten as 
+
+.. code:: python
+
+    def spam(a=None, b=None):
+        if a is None:
+            a = {}
+        if b is None:
+            b = []
+        
+This is a well known "gotcha", as documented for instance
+`here <https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments>`_.
 In short, this plugin detects bugs that went under the radar up to now, so it's
 probably worth adding it to our linting CI.
 
