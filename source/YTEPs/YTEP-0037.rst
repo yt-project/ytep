@@ -25,6 +25,7 @@ The following PR corpus demonstrates the feasibility of the proposal
   * redirect internal imports from the wrapper module ``yt.units`` to ``unyt`` (`#2597 <https://github.com/yt-project/yt/pull/2597>`_)
   * add a ``pyproject.toml`` file (`#2598 <https://github.com/yt-project/yt/pull/2598>`_)
   * add a precommit hook configuration file (`#2600 <https://github.com/yt-project/yt/pull/2600>`_)
+  * apply fstrings everywhere (`#2605 <https://github.com/yt-project/yt/pull/2605>`_)
 
 Detailed Description
 --------------------
@@ -105,7 +106,14 @@ confusion between ``unyt`` and its wrapper interface ``yt.units``. This is done 
 `#2597 <https://github.com/yt-project/yt/pull/2597>`_.
 
 .. _additional rules:
-**additional rules (flake8 pluggings)**
+**additional rules & flake8 pluggings**
+
+Since the oldest python version supported (as of yt-4.0) is 3.6, it means we can start
+using fstrings instead of ``str.format()`` and ``%`` formatting.
+`#2605 <https://github.com/yt-project/yt/pull/2605>`_ demonstrates how a transition can
+be performed using ``flynt``.
+
+--
 
 `flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8`` plugging
 that goes beyond code style and detects some additional anti-patterns, most of which are
@@ -132,6 +140,7 @@ This is a well known "gotcha", as documented for instance
 In short, this plugin detects bugs that went under the radar up to now, so it's
 probably worth adding it to our linting CI.
 
+--
 
 Another plugging can be added to enforce docstring formatting
 (`flake8-docstrings <https://github.com/PyCQA/flake8-docstrings>`_), and has a
@@ -145,6 +154,7 @@ for *new* errors only, such as
     git diff upstream/master -u -- "*.py" | flake8 --diff
 
 (snippet borrowed from pandas' contributing guide)
+
 
 
 **side effects**
