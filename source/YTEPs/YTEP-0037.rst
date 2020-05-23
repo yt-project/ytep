@@ -78,9 +78,11 @@ library caps linelenght at 79, pandas does so at 80. By default, ``black`` will 
 to enforcing 80).
 
 In first drafting the PR linked above, I chose a line-lenght of 100, so as to minimize
-the amount of manual tweaking left to me after a ``black`` pass.
-I estimated that imposing a strict limit to 80 chars would leave 545 lines to be
-manually updated, while caping at 88 leaves a mere 135 (75% less work).
+the amount of manual tweaking left to me after a ``black`` pass. I estimated that
+imposing a strict limit to 80 chars would leave 545 lines to be manually updated, while
+caping at 88 leaves a mere 135 (75% less work). As a reference, ``dask`` uses black's
+default settings, *and* allows flexibility for docstrings up to 120 characters through
+flake8.
 
 
 **sorting imports**
