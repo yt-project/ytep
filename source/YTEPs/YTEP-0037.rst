@@ -74,7 +74,7 @@ This is most important in the case of dosctrings, and I explore the tools availa
 validate them hereafter (see `additional rules`_).
 
 There is a range of possible values we might give preference to. Python's standard
-library caps line-length at 79, pandas does so at 80. By default, ``black`` will target
+library caps line-length at 79, pandas does so at 88. By default, ``black`` will target
 88, as its authors claim it reduces the total number of lines by some 10% (as compared
 to enforcing 80).
 
