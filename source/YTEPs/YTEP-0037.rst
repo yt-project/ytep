@@ -74,11 +74,11 @@ This is most important in the case of dosctrings, and I explore the tools availa
 validate them hereafter (see `additional rules`_).
 
 There is a range of possible values we might give preference to. Python's standard
-library caps linelenght at 79, pandas does so at 80. By default, ``black`` will target
+library caps line-length at 79, pandas does so at 80. By default, ``black`` will target
 88, as its authors claim it reduces the total number of lines by some 10% (as compared
 to enforcing 80).
 
-In first drafting the PR linked above, I chose a line-lenght of 100, so as to minimize
+In first drafting the PR linked above, I chose a line-length of 100, so as to minimize
 the amount of manual tweaking left to me after a ``black`` pass. I estimated that
 imposing a strict limit to 80 chars would leave 545 lines to be manually updated, while
 caping at 88 leaves a mere 135 (75% less work). As a reference, ``dask`` uses black's
@@ -183,7 +183,7 @@ It should be noted that ``black`` does not have a parser for Cython files, but
 interstingly ``flake8`` and ``isort`` do. Thus it is possible to add style checks for
 Cython extensions to the CI pipeline.
 
-Additionally, ``black`` will not force line-lenght limits in docstrings.
+Additionally, ``black`` will not force line-length limits in docstrings.
 ``flake8`` will still be able to catch violations there, but solving them
 require manual tweaking. However, the amount of existing docstrings going over
 88 characters is fairly small (a few dozens), so this is by no means a blocking
