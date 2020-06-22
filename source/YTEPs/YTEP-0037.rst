@@ -225,6 +225,12 @@ be done separately, and the big one (blackening) happen on a meeting.
 A possible roadmap
 ------------------
 
+To ensure cohesion in getting the number of features included in this PR in the
+codebase, we will have a dedicated maintainer/triage meeting. This YTEP's PR, the yt
+slack, and the yt-dev mailing list will include the meeting details for interested
+parties to attend. Some items require completion before the triage meeting, and some can
+be done afterwards, and have been categorized below.
+
 **pre meeting**
 
 * settle on a maximal line length and the status of unyt ("second" or third party)
