@@ -13,7 +13,7 @@ This YTEP proposes the enforcement of code styling guidelines with auto-formatti
 Status
 ------
 
-Proposed
+Accepted
 
 Project Management Links
 ------------------------
@@ -22,7 +22,6 @@ The following PR corpus demonstrates the feasibility of the proposal
 
   * sorting imports with `isort <https://github.com/timothycrosley/isort>`_ (`#2592 <https://github.com/yt-project/yt/pull/2592>`_)
   * code formatting with `black <https://github.com/psf/black>`_ (`#2596 <https://github.com/yt-project/yt/pull/2596>`_)
-  * redirect internal imports from the wrapper module ``yt.units`` to ``unyt`` (`#2597 <https://github.com/yt-project/yt/pull/2597>`_)
   * add a ``pyproject.toml`` file (`#2598 <https://github.com/yt-project/yt/pull/2598>`_)
   * add a precommit hook configuration file (`#2600 <https://github.com/yt-project/yt/pull/2600>`_)
   * apply fstrings everywhere (`#2605 <https://github.com/yt-project/yt/pull/2605>`_)
@@ -99,11 +98,6 @@ Moreover, ``isort`` is configurable so that it allows for the definition of cust
 which falls somewhere in between the default sections "third party" (external
 dependency) and "first party" (the project). This is done in 
 `#2592 <https://github.com/yt-project/yt/pull/2592>`_.
-
-To better highlight the way yt 4.0 depends on ``unyt``, I also propose that, within the
-code base, we import directly from ``unyt`` as often as possible, so as to limit
-confusion between ``unyt`` and its wrapper interface ``yt.units``. This is done in 
-`#2597 <https://github.com/yt-project/yt/pull/2597>`_.
 
 .. _additional rules:
 **additional rules & flake8 pluggings**
@@ -233,7 +227,13 @@ be done afterwards, and have been categorized below.
 
 **pre meeting**
 
-* settle on a maximal line length and the status of unyt ("second" or third party)
+* settle on a maximal line length and the status of ``unyt`` ("second" or third party)
+
+
+.. note::
+
+    final: maximum-line-length 88, ``unyt`` treated as third party
+
 * merge isort pass on the code base + CI check + doc
 * optional (needs approval) merge `#2597 <https://github.com/yt-project/yt/pull/2597>`_
 * merge (needs tweaking) `#2598 <https://github.com/yt-project/yt/pull/2598>`_
