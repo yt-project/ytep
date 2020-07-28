@@ -35,7 +35,7 @@ though enforcing them is not explicitly made part of the reviewing process.
 
 We already use ``flake8`` and integrate it to our CI to catch a subset of
 infractions to `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. From
-``flake8``'s `pipy page <https://pypi.org/project/flake8/>`_
+``flake8``'s `pypi page <https://pypi.org/project/flake8/>`_
 
   Flake8 is a wrapper around these tools:
     - PyFlakes
@@ -50,11 +50,12 @@ From ``black``'s `documentation <https://black.readthedocs.io/en/stable/the_blac
   The coding style used by Black can be viewed as a strict subset of PEP 8.
 
 so it is expected that ``black`` plays nicely with ``flake8`` by construction.
-``black`` applies an opinated style, and offers very little configuration options
+``black`` applies an opinionated style, and offers very little configuration options
 by design. Only the target line length can be changed. This makes it a critical 
 point, requiring discussion if this YTEP is approved.
 
-**maximal line length**
+Maximal line length
++++++++++++++++++++
 
 The guidelines states that
 
@@ -80,17 +81,17 @@ to enforcing 80).
 In first drafting the PR linked above, I chose a line-length of 100, so as to minimize
 the amount of manual tweaking left to me after a ``black`` pass. I estimated that
 imposing a strict limit to 80 chars would leave 545 lines to be manually updated, while
-caping at 88 leaves a mere 135 (75% less work). As a reference, ``dask`` uses black's
+capping at 88 leaves a mere 135 (75% less work). As a reference, ``dask`` uses black's
 default settings, *and* allows flexibility for docstrings up to 120 characters through
 flake8.
 
+Sorting imports
++++++++++++++++
 
-**sorting imports**
-
-PEP8 `recommends sorting imports statments <https://www.python.org/dev/peps/pep-0008/#imports>`_,
+PEP8 `recommends sorting imports statements <https://www.python.org/dev/peps/pep-0008/#imports>`_,
 Needless to say, the task is daunting and definitely not worthy of anyone's time if we
 had to go back and apply those rules manually to the code base.
-Luckilly, ``isort`` is able to check for and auto-apply those rules, so it can easily be
+Luckily, ``isort`` is able to check for and auto-apply those rules, so it can easily be
 added to the CI-linting process.
 
 Moreover, ``isort`` is configurable so that it allows for the definition of custom
@@ -100,7 +101,9 @@ dependency) and "first party" (the project). This is done in
 `#2592 <https://github.com/yt-project/yt/pull/2592>`_.
 
 .. _additional rules:
-**additional rules & flake8 pluggings**
+
+Additional rules & flake8 plugins
++++++++++++++++++++++++++++++++++
 
 Since the oldest python version supported (as of yt-4.0) is 3.6, it means we can start
 using fstrings instead of ``str.format()`` and ``%`` formatting.
@@ -111,7 +114,7 @@ be performed using ``flynt``.
 
 `flake8-bugbear <https://github.com/PyCQA/flake8-bugbear>`_ is a ``flake8`` plugging
 that goes beyond code style and detects some additional anti-patterns, most of which are
-correspond very likely to design flaws in otherwise syntaxically valid statement. For
+correspond very likely to design flaws in otherwise syntactically valid statement. For
 instance, it will catch mutable default values such as in
 
 .. code:: python
@@ -149,11 +152,10 @@ for *new* errors only, such as
 
 (snippet borrowed from pandas' contributing guide)
 
+Side effects
+++++++++++++
 
-
-**side effects**
-
-Although some default options in ``isort`` conflict with ``black``'s opinated standard,
+Although some default options in ``isort`` conflict with ``black``'s opinionated standard,
 it can be configured so that the tools play nicely with each other.
 This is demonstrated in `#2596 <https://github.com/yt-project/yt/pull/2596>`_ where both
 check pass on Travis.
@@ -167,14 +169,14 @@ A proof of concept for this is `#2598 <https://github.com/yt-project/yt/pull/259
 where CI builds are run correctly across all tested python versions (3.6, 3.7, 3.8).
 
 A serious counter-argument to applying black is that it implies messing up with ``git
-blame`` by making a single contributor the defacto last-author of a large number of
+blame`` by making a single contributor the de facto last-author of a large number of
 lines they have not even necessarily read. Most recent versions of ``git`` can be
 configured to ignore specific commits in ``git blame``. However, ``black``'s own README
-currently points out that github's UI for ``git-blame`` does not support this feature
+currently points out that GitHub's UI for ``git-blame`` does not support this feature
 (yet ?).
 
 It should be noted that ``black`` does not have a parser for Cython files, but
-interstingly ``flake8`` and ``isort`` do. Thus it is possible to add style checks for
+interestingly ``flake8`` and ``isort`` do. Thus it is possible to add style checks for
 Cython extensions to the CI pipeline.
 
 Additionally, ``black`` will not force line-length limits in docstrings.
@@ -183,14 +185,14 @@ require manual tweaking. However, the amount of existing docstrings going over
 88 characters is fairly small (a few dozens), so this is by no means a blocking
 condition.
 
-
-**outreach and transition**
+Outreach and transition
++++++++++++++++++++++++
 
 Enforcing these change throughout future contributions can be done by
 
-* updating the Developper Guide (done in part in `#2592 <https://github.com/yt-project/yt/pull/2592>`_)
+* updating the Developer Guide (done in part in `#2592 <https://github.com/yt-project/yt/pull/2592>`_)
 * offering a precommit hook configuration file to help contributors automate the linting stage locally (``precommit_hook.yaml``)
-such a configuration file is propoed in  `#2600 <https://github.com/yt-project/yt/pull/2600>`_
+  such a configuration file is proposed in `#2600 <https://github.com/yt-project/yt/pull/2600>`_
 
 It is expected that transitioning to the "blackened" version of the code will add a bit
 of overhead in merging pre-existing PRs. Specifically, a simple ``git merge <pr-branch>
@@ -225,7 +227,8 @@ slack, and the yt-dev mailing list will include the meeting details for interest
 parties to attend. Some items require completion before the triage meeting, and some can
 be done afterwards, and have been categorized below.
 
-**pre meeting**
+Pre meeting
++++++++++++
 
 * settle on a maximal line length and the status of ``unyt`` ("second" or third party)
 
@@ -240,17 +243,18 @@ be done afterwards, and have been categorized below.
 * rebase blackening PR on the target branch (yt-4.0 ?) and prepare it with agreed line length
 * provided all CI check pass and the PR is reviewed & approved, this goes to a PR triage meeting
 
-**on the meeting**
+On the meeting
+++++++++++++++
 
 * merge blackening + manual fixups + CI checks + doc
 * signal to open PR authors that they should apply black (see transitioning strategy)
 
-**can be done later**
+Can be done later
++++++++++++++++++
 
 * merge `#2600 <https://github.com/yt-project/yt/pull/2600>`_
 * merge `#2595 <https://github.com/yt-project/yt/pull/2595>`_
 * reduce flake8 ignore list, add bugbear plugin and correct detected anti-patterns
-
 
 Backwards Compatibility
 -----------------------
