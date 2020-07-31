@@ -13,18 +13,27 @@ This YTEP proposes the enforcement of code styling guidelines with auto-formatti
 Status
 ------
 
-Accepted
+Completed
 
 Project Management Links
 ------------------------
 
-The following PR corpus demonstrates the feasibility of the proposal
+The following PR are part of this proposal
 
   * sorting imports with `isort <https://github.com/timothycrosley/isort>`_ (`#2592 <https://github.com/yt-project/yt/pull/2592>`_)
   * code formatting with `black <https://github.com/psf/black>`_ (`#2596 <https://github.com/yt-project/yt/pull/2596>`_)
   * add a ``pyproject.toml`` file (`#2598 <https://github.com/yt-project/yt/pull/2598>`_)
   * add a precommit hook configuration file (`#2600 <https://github.com/yt-project/yt/pull/2600>`_)
-  * apply fstrings everywhere (`#2605 <https://github.com/yt-project/yt/pull/2605>`_)
+  * add ``flake8-bugbear`` to our CI and fix existing errors (`#2667 <https://github.com/yt-project/yt/pull/2667>`_ `#2668 <https://github.com/yt-project/yt/pull/2668>`_ `#2669 <https://github.com/yt-project/yt/pull/2669>`_ `#2670 <https://github.com/yt-project/yt/pull/2670>`_ `#2671 <https://github.com/yt-project/yt/pull/2671>`_ `#2672 <https://github.com/yt-project/yt/pull/2672>`_ `#2673 <https://github.com/yt-project/yt/pull/2673>`_ `#2674 <https://github.com/yt-project/yt/pull/2674>`_)
+
+And those are post-process PRs 
+
+  * `#2750 <https://github.com/yt-project/yt/pull/2750>`_ (merged)
+  * `#2756 <https://github.com/yt-project/yt/pull/2764>`_ (merged)
+  * `#2759 <https://github.com/yt-project/yt/pull/2759>`_ (merged)
+  * `#2758 <https://github.com/yt-project/yt/pull/2758>`_ (merged)
+  * `#2777 <https://github.com/yt-project/yt/pull/2777>`_ (merged)
+  * `#2789 <https://github.com/yt-project/yt/pull/2789>`_ (merged)
 
 Detailed Description
 --------------------
@@ -56,6 +65,11 @@ point, requiring discussion if this YTEP is approved.
 
 Maximal line length
 +++++++++++++++++++
+.. note::
+
+    After discussion a maximum-line-length of 88, which is ``black``'s default setting,
+    was adopted.
+
 
 The guidelines states that
 
@@ -94,18 +108,12 @@ had to go back and apply those rules manually to the code base.
 Luckily, ``isort`` is able to check for and auto-apply those rules, so it can easily be
 added to the CI-linting process.
 
-Moreover, ``isort`` is configurable so that it allows for the definition of custom
-"sections" within import statements. This can be use to isolate imports from ``unyt``,
-which falls somewhere in between the default sections "third party" (external
-dependency) and "first party" (the project). This is done in 
-`#2592 <https://github.com/yt-project/yt/pull/2592>`_.
-
 .. _additional rules:
 
 Additional rules & flake8 plugins
 +++++++++++++++++++++++++++++++++
 
-Since the oldest python version supported (as of yt-4.0) is 3.6, it means we can start
+Since the oldest python version supported (as of yt 4.0dev) is 3.6, it means we can start
 using fstrings instead of ``str.format()`` and ``%`` formatting.
 `#2605 <https://github.com/yt-project/yt/pull/2605>`_ demonstrates how a transition can
 be performed using ``flynt``.
@@ -196,20 +204,24 @@ Enforcing these change throughout future contributions can be done by
 
 It is expected that transitioning to the "blackened" version of the code will add a bit
 of overhead in merging pre-existing PRs. Specifically, a simple ``git merge <pr-branch>
-<target-blackened-branch>`` will almost certainly raise git conflicts. A potential
-solution to this is to sanitize the pr-branch (on author side) with:
+master`` will almost certainly raise git conflicts. One possible solution to this is to
+sanitize the pr-branch (on author side) with:
 
 .. code:: shell
 
     pip install black
     black --line-width <N> yt/
-    git merge --strategy ours <target-blackened-branch>
+    git merge --strategy ours master
     git push
 
 I tested this strategy locally by simulating blackening at an arbitrary point in the
 past and merging the current state of the code base back in, producing a net zero diff
 with a direct blackening of the current state. In practice I advise caution, and
-sanitized code should be reviewed before merging.
+sanitized code should be reviewed before merging. Another, arguably cleaner way to to
+resolve conflicts is to rebase the branch onto master and solve conflicts along the
+process. This is the prefered method though I would not recommend it to contributors who
+are not used to rebasing since it is easy to make mistakes in the process.
+
 
 
 The shorter the transition, the easier, so I think that most of the PRs could be
@@ -218,8 +230,8 @@ conditions. However, because we want to ensure that each step passes the tests,
 which typically takes a least an hour or two per step, I propose that prep steps
 be done separately, and the big one (blackening) happen on a meeting.
 
-A possible roadmap
-------------------
+Roadmap
+-------
 
 To ensure cohesion in getting the number of features included in this PR in the
 codebase, we will have a dedicated maintainer/triage meeting. This YTEP's PR, the yt
@@ -232,29 +244,26 @@ Pre meeting
 
 * settle on a maximal line length and the status of ``unyt`` ("second" or third party)
 
-
 .. note::
 
     final: maximum-line-length 88, ``unyt`` treated as third party
 
-* merge isort pass on the code base + CI check + doc
-* optional (needs approval) merge `#2597 <https://github.com/yt-project/yt/pull/2597>`_
-* merge (needs tweaking) `#2598 <https://github.com/yt-project/yt/pull/2598>`_
-* rebase blackening PR on the target branch (yt-4.0 ?) and prepare it with agreed line length
-* provided all CI check pass and the PR is reviewed & approved, this goes to a PR triage meeting
 
 On the meeting
 ++++++++++++++
 
-* merge blackening + manual fixups + CI checks + doc
+* merge isort pass on the code base + CI check + doc (done)
+* merge (needs tweaking) `#2598 <https://github.com/yt-project/yt/pull/2598>`_ (done)
+* merge blackening + manual fixups + CI checks + doc (done)
 * signal to open PR authors that they should apply black (see transitioning strategy)
 
 Can be done later
 +++++++++++++++++
 
-* merge `#2600 <https://github.com/yt-project/yt/pull/2600>`_
-* merge `#2595 <https://github.com/yt-project/yt/pull/2595>`_
-* reduce flake8 ignore list, add bugbear plugin and correct detected anti-patterns
+* merge `#2600 <https://github.com/yt-project/yt/pull/2600>`_ (done)
+* merge `#2595 <https://github.com/yt-project/yt/pull/2595>`_ (done)
+* reduce flake8 ignore list (done)
+* add bugbear plugin and correct detected anti-patterns
 
 Backwards Compatibility
 -----------------------
