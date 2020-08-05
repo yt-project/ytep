@@ -245,7 +245,7 @@ Pre meeting
 
 The following questions should be resolved
 * settle on a maximal line length (final: 88 characters)
-* decide on where should ``unyt`` import statement land: on third party section, or a custom
+* decide on where should ``unyt`` import statement lands (for isort sorting): on third party section, or a custom
 intermediate section between first and third parties ? (final: third party) 
 
 
