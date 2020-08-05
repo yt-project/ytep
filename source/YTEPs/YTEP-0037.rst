@@ -209,8 +209,8 @@ sanitize the pr-branch (on author side) with:
 
 .. code:: shell
 
-    pip install black
-    black --line-width <N> yt/
+    pip install lint_requirements.txt
+    black yt/
     git merge --strategy ours master
     git push
 
