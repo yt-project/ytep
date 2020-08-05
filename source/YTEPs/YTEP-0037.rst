@@ -211,6 +211,7 @@ sanitize the pr-branch (on author side) with:
 
     pip install lint_requirements.txt
     black yt/
+    isort .
     git merge --strategy ours master
     git push
 
@@ -242,11 +243,10 @@ be done afterwards, and have been categorized below.
 Pre meeting
 +++++++++++
 
-* settle on a maximal line length and the status of ``unyt`` ("second" or third party)
-
-.. note::
-
-    final: maximum-line-length 88, ``unyt`` treated as third party
+The following questions should be resolved
+* settle on a maximal line length (final: 88 characters)
+* decide on where should ``unyt`` import statement land: on third party section, or a custom
+intermediate section between first and third parties ? (final: third party) 
 
 
 On the meeting
