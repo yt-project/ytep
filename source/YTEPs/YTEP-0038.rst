@@ -1,0 +1,87 @@
+YTEP-0038: Type Annotations
+===========================
+
+Abstract
+--------
+
+Created: March 1, 2021
+Author: Matthew Turk
+
+This YTEP proposes that we undertake a staged process of adding [type
+annotations](https://docs.python.org/3/library/typing.html) to the yt
+codebase.
+
+Status
+------
+
+Proposed, after havingbeen discussed.
+
+Project Management Links
+------------------------
+
+  * [PR 3064 - Add a `_typing` module](https://github.com/yt-project/yt/pull/3064)
+  * [PR 3028 - pyannotate for type hints](https://github.com/yt-project/yt/pull/3028)
+  * [PR 2917 - Drop support for Py 3.6](https://github.com/yt-project/yt/pull/2917)
+  * [PR 2352 - Experiment with type hinting](https://github.com/yt-project/yt/pull/2352)
+  * [Somewhat related YTEP on traitlets](https://github.com/yt-project/ytep/pull/8)
+
+Detailed Description
+--------------------
+
+In the 3.x series, Python had added support for type annotations/hinting.
+These are optional annotations that specify what types a given function
+expects to receive or to emit.
+
+This allows a number of useful features, chief among them a more rigorous
+method for error-checking in code and a way to provide much better
+autocompletion and IDE functionality for developing both scripts *and* code
+within yt.  If your IDE is aware of what kinds of objects will be returned by 
+a function, it can then provide options about what you might be able to do
+with that object. A recent summary (as of this writing) can be found
+[here](https://www.augmentedmind.de/2020/10/11/static-python-type-hints/).
+
+There are also possibilities of future optimizations that can build on type
+hinting, for instance in tools like Cython and Numba, but that is not
+considered a top-tier reason for adding type hints.
+
+However, there are some features of type-hinting that would be extremely
+useful to yt that only started appearing in Python 3.7. Part of this
+discussion should be around when to require Python 3.7 and above.
+
+Implementing type annotations across an entire codebase such as yt is a
+daunting task. There are many, many internal functions that would benefit
+from type annotations. Instead, it would be most useful to take a staged
+approach, utilizing automated conversion tools where possible with
+hand-reviews of these *internal* items.
+
+For user-facing items, in particular anything in the *high-level* APIs (i.e.,
+data selectors, `SlicePlot`, etc) a personal touch should be used, and each
+should be written by a developer.
+
+Because this is a big task, the order of modifications we propose would be:
+
+ * Identify any type hint `Union` types that need to be made (to account for,
+   for instance, supplying either a `unyt_quantity` or a tuple of (value,
+   unit))
+ * Type-hint constructors for all top-level objects (`SlicePlot`, `Sphere`, etc)
+ * Type-hint all visualization function calls (`p.set_width`)
+ * Type-hint public methods on top-level objects (`.profile`)
+ * Utilize annotators for internal (underscore) methods.
+
+This will need to be a series of pull requests.
+
+Because these hints will be integrated into the testing suites, we can have
+an additional check of static analysis of our testing suites and examples.
+This should ease the development process, as an error will be raised for
+invalid API uses or incorrect type annotations.
+
+Backwards Compatibility
+-----------------------
+
+Unless Python 3.7 or above features of type hinting are used, this should not
+have any backwards-incompatible changed.
+
+Alternatives
+------------
+
+None that I can identify.
