@@ -7,8 +7,8 @@ Abstract
 Created: March 1, 2021
 Author: Matthew Turk, Corentin Cadiou, Clément Robert
 
-This YTEP proposes that we undertake a staged process of adding [type
-annotations](https://docs.python.org/3/library/typing.html) to the yt
+This YTEP proposes that we undertake a staged process of adding `type
+annotations <https://docs.python.org/3/library/typing.html>`_ to the yt
 codebase.
 
 Status
@@ -19,14 +19,14 @@ Proposed, after havingbeen discussed.
 Project Management Links
 ------------------------
 
-  * [PR 3064 - Add a `_typing` module](https://github.com/yt-project/yt/pull/3064)
-  * [PR 3028 - pyannotate for type hints](https://github.com/yt-project/yt/pull/3028)
-  * [PR 2917 - Drop support for Py 3.6](https://github.com/yt-project/yt/pull/2917)
-  * [PR 2352 - Experiment with type hinting](https://github.com/yt-project/yt/pull/2352)
-  * [Somewhat related YTEP on traitlets](https://github.com/yt-project/ytep/pull/8)
+  * `PR 3064 - Add a typing module <https://github.com/yt-project/yt/pull/3064>`_
+  * `PR 3028 - pyannotate for type hints <https://github.com/yt-project/yt/pull/3028>`_
+  * `PR 2917 - Drop support for Py 3.6 <https://github.com/yt-project/yt/pull/2917>`_
+  * `PR 2352 - Experiment with type hinting <https://github.com/yt-project/yt/pull/2352>`_
+  * `Somewhat related YTEP on traitlets <https://github.com/yt-project/ytep/pull/8>`_
 
-Additionally, the [pull request for this
-YTEP](https://github.com/yt-project/ytep/pull/17) is an invaluable source of
+Additionally, the `pull request for this YTEP
+<https://github.com/yt-project/ytep/pull/17>`_ is an invaluable source of
 information and discussion.
 
 Detailed Description
@@ -42,7 +42,7 @@ autocompletion and IDE functionality for developing both scripts *and* code
 within yt.  If your IDE is aware of what kinds of objects will be returned by 
 a function, it can then provide options about what you might be able to do
 with that object. A recent summary (as of this writing) can be found
-[here](https://www.augmentedmind.de/2020/10/11/static-python-type-hints/).
+`here <https://www.augmentedmind.de/2020/10/11/static-python-type-hints/>`_.
 
 There are also possibilities of future optimizations that can build on type
 hinting, for instance in tools like Cython and Numba, but that is not
