@@ -5,7 +5,7 @@ Abstract
 --------
 
 Created: March 1, 2021
-Author: Matthew Turk
+Author: Matthew Turk, Corentin Cadiou, Clément Robert
 
 This YTEP proposes that we undertake a staged process of adding [type
 annotations](https://docs.python.org/3/library/typing.html) to the yt
@@ -24,6 +24,10 @@ Project Management Links
   * [PR 2917 - Drop support for Py 3.6](https://github.com/yt-project/yt/pull/2917)
   * [PR 2352 - Experiment with type hinting](https://github.com/yt-project/yt/pull/2352)
   * [Somewhat related YTEP on traitlets](https://github.com/yt-project/ytep/pull/8)
+
+Additionally, the [pull request for this
+YTEP](https://github.com/yt-project/ytep/pull/17) is an invaluable source of
+information and discussion.
 
 Detailed Description
 --------------------
@@ -60,6 +64,10 @@ should be written by a developer.
 
 Because this is a big task, the order of modifications we propose would be:
 
+ * *Immediately* allow type hinting in new pull requests and code
+   modifications.
+ * *Immediately* allow the inclusion of a type hinting module, and open for
+   discussion the usage of that module and its makeup.
  * Identify any type hint `Union` types that need to be made (to account for,
    for instance, supplying either a `unyt_quantity` or a tuple of (value,
    unit))
@@ -75,11 +83,34 @@ an additional check of static analysis of our testing suites and examples.
 This should ease the development process, as an error will be raised for
 invalid API uses or incorrect type annotations.
 
+Guidelines for Typing in yt
+---------------------------
+
+ * "Don't Repeat Yourself": All internal typing should be imported either
+   from `typing` or from `yt.typing`, except classes (that should be imported
+   from their respective files directly) and functions that return or take as
+   inputs objects from foreign libraries (e.g. that export pandas
+   dataframes). We should avoid as much as possible code repetition in
+   function signatures, except where it helps understanding the signature
+   itself (i.e. `Tuple[str, str]` may be clearer than `StrTuple`)
+ * "Type for users then for the machine": Typing should help users and
+   developers first, and be machine readable then. This means that complex
+   types should be defined as their own meaningful type and stored in
+   `yt/typing.py`.
+ * "Favour clean signature over history": Inevitably we will hit a function
+   with very complex signatures/variable return types. We should favour
+   refactoring it if that can contribute to simplifying the signature.
+
 Backwards Compatibility
 -----------------------
 
 Unless Python 3.7 or above features of type hinting are used, this should not
 have any backwards-incompatible changed.
+
+The primary Python 3.7 feature we would want to take advantage of is deferred
+evaluation. The example given in discussion is a return type of a class that
+does not exist yet; to retain Python 3.6 compatibility we would use a string
+literal for the time-being.
 
 Alternatives
 ------------
