@@ -105,6 +105,20 @@ The primary ``conftest.py`` file resides in the root of the yt repository. It:
     * Defines the command-line options
     * Defines the fixtures used across each of the answer tests
 
+Testing the Tests
+>>>>>>>>>>>>>>>>>
+
+The pytest ecosystem contains a swath of useful tools that can be employed in order to aid the testing process. Several such tools are listed here:
+
+    * `pytest-randomly <https://github.com/pytest-dev/pytest-randomly>`_ is a plugin for causing the tests to be collected in a random order each time they are run. This helps guard against nefarious bugs that may result from calling tests in a specific order
+    * `pytest-cov <https://pypi.org/project/pytest-cov/>`_ is a plugin that generates test coverage reports. It also plays well with other useful pytest plugins such as `pytest-xdist <https://pypi.org/project/pytest-xdist/>`_, which allows for tests to be run in parallel
+    * `coverage-badge <https://pypi.org/project/coverage-badge/>`_ is a plugin for generating a test coverage badge that can be added to the `README` file
+
+Doctest Integration
+>>>>>>>>>>>>>>>>>>>
+
+In addition to being able to run both the unit and answer tests for yt, pytest can also
+
 Saving Answer Test Results As Hashes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -122,6 +136,8 @@ This produces human-readable text files that can be easily packaged with the mai
 Running the Tests
 ^^^^^^^^^^^^^^^^^
 
+The unit and answer tests are mutually exclusive, being run with two separate commands.
+
 Unit Tests
 """"""""""
 
@@ -137,7 +153,7 @@ To run a specific test or group of tests, one can either pass in the path to the
 
 .. code-block:: bash
 
-  $ pytest -s -v /path/to/test/module.py
+  $ pytest /path/to/tests/test_module.py
 
 or use pytest's ``-k`` flag, which enables test selection by name. For example, to run all of the tests contained in a single class, one would do:
 
@@ -195,18 +211,19 @@ Within the file containing the answer tests, one should define a new class that 
     param1List = [value1, value2]
     param2List = [value1, value2]
 
+
     @pytest.mark.answer_test
     class TestNewFrontend:
         answer_file = None
         saved_hashes = None
 
-        @pytest.mark.usefixtures('hashing')
+        @pytest.mark.usefixtures("hashing")
         @pytest.mark.parametrize("ds", dsList, indirect=True)
         @pytest.mark.parametrize("param1", param1List, indirect=True)
         @pytest.mark.parametrize("param2", param2List, indirect=True)
         def test_method1(self, ds, param1, param2):
-          test_result = some_answer_test(ds, param1, param2)
-          self.hashes.update({'some_answer_test' : test_result})
+            test_result = some_answer_test(ds, param1, param2)
+            self.hashes.update({"some_answer_test": test_result})
 
 If desired, test parameterization can be handled in a ``conftest.py`` file that lives in the new frontend's ``tests`` directory. See the pytest `documentation <https://docs.pytest.org/en/stable/>`_ for more.
 
