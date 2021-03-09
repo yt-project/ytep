@@ -1,4 +1,4 @@
-YTEP-0000: YTEP Template
+YTEP-9999: YTEP Template
 ========================
 
 To write a YTEP, copy this template to the next numerical number, add it to the
