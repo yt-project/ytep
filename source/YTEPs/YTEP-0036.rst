@@ -117,7 +117,7 @@ The pytest ecosystem contains a swath of useful tools that can be employed in or
 Doctest Integration
 >>>>>>>>>>>>>>>>>>>
 
-In addition to being able to run both the unit and answer tests for yt, pytest can also run doctests embedded in documentation as well as source code doc string via the ``--doctest-glob="*.rst"`` command-line option.
+In addition to being able to run both the unit and answer tests for yt, pytest can also run doctests embedded in documentation as well as source code doc string via the ``--doctest-glob="*.rst"`` command-line option, which is described `here <https://docs.pytest.org/en/stable/doctest.html>`_, and the ``doctest_namespace`` fixture, which is described `here < https://docs.pytest.org/en/stable/doctest.html#doctest-namespace-fixture>`_.
 
 Saving Answer Test Results As Hashes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
