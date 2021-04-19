@@ -1,0 +1,110 @@
+YTEP-0035: Type Hinting and Traitlets
+=====================================
+
+Abstract
+--------
+
+Created: September 16, 2019
+Author: Matthew Turk
+
+At present, yt has numerous instances of classes with a set of properties that are not defined at a top-level, that are generally restricted to one or a handful of things, and that utilize a fairly large amount of validation, coercion, and monitoring code.
+
+Utilizing libraries such as `traitlets<https://traitlets.readthedocs.io/en/stable/>`_, we can reduce the total code required to retain these properties, reuse code more readily across object definitions, and improve maintainability.  This YTEP outlines a step-by-step path forward for implementing this.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+There are no current project management links.
+
+Detailed Description
+--------------------
+
+What are Traits?
+++++++++++++++++
+
+For the purposes of this YTEP, there are two specific areas that will serve as useful discussion points: visualization (specifically `PlotWindow`) and data containers.  We also note that `traitlets` is, by virtue of transitive dependencies, already included in a base `yt` installation.
+
+Within the plotting classes specifically, there are a number of attributes that serve to monitor whether or not "state" has been changed sufficiently to warrant regenerating a visualization; additionally, many of these include "validation" actions.  As an example, calling `set_width` will result in a call to `invalidate_data`, which indicates that the data has to be regenerated.  The width itself is also able to be specified in a number of ways that correspond to what "width" means in the specific context.  Almost all of the logic for setting the width is contained within this routine, although there are separate "initialization" routines for when the plot object is initially created.
+
+Traitlets is a library designed to simplify this process.  Instead of the `width` attribute being set up by the class, it would be a "trait."  In cases where the trait is easily specifiable (for instance, for `Int`, `Tuple`, etc types) we could rely on the built-in traitlets instances.  When the traitlet is more complex, for instance in the case of `width`, we would create our own `TraitType` class.  The traitlets documentation includes `examples<https://traitlets.readthedocs.io/en/stable/defining_traits.html>`_ for how to do this, but the principle components to be defined are a `default_value` and a `validate` operation.  This allows for very flexible validation and *coercion* of data types.
+
+For instance, if we defined a `TraitType` that was a "unitful value", we could reuse the definition in `yt/funcs.py` of `fix_length` which enables coercion of unitful tuples as well as `YTQuantity` objects.  Our class definition would change from:
+
+.. code-block:: python
+
+   class SomeObject:
+       def __init__(self, width):
+           self.width = fix_length(width)
+
+to something that was slightly more compact, where the type of the attribute `width` was specified at the top level:
+
+.. code-block:: python
+
+   class SomeObject(traitlets.HasTraits):
+       width = YTLengthTrait()
+
+In this particular case, the code reduction is not significant; however, what this enables is a much more compact specification of the class as a whole.  Because all validation code is typically managed external to the class, and because default values are often provided, we can reduce the function call signature.  In other projects, such as the OpenGL volume rendering refactor, this has enabled using strings (such as `'float'`) to refer to OpenGL constants (such as `GL_FLOAT`).
+
+A typical definition for an extensive class could look something like:
+
+.. code-block:: python
+
+   class SomeObject(traitlets.HasTraits):
+       width = YTLengthTrait((1.0, 'unitary'))
+       num_something = traitlets.Int(10)
+       other_name = traitlets.Unicode('My other name')
+       some_instance = traitlets.Instance(SomeOtherObject)
+
+When initialized, any parameters that are passed (as keyword arguments) override the defaults; any parameters that are not passed utilize the default values.  Additionally, traitlets provides an "observer" pattern which has been implemented in many different places in yt.  It is possible to identify observation operations:
+
+.. code-block:: python
+
+   class SomeObject(traitlets.HasTraits):
+       num_something = traitlets.Int(10)
+
+       @traitlets.observe('num_something')
+       def _update_num(self, change):
+           print("We have changed values! Old: {} New: {}".format(change['old'], change['new']))
+
+Implementing this would greatly simplify the logic in our visualization classes.
+
+Proposed Action
++++++++++++++++
+
+This YTEP proposes the following steps, applied first to the visualization classes, and then to the data container classes.
+
+  1. Build `TraitTypes` that can coerce and validate parameters in the same manner as existing parameter validation, such as in `fix_length`.
+  2. Convert the base plot types to `HasTraits` instances, where the traits are defined at class level.
+  3. Change our validation pattern to utilize observers.  Instead of decorating `set_` functions with `@invalidate_data` and `@invalidate_plot`, utilize `@observe` and add the list of traits to the set of observed traits.
+
+How to Implement?
++++++++++++++++++
+
+Implementation will likely be somewhat rote at first, with identification and collection of properties on objects, and transforming their initialization and validation systems to `TraitType` objects.  This will start at the base classes, moving down to subclasses.
+
+The difficulty level here is likely to be "medium" -- the changes will be straightforward, in many cases not impacting a large number of deep yt internals, but may require iterative testing and development.
+
+Testing Method
+++++++++++++++
+
+There should be *no* functional changes to any results as a result of this change.  All tests should continue to pass, and furthermore, testing can be *improved* by testing individual `TraitType` objects in isolation.
+
+Backwards Compatibility
+-----------------------
+
+The principal problems that may be experienced:
+
+ * Existing scripts that rely on the ordering of arguments that will become keyword arguments.  This may be mitigated by `__init__` wrappers, but ideally only a handful of parameters would ever cause problems in this way.
+ * Documentation may rely on the docstrings for the `__init__` functions, but more useful information may be found in the definitions elsewhere.
+
+There may be additional concerns that will arise, but since this is largely a codification of existing usage patterns and relying on an external library for implementation, it should be minimally disruptive.
+
+Alternatives
+------------
+
+The principal alternative is through `type hinting<https://docs.python.org/3/library/typing.html>`_, and libraries such as `pydantic<https://pydantic-docs.helpmanual.io>`_ that enforce type hinting.  These libraries are effective, and have external support in tools such as `mypy<http://mypy-lang.org/>`_, but they are more difficult to enable validation and coercion as nicely as traitlets.  Traitlets has the additional benefit of deeper integration with libraries such as `ipywidgets`, enabling potential future parameter modification through GUI methods.
