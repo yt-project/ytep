@@ -1,0 +1,91 @@
+YTEP-0040: a yt-baked colormap package
+======================================
+
+Abstract
+--------
+
+Created: 20 April, 2021 (happy 40th birthday Matt !)
+Author: Clément Robert
+
+I propose to extract native colormaps ("cmaps" hereafter) from yt into a separate, lightweight package.
+
+Status
+------
+
+Proposed
+
+Project Management Links
+------------------------
+
+PRs following the release of Matplotlib 3.4
+  * remove duplicated (vendored) cmaps from matpltolib (cubehelix in `#3149 <https://github.com/yt-project/yt/pull/3149>`_ and turbo in `#3137 <https://github.com/yt-project/yt/pull/3137>`_)
+  * stop registering colormaps from cmocean `#3175 <https://github.com/yt-project/yt/pull/3175>`_
+  * add a visible deprecation warning for unprefixed cmocean maps (`#3214 <https://github.com/yt-project/yt/pull/3214>`_)
+  * document the deprecation above `#3207 <https://github.com/yt-project/yt/pull/3207>`_
+  * bugfix an undesirable side effect from #3175 `#3212 <https://github.com/yt-project/yt/pull/3212>`_
+
+GH issue with the initial discussion `#3165 <https://github.com/yt-project/yt/issues/3165>`_
+
+
+Detailed Description
+--------------------
+
+An undocumented behaviour change in Matplotlib 3.4.0 made naming collisions in cmaps
+fatal. Registering a new cmap with a previously registered name will not work any more,
+and cause the program to crash.
+Up to yt 3.6, we've been automatically registering cmaps from various sources. Most notably:
+- yt itself
+- IDL
+- `cmocean <https://matplotlib.org/cmocean/>`_
+  
+All of the cmaps in questions are (or used to be) registered with bare names, i.e.
+without a dedicated prefix. This means that if any of our cmaps' names is used in the
+future release of Matplotlib, importing yt will fail with a ``ValueError``.
+
+Good practice is in fact to register cmaps under a custom "namespace" (prefix) that is
+guaranted to never collide with matplotlib native colormpas. This is what is currently
+done in cmocean itself (prefixing with ``"cmo."``) as well as, for instance `cmasher <https://cmasher.readthedocs.io>`_
+(prefixing with ``"cmr."``).
+
+Since migrating away from the fragile current registration method requires a structural
+change anyway, I propose we seize the opportunity to make yt native cmaps easier to use
+from outside the framework (to footnote: it is actually already doable but it requires loading the entire package)
+and export them into a small, lightweight, easy to maintain and install package.
+
+Such a package would be a hard dependency of yt itself.
+
+In case this proposal is accepted, the exact prefix used is up for discussion. I can propose
+1) ``cmy.`` pros: perfectly fits the dominant convention, cons: doesn't look like yt
+1) ``yt.`` pros: dead simple, best at "brand" reinforcement, cons: doesn't align with the dominant convention
+1) ``cmyt.`` pros: has "yt" _and_ "cm" in the name, cons: one char more that the dominant convention
+
+My personal preference goes to ``cmyt.``, and I'm going with it as the proposed package
+name in the following.
+
+NOTE: the fate of IDL orignated colormaps currently registered and vendored by yt is not
+clear. They could be ported as yet another package (and maybe made a hard dep to yt
+too ?), or be included in the first package (not my favourite option).
+
+
+Backwards Compatibility
+-----------------------
+
+Forcing people to add prefixes everywhere is not (yet ?) necessary, but the practice
+should be encouraged nevertheless. One way to bridge the gap between current
+"malpractice" and a more stable usage in yt would be to perfom reregistrations of
+``cmyt``'s cmaps without a prefix (similarly to what was previously done with cmocean,
+though in an error-safe way).
+
+Maybe this could be done silently in yt 4.0 (to save our users as much of a migration
+burden as possible), then raise visible deprecation warnings starting from yt 4.1, and
+finally be completely deprecated in yt 4.2 or yt 4.3 . 
+
+
+Alternatives
+------------
+
+- Perform structural changes in how yt registers its own cmaps (necessary) without making
+the result a new package (not necessary, but offers some additional benefits).
+
+- Perform the necessary changes on yt side, export the cmaps into a separate package but
+  keep them in the main package too (code duplication, not my cup of tea).
