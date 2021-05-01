@@ -1,0 +1,118 @@
+YTEP-0038: Type Annotations
+===========================
+
+Abstract
+--------
+
+Created: March 1, 2021
+Author: Matthew Turk, Corentin Cadiou, Clément Robert
+
+This YTEP proposes that we undertake a staged process of adding `type
+annotations <https://docs.python.org/3/library/typing.html>`_ to the yt
+codebase.
+
+Status
+------
+
+Proposed, after having been discussed.
+
+Project Management Links
+------------------------
+
+  * `PR 3064 - Add a typing module <https://github.com/yt-project/yt/pull/3064>`_
+  * `PR 3028 - pyannotate for type hints <https://github.com/yt-project/yt/pull/3028>`_
+  * `PR 2917 - Drop support for Py 3.6 <https://github.com/yt-project/yt/pull/2917>`_
+  * `PR 2352 - Experiment with type hinting <https://github.com/yt-project/yt/pull/2352>`_
+  * `Somewhat related YTEP on traitlets <https://github.com/yt-project/ytep/pull/8>`_
+
+Additionally, the `pull request for this YTEP
+<https://github.com/yt-project/ytep/pull/17>`_ is an invaluable source of
+information and discussion.
+
+Detailed Description
+--------------------
+
+In the 3.x series, Python had added support for type annotations/hinting.
+These are optional annotations that specify what types a given function
+expects to receive or to emit.
+
+This allows a number of useful features, chief among them a more rigorous
+method for error-checking in code and a way to provide much better
+autocompletion and IDE functionality for developing both scripts *and* code
+within yt. If your IDE is aware of what kinds of objects will be returned by 
+a function, it can then provide options about what you might be able to do
+with that object. A recent summary (as of this writing) can be found
+`here <https://www.augmentedmind.de/2020/10/11/static-python-type-hints/>`_.
+
+There are also possibilities of future optimizations that can build on type
+hinting, for instance in tools like Cython and Numba, but that is not
+considered a top-tier reason for adding type hints.
+
+However, there are some features of type-hinting that would be extremely
+useful to yt that only started appearing in Python 3.7. Part of this
+discussion should be around when to require Python 3.7 and above.
+
+Implementing type annotations across an entire codebase such as yt is a
+daunting task. There are many, many internal functions that would benefit
+from type annotations. Instead, it would be most useful to take a staged
+approach, utilizing automated conversion tools where possible with
+hand-reviews of these *internal* items.
+
+For user-facing items, in particular anything in the *high-level* APIs (i.e.,
+data selectors, `SlicePlot`, etc) a personal touch should be used, and each
+should be written by a developer.
+
+Because this is a big task, the order of modifications we propose would be:
+
+ * *Immediately* allow type hinting in new pull requests and code
+   modifications.
+ * *Immediately* allow the inclusion of a type hinting module, and open for
+   discussion the usage of that module and its makeup.
+ * Identify any type hint `Union` types that need to be made (to account for,
+   for instance, supplying either a `unyt_quantity` or a tuple of (value,
+   unit))
+ * Type-hint constructors for all top-level objects (`SlicePlot`, `Sphere`, etc)
+ * Type-hint all visualization function calls (`p.set_width`)
+ * Type-hint public methods on top-level objects (`.profile`)
+ * Utilize annotators for internal (underscore) methods.
+
+This will need to be a series of pull requests.
+
+Because these hints will be integrated into the testing suites, we can have
+an additional check of static analysis of our testing suites and examples.
+This should ease the development process, as an error will be raised for
+invalid API uses or incorrect type annotations.
+
+Guidelines for Typing in yt
+---------------------------
+
+ * "Don't Repeat Yourself": All internal typing should be imported either
+   from `typing` or from `yt.typing`, except classes (that should be imported
+   from their respective files directly) and functions that return or take as
+   inputs objects from foreign libraries (e.g. that export pandas
+   dataframes). We should avoid as much as possible code repetition in
+   function signatures, except where it helps understanding the signature
+   itself (i.e. `Tuple[str, str]` may be clearer than `StrTuple`)
+ * "Type for users then for the machine": Typing should help users and
+   developers first, and be machine readable then. This means that complex
+   types should be defined as their own meaningful type and stored in
+   `yt/typing.py`.
+ * "Favour clean signature over history": Inevitably we will hit a function
+   with very complex signatures/variable return types. We should favour
+   refactoring it if that can contribute to simplifying the signature.
+
+Backwards Compatibility
+-----------------------
+
+Unless Python 3.7 or above features of type hinting are used, this should not
+have any backwards-incompatible changed.
+
+The primary Python 3.7 feature we would want to take advantage of is deferred
+evaluation. The example given in discussion is a return type of a class that
+does not exist yet; to retain Python 3.6 compatibility we would use a string
+literal for the time-being.
+
+Alternatives
+------------
+
+None that I can identify.
