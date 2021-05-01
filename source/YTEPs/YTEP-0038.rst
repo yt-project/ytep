@@ -14,7 +14,7 @@ codebase.
 Status
 ------
 
-Proposed, after havingbeen discussed.
+Proposed, after having been discussed.
 
 Project Management Links
 ------------------------
