@@ -39,7 +39,7 @@ expects to receive or to emit.
 This allows a number of useful features, chief among them a more rigorous
 method for error-checking in code and a way to provide much better
 autocompletion and IDE functionality for developing both scripts *and* code
-within yt.  If your IDE is aware of what kinds of objects will be returned by 
+within yt. If your IDE is aware of what kinds of objects will be returned by 
 a function, it can then provide options about what you might be able to do
 with that object. A recent summary (as of this writing) can be found
 `here <https://www.augmentedmind.de/2020/10/11/static-python-type-hints/>`_.
