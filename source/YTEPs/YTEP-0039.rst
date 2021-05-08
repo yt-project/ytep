@@ -22,7 +22,9 @@ Project Management Links
 
 - rich logging `#3106 <https://github.com/yt-project/yt/pull/3106>`_
 - rich progress bars `#3114 <https://github.com/yt-project/yt/pull/3114>`_
-
+- upstream, add support for non-tqdm based progress bars to `pooch <https://github.com/fatiando/pooch/pull/228>`_
+ (unreleased as of May the 8th, 2021)
+  
 Detailed Description
 --------------------
 
