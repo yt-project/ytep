@@ -13,7 +13,7 @@ We will be dropping support for Python 2.7 in all "major" releases after 3.5, wh
 Status
 ------
 
-Proposed.
+Completed
 
 Project Management Links
 ------------------------

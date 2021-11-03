@@ -15,7 +15,7 @@ the blockers to adoption are enumerated.
 Status
 ------
 
-In Progress
+Completed
 
 Project Management Links
 ------------------------

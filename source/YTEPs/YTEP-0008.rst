@@ -8,6 +8,8 @@ Abstract
 
 Created: February 21, 2013
 Author: Matthew Turk
+Updated: November 3, 2021
+Author: Clément Robert
 
 The yt release schedule is somewhat dysfunctional in several ways.  Release
 dates can be difficult to stick to, and merges to stable occur only after long
@@ -77,6 +79,13 @@ Version Release Date Days Since Last
 3.3.4   2017-02-13   63
 3.3.5   2017-03-08   23
 3.4     2017-08-11   156
+3.4.1   2018-02-16   189
+3.5     2018-10-16   242
+3.5.1   2019-02-26   133
+3.6     2020-04-11   410
+3.6.1   2020-11-13   216
+4.0     2021-07-06   235
+4.0.1   2021-07-21   15
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this

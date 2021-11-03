@@ -12,7 +12,7 @@ I propose to extract native colormaps ("cmaps" hereafter) from yt into a separat
 Status
 ------
 
-Proposed
+Completed
 
 Project Management Links
 ------------------------
@@ -26,6 +26,7 @@ PRs following the release of Matplotlib 3.4
 
 GH issue with the initial discussion `#3165 <https://github.com/yt-project/yt/issues/3165>`_
 
+The new package's home is `https://github.com/yt-project/cmyt <https://github.com/yt-project/cmyt>`_
 
 Detailed Description
 --------------------

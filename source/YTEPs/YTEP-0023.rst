@@ -17,9 +17,7 @@ members to report violations.
 Status
 ------
 
-Status should be one of the following:
-
-In Progress
+Completed
 
 Project Management Links
 ------------------------

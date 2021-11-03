@@ -27,7 +27,7 @@ main benefit is to make sure units are carried through calculations in a
 
 Status
 ------
-In Progress: work is ongoing and there is an open PR for discussion.
+Completed
 
 Project Management Links
 ------------------------

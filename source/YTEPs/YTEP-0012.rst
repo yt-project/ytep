@@ -17,7 +17,7 @@ creation, and halo profiling on one's own.
 Status
 ------
 
-Proposed
+Completed
 
 Project Management Links
 ------------------------

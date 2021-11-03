@@ -14,7 +14,7 @@ particle fields against one another.
 Status
 ------
 
-  In progress - a basic implementation exists, but needs to be modified and refactored as described below.
+Completed
 
 Project Management Links
 ------------------------
