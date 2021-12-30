@@ -14,7 +14,7 @@ progress bars (as a replacement for ``tqdm``).
 Status
 ------
 
-Proposed
+Withdrawn
 
 
 Project Management Links
