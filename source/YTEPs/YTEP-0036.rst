@@ -15,7 +15,7 @@ This YTEP proposes two major changes to yt's answer testing:
 Status
 ------
 
- * Proposed
+In progress
 
 Project Management Links
 ------------------------

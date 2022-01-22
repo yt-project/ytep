@@ -17,7 +17,7 @@ ecosystem of independently developed packages that utilize yt.
 Status
 ------
 
-This YTEP has been accepted.
+Completed
 
 Project Management Links
 ------------------------

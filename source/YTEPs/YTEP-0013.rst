@@ -28,7 +28,7 @@ fluids; however, for SPH and N-body systems, this is not the case.
 Status
 ------
 
-Accepted: an implementation has been written, tested and included.
+Completed
 
 Project Management Links
 ------------------------

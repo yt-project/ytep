@@ -15,7 +15,7 @@ transition.
 Status
 ------
 
-Proposed.
+Completed
 
 The yt steering committee has evaluated the broad strokes, and it was presented
 to the yt community at the beginning of March. There were no objections, and
