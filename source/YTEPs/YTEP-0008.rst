@@ -86,6 +86,7 @@ Version Release Date Days Since Last
 3.6.1   2020-11-13   216
 4.0     2021-07-06   235
 4.0.1   2021-07-21   15
+4.0.2   2022-02-01   195
 ======= ============ ===============
 
 In principle, a long release schedule is not a problem.  However, what this
@@ -110,33 +111,12 @@ For the purposes of this document, a "release" constitutes five things:
     long-term container.
   * The development branch (``yt``) is merged to the stable branch (``stable``)
   * A new tag in the version control history
-  * An upload of the source code to PyPI ( http://pypi.python.org/ )
+  * An upload of the source code to PyPI ( https://pypi.org/ )
+  * An new entry on conda-forge ( https://anaconda.org/conda-forge/yt )
   * An announcement email (to ``yt-users`` for minor releases and more broadly
     for major releases)
-  * For "bugfix"-level releases, changes should be backported to the ``stable``
-    branch using the ``pr_backport.py`` script.
+  * For "bugfix"-level releases, changes should be backported to a dedicated branch.
 
-Long Term Support Branch
-++++++++++++++++++++++++
-
-As development on underlying infrastructure of yt continues apace, we must
-provide long-term support for the existing infrastructure.  As such, we will
-continue to provide (time, effort and need permitting) the existing 2.X
-branches with critical bugfixes.
-
-Here is an outline of the release dates for the remainder of 2014.  This YTEP
-will be updated as time goes on with additional release dates for long-term
-stability, but currently it is anticipated that this release schedule will
-relax over time once the next-generation branch (described below) becomes
-viable.
-
-This branch will be known as ``yt-2.x``.
-
-======= ============
-Version Release Date
-======= ============
-2.6.4   2014-11-01
-======= ============ 
 
 Release Managers
 ++++++++++++++++
@@ -166,6 +146,21 @@ Version Release Manager
 3.2.1   Nathan Goldbaum
 3.2.2   Nathan Goldbaum
 3.2.3   Nathan Goldbaum
+3.3.0   Nathan Goldbaum
+3.3.1   Nathan Goldbaum
+3.3.2   Nathan Goldbaum
+3.3.3   Nathan Goldbaum
+3.3.4   Nathan Goldbaum
+3.3.5   Nathan Goldbaum
+3.4.0   Nathan Goldbaum
+3.4.1   Nathan Goldbaum
+3.5.0   Nathan Goldbaum
+3.5.1   Nathan Goldbaum
+3.6.0   Madicken Munk
+3.6.1   Madicken Munk
+4.0.0   Madicken Munk
+4.0.1   Madicken Munk
+4.0.2   Matthew Turk
 ======= ===============
 
 Backwards Compatibility
